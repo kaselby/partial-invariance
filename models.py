@@ -1,0 +1,133 @@
+import torch.nn as nn
+import torch
+
+class SetModel(nn.Module):
+    def __init__(self, encoder, decoder):
+        super().__init__()
+        self.encoder = encoder
+        self.decoder = decoder
+    def forward(self, X):
+        return self.decoder(self.encoder(X).sum(dim=1))
+
+class MultiSetModel(nn.Module):
+    def __init__(self, encoder1, encoder2, decoder):
+        super().__init__()
+        self.encoder1=encoder1
+        self.encoder2=encoder2
+        self.decoder=decoder
+
+    def forward(self, X, Y):
+        Z_x = self.encoder1(X).sum(dim=1)
+        Z_y = self.encoder1(Y).sum(dim=1)
+        return self.decoder(torch.cat([Z_x,Z_y], dim=-1))
+
+class RelationNetwork(nn.Module):
+    def __init__(self, encoder, decoder, pooling='sum'):
+        super().__init__()
+        self.encoder = encoder
+        self.decoder = decoder
+        self.pooling = pooling
+    
+    def forward(self, X):
+        pairs = torch.cat([X.unsqueeze(1), X.unsqueeze(2)], dim=-1).view(X.size(0),-1, X.size(-1)*2)
+        Z = self.encoder(pairs)
+        if self.pooling == 'sum':
+            Z = Z.sum(dim=1)
+        elif self.pooling == 'max':
+            Z = Z.max(dim=1)
+        else:
+            raise NotImplementedError()
+        return self.decoder(Z)
+
+class EntropyRN(nn.Module):
+    def __init__(self, encoder, decoder):
+        super().__init__()
+        self.encoder = encoder
+        self.decoder = decoder
+
+    def forward(self, X):
+        N = X.size(1)
+        pairs = torch.cat([X.unsqueeze(1).expand(-1,N,-1,-1), X.unsqueeze(2).expand(-1,-1,N,-1)], dim=-1)
+        Z = self.encoder(pairs)
+        Z = torch.max(Z, dim=2)[0]
+        Z = torch.sum(Z, dim=1)
+        return self.decoder(Z)
+
+
+
+class EquiNN(nn.Module):
+    def __init__(self):
+        self.l = nn.Parameter(torch.empty(1))
+        self.g = nn.Parameter(torch.empty(1))
+
+    def forward(self, X, maxpool=False):
+        N = X.size(-1)
+        if maxpool:
+            return X.matmul(self.l * torch.eye(N)) + self.g * X.max(dim=-1)[0] * torch.ones_like(X)
+        else:
+            return X.matmul(self.l * torch.eye(N) + self.g*torch.ones(N, N))
+        
+
+class PEquiNN(nn.Module):
+    def __init__(self):
+        self.l_xx = nn.Parameter(torch.empty(1))
+        self.l_yy = nn.Parameter(torch.empty(1))
+        self.g_xx = nn.Parameter(torch.empty(1))
+        self.g_xy = nn.Parameter(torch.empty(1))
+        self.g_yx = nn.Parameter(torch.empty(1))
+        self.g_yy = nn.Parameter(torch.empty(1))
+
+    def forward(self, X, Y):
+        n = X.size(-1)
+        m = Y.size(-1)
+        theta_xx = torch.eye(n) * self.l_xx + torch.ones(n,n) * self.g_xx
+        theta_yy = torch.eye(m) * self.l_yy + torch.ones(m,m) * self.g_yy
+        theta_xy = torch.ones(m, n) * self.g_xy
+        theta_yx = torch.ones(n, m) * self.g_yx
+        return X.mm(theta_xx) + Y.mm(theta_yx), Y.mm(theta_yy) + X.mm(theta_xy)
+
+
+def simple_model(input_size, output_size, latent_size=16, hidden_size=32):
+    encoder = nn.Linear(input_size, latent_size, bias=False)
+    nn.init.eye_(encoder.weight)
+    decoder = nn.Sequential(
+        nn.Linear(latent_size, hidden_size),
+        nn.ReLU(),
+        nn.Linear(hidden_size, hidden_size),
+        nn.ReLU(),
+        nn.Linear(hidden_size, output_size),
+    )
+    return SetModel(encoder, decoder)
+
+
+def simple_multi_model(input_size, output_size, latent_size=16, hidden_size=32):
+    encoder1 = nn.Linear(input_size, latent_size, bias=False)
+    encoder2 = nn.Linear(input_size, latent_size, bias=False)
+    nn.init.eye_(encoder1.weight)
+    nn.init.eye_(encoder2.weight)
+    decoder = nn.Sequential(
+        nn.Linear(2*latent_size, hidden_size),
+        nn.ReLU(),
+        nn.Linear(hidden_size, hidden_size),
+        nn.ReLU(),
+        nn.Linear(hidden_size, output_size),
+    )
+    return MultiSetModel(encoder1, encoder2, decoder)
+
+
+def entropy_model(input_size, output_size, latent_size=4, hidden_size=12):
+    encoder = nn.Sequential(
+        nn.Linear(2*input_size, hidden_size),
+        nn.ReLU(),
+        nn.Linear(hidden_size, hidden_size),
+        nn.ReLU(),
+        nn.Linear(hidden_size, latent_size),
+    )
+    decoder = nn.Sequential(
+        nn.Linear(latent_size, hidden_size),
+        nn.ReLU(),
+        nn.Linear(hidden_size, hidden_size),
+        nn.ReLU(),
+        nn.Linear(hidden_size, output_size),
+    )
+    return EntropyRN(encoder, decoder)
