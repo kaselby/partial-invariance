@@ -80,10 +80,12 @@ class DivergenceRN(nn.Module):
         Z_YY = torch.max(Z_YY, dim=2)[0]
         Z_XY = torch.max(Z_XY, dim=2)[0]
         Z_YX = torch.max(Z_YX, dim=2)[0]
+        Z_X = Z_XX/Z_YX
+        Z_Y = Z_YY/Z_XY
         #Z_X = torch.exp(Z_XX - Z_YX)
         #Z_Y = torch.exp(Z_YY - Z_XY)
-        Z_X = self.e2_x(torch.cat([Z_XX, Z_YX],dim=-1))
-        Z_Y = self.e2_y(torch.cat([Z_YY, Z_XY],dim=-1))
+        #Z_X = self.e2_x(torch.cat([Z_XX, Z_YX],dim=-1))
+        #Z_Y = self.e2_y(torch.cat([Z_YY, Z_XY],dim=-1))
         Z_X = torch.sum(Z_X, dim=1)
         Z_Y = torch.sum(Z_Y, dim=1)
         return self.decoder(torch.cat([Z_X, Z_Y], dim=-1))
