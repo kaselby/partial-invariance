@@ -191,7 +191,7 @@ def divergence_model(input_size, output_size, latent_size=4, hidden_size=16):
         nn.ReLU(),
         nn.Linear(hidden_size, output_size),
     )
-    for module in decoder.modules:
+    for module in decoder.modules():
         if type(module) == nn.Linear:
             nn.init.eye_(module.weight)
     return DivergenceRN(pair_encoder, merge_encoder, decoder)
