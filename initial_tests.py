@@ -94,6 +94,8 @@ def train(model, sample_fct, label_fct, criterion=nn.L1Loss(), batch_size=64, st
     losses = []
     for _ in range(steps):
         X = sample_fct(batch_size)
+        if use_cuda:
+            X = [x.cuda() for x in X]
         labels = label_fct(*X)
         loss = criterion(model(*X).squeeze(-1), labels)
         optimizer.zero_grad()
