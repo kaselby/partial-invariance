@@ -53,6 +53,41 @@ class EntropyRN(nn.Module):
         Z = torch.sum(Z, dim=1)
         return self.decoder(Z)
 
+import copy
+class DivergenceRN(nn.Module):
+    def __init__(self, pair_encoder, merge_encoder, decoder):
+        super().__init__()
+        self.e1_xx = pair_encoder
+        self.e1_xy = copy.deepcopy(pair_encoder)
+        self.e1_yx = copy.deepcopy(pair_encoder)
+        self.e1_yy = copy.deepcopy(pair_encoder)
+        self.e2_x = merge_encoder
+        self.e2_y = copy.deepcopy(merge_encoder)
+        self.decoder = decoder
+
+    def forward(self, X, Y):
+        N = X.size(1)
+        M = Y.size(1)
+        XX = torch.cat([X.unsqueeze(1).expand(-1,N,-1,-1), X.unsqueeze(2).expand(-1,-1,N,-1)], dim=-1)
+        YY = torch.cat([Y.unsqueeze(1).expand(-1,M,-1,-1), Y.unsqueeze(2).expand(-1,-1,M,-1)], dim=-1)
+        XY = torch.cat([X.unsqueeze(1).expand(-1,M,-1,-1), Y.unsqueeze(2).expand(-1,-1,N,-1)], dim=-1)
+        YX = torch.cat([Y.unsqueeze(1).expand(-1,N,-1,-1), X.unsqueeze(2).expand(-1,-1,M,-1)], dim=-1)
+        Z_XX = self.e_xx(XX)
+        Z_YY = self.e_yy(YY)
+        Z_XY = self.e_xy(XY)
+        Z_YX = self.e_yx(YX)
+        Z_XX = torch.max(Z_XX, dim=2)[0]
+        Z_YY = torch.max(Z_YY, dim=2)[0]
+        Z_XY = torch.max(Z_XY, dim=2)[0]
+        Z_YX = torch.max(Z_YX, dim=2)[0]
+        Z_X = Z_XX / Z_YX
+        Z_X = Z_YY / Z_XY
+        #Z_X = self.merge_encoder(torch.cat([Z_XX, Z_YX],dim=-1))
+        #Z_Y = self.merge_encoder(torch.cat([Z_YY, Z_XY],dim=-1))
+        Z_X = torch.sum(Z_X, dim=1)
+        Z_Y = torch.sum(Z_Y, dim=1)
+        return self.decoder(torch.cat([Z_X, Z_Y], dim=-1))
+
 
 
 class EquiNN(nn.Module):
@@ -131,3 +166,27 @@ def entropy_model(input_size, output_size, latent_size=4, hidden_size=12):
         nn.Linear(hidden_size, output_size),
     )
     return EntropyRN(encoder, decoder)
+
+def divergence_model(input_size, output_size, latent_size=4, hidden_size=12):
+    pair_encoder = nn.Sequential(
+        nn.Linear(2*input_size, hidden_size),
+        nn.ReLU(),
+        nn.Linear(hidden_size, hidden_size),
+        nn.ReLU(),
+        nn.Linear(hidden_size, latent_size),
+    )
+    merge_encoder = nn.Sequential(
+        nn.Linear(2*input_size, hidden_size),
+        nn.ReLU(),
+        nn.Linear(hidden_size, hidden_size),
+        nn.ReLU(),
+        nn.Linear(hidden_size, latent_size),
+    )
+    decoder = nn.Sequential(
+        nn.Linear(4*latent_size, hidden_size),
+        nn.ReLU(),
+        nn.Linear(hidden_size, hidden_size),
+        nn.ReLU(),
+        nn.Linear(hidden_size, output_size),
+    )
+    return DivergenceRN(encoder, decoder)
