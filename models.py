@@ -82,8 +82,8 @@ class DivergenceRN(nn.Module):
         Z_YX = torch.max(Z_YX, dim=2)[0]
         #Z_X = Z_XX/Z_YX
         #Z_Y = Z_YY/Z_XY
-        Z_X = torch.log(Z_XX) - torch.log(Z_YX)
-        Z_Y = torch.log(Z_XX) - torch.log(Z_YX)
+        Z_X = Z_XX - Z_YX
+        Z_Y = Z_XX - Z_YX
         #Z_X = self.e2_x(torch.cat([Z_XX, Z_YX],dim=-1))
         #Z_Y = self.e2_y(torch.cat([Z_YY, Z_XY],dim=-1))
         Z_X = torch.sum(Z_X, dim=1)
