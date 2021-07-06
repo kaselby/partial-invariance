@@ -73,13 +73,13 @@ def knn(X, k, Y=None, bs=32):
         dists[:,j_min:j_max] = topk_i
     return dists
 
-def kl_knn(X, Y, k=1):
+def kl_knn(X, Y, k=1, xi=1e-5):
     n = X.size(1)
     m = Y.size(1)
     d = X.size(-1)
 
     nu = knn(X=Y, Y=X, k=k)
-    eps = knn(X=X, k=k)
+    eps = knn(X=X, k=k) + xi
 
     return d/n * torch.log(nu/eps).sum(dim=1) + math.log(m/(n-1))
 
