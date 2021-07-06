@@ -72,18 +72,18 @@ class DivergenceRN(nn.Module):
         YY = torch.cat([Y.unsqueeze(1).expand(-1,M,-1,-1), Y.unsqueeze(2).expand(-1,-1,M,-1)], dim=-1)
         XY = torch.cat([X.unsqueeze(1).expand(-1,M,-1,-1), Y.unsqueeze(2).expand(-1,-1,N,-1)], dim=-1)
         YX = torch.cat([Y.unsqueeze(1).expand(-1,N,-1,-1), X.unsqueeze(2).expand(-1,-1,M,-1)], dim=-1)
-        Z_XX = self.e_xx(XX)
-        Z_YY = self.e_yy(YY)
-        Z_XY = self.e_xy(XY)
-        Z_YX = self.e_yx(YX)
+        Z_XX = self.e1_xx(XX)
+        Z_YY = self.e1_yy(YY)
+        Z_XY = self.e1_xy(XY)
+        Z_YX = self.e1_yx(YX)
         Z_XX = torch.max(Z_XX, dim=2)[0]
         Z_YY = torch.max(Z_YY, dim=2)[0]
         Z_XY = torch.max(Z_XY, dim=2)[0]
         Z_YX = torch.max(Z_YX, dim=2)[0]
         Z_X = Z_XX / Z_YX
         Z_Y = Z_YY / Z_XY
-        #Z_X = self.merge_encoder(torch.cat([Z_XX, Z_YX],dim=-1))
-        #Z_Y = self.merge_encoder(torch.cat([Z_YY, Z_XY],dim=-1))
+        #Z_X = self.e2_x(torch.cat([Z_XX, Z_YX],dim=-1))
+        #Z_Y = self.e2_y(torch.cat([Z_YY, Z_XY],dim=-1))
         Z_X = torch.sum(Z_X, dim=1)
         Z_Y = torch.sum(Z_Y, dim=1)
         return self.decoder(torch.cat([Z_X, Z_Y], dim=-1))
