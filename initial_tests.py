@@ -78,7 +78,7 @@ def kl_knn(X, Y, k=1, xi=1e-5):
     m = Y.size(1)
     d = X.size(-1)
 
-    nu = knn(X=Y, Y=X, k=k)
+    nu = knn(X=Y, Y=X, k=k) + xi
     eps = knn(X=X, k=k) + xi
 
     return d/n * torch.log(nu/eps).sum(dim=1) + math.log(m/(n-1))
