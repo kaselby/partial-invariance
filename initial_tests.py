@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 import math
 from torch.distributions import OneHotCategorical, Normal
+import tqdm
 
 use_cuda=torch.cuda.is_available()
 
@@ -92,7 +93,7 @@ def avg_nn_dist(X):
 def train(model, sample_fct, label_fct, criterion=nn.L1Loss(), batch_size=64, steps=3000, lr=1e-5):
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     losses = []
-    for _ in range(steps):
+    for _ in tqdm.tqdm(range(steps)):
         X = sample_fct(batch_size)
         if use_cuda:
             X = [x.cuda() for x in X]
