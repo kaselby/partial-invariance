@@ -81,7 +81,7 @@ class DivergenceRN(nn.Module):
         Z_XY = torch.max(Z_XY, dim=2)[0]
         Z_YX = torch.max(Z_YX, dim=2)[0]
         Z_X = Z_XX / Z_YX
-        Z_X = Z_YY / Z_XY
+        Z_Y = Z_YY / Z_XY
         #Z_X = self.merge_encoder(torch.cat([Z_XX, Z_YX],dim=-1))
         #Z_Y = self.merge_encoder(torch.cat([Z_YY, Z_XY],dim=-1))
         Z_X = torch.sum(Z_X, dim=1)
@@ -189,4 +189,4 @@ def divergence_model(input_size, output_size, latent_size=4, hidden_size=12):
         nn.ReLU(),
         nn.Linear(hidden_size, output_size),
     )
-    return DivergenceRN(encoder, decoder)
+    return DivergenceRN(pair_encoder, merge_encoder, decoder)

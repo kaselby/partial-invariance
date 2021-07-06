@@ -106,7 +106,9 @@ def train(model, sample_fct, label_fct, criterion=nn.L1Loss(), batch_size=64, st
     return losses
 
 def show_examples(model, sample_fct, label_fct, n=8):
-    x = sample_fct(n)
-    yhat = model(*x).detach()
-    y = label_fct(*x)
+    X = sample_fct(n)
+    if use_cuda:
+        X = [x.cuda() for x in X]
+    yhat = model(*X).cpu().detach()
+    y = label_fct(*X)
     print("Y:", y, "\nYhat:", yhat)
