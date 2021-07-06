@@ -169,7 +169,7 @@ def entropy_model(input_size, output_size, latent_size=4, hidden_size=12):
     )
     return EntropyRN(encoder, decoder)
 
-def divergence_model(input_size, output_size, latent_size=4, hidden_size=12):
+def divergence_model(input_size, output_size, latent_size=4, hidden_size=16):
     pair_encoder = nn.Sequential(
         nn.Linear(2*input_size, hidden_size),
         nn.ReLU(),
@@ -191,4 +191,7 @@ def divergence_model(input_size, output_size, latent_size=4, hidden_size=12):
         nn.ReLU(),
         nn.Linear(hidden_size, output_size),
     )
+    for module in decoder.modules:
+        if type(module) == nn.Linear:
+            nn.init.eye_(module.weight)
     return DivergenceRN(pair_encoder, merge_encoder, decoder)
