@@ -176,7 +176,7 @@ def divergence_model(input_size, output_size, latent_size=4, hidden_size=12):
         nn.Linear(hidden_size, latent_size),
     )
     merge_encoder = nn.Sequential(
-        nn.Linear(2*input_size, hidden_size),
+        nn.Linear(2*latent_size, hidden_size),
         nn.ReLU(),
         nn.Linear(hidden_size, hidden_size),
         nn.ReLU(),
