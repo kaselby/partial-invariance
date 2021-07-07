@@ -4,6 +4,7 @@ import torch.nn as nn
 import math
 from torch.distributions import OneHotCategorical, Normal
 import tqdm
+import ot
 
 use_cuda=torch.cuda.is_available()
 
@@ -99,6 +100,10 @@ def kl_1d_gaussian(mu1, sigma1, mu2, sigma2):
 def avg_nn_dist(X):
     dists = knn(X, 1)
     return dists.sum(dim=-1)/dists.size(-1)
+
+def wasserstein(X, Y):
+    costs = ot.dist(X, Y)
+    return ot.emd2([],[],costs)
 
 def train(model, sample_fct, label_fct, criterion=nn.L1Loss(), batch_size=64, steps=3000, lr=1e-5):
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)

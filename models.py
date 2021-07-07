@@ -39,6 +39,18 @@ class RelationNetwork(nn.Module):
             raise NotImplementedError()
         return self.decoder(Z)
 
+class RNBlock(nn.Module):
+    def __init__(self, net) -> None:
+        super().__init__()
+        self.net = net
+    
+    def forward(self, X):
+        N = X.size(1)
+        pairs = torch.cat([X.unsqueeze(1).expand(-1,N,-1,-1), X.unsqueeze(2).expand(-1,-1,N,-1)], dim=-1)
+        Z = self.net(pairs)
+        Z = torch.max(Z, dim=2)[0]
+        return Z
+
 class EntropyRN(nn.Module):
     def __init__(self, encoder, decoder):
         super().__init__()
@@ -47,9 +59,7 @@ class EntropyRN(nn.Module):
 
     def forward(self, X):
         N = X.size(1)
-        pairs = torch.cat([X.unsqueeze(1).expand(-1,N,-1,-1), X.unsqueeze(2).expand(-1,-1,N,-1)], dim=-1)
-        Z = self.encoder(pairs)
-        Z = torch.max(Z, dim=2)[0]
+        Z = self.encoder(X)
         Z = torch.sum(Z, dim=1)
         return self.decoder(Z)
 
@@ -205,14 +215,17 @@ def simple_multi_model(input_size, output_size, latent_size=16, hidden_size=32):
     return MultiSetModel(encoder1, encoder2, decoder)
 
 
-def entropy_model(input_size, output_size, latent_size=4, hidden_size=12):
-    encoder = nn.Sequential(
-        nn.Linear(2*input_size, hidden_size),
-        nn.ReLU(),
-        nn.Linear(hidden_size, hidden_size),
-        nn.ReLU(),
-        nn.Linear(hidden_size, latent_size),
-    )
+def entropy_model(input_size, output_size, latent_size=4, hidden_size=12, num_blocks=1):
+    blocks=[]
+    for i in range(num_blocks):
+        blocks.append(RNBlock(nn.Sequential(
+            nn.Linear(2*input_size, hidden_size),
+            nn.ReLU(),
+            nn.Linear(hidden_size, hidden_size),
+            nn.ReLU(),
+            nn.Linear(hidden_size, latent_size),
+    )))
+    encoder = nn.Sequential(*blocks)
     decoder = nn.Sequential(
         nn.Linear(latent_size, hidden_size),
         nn.ReLU(),
