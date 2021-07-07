@@ -218,13 +218,23 @@ def simple_multi_model(input_size, output_size, latent_size=16, hidden_size=32):
 def entropy_model(input_size, output_size, latent_size=4, hidden_size=12, num_blocks=1):
     blocks=[]
     for i in range(num_blocks):
-        blocks.append(RNBlock(nn.Sequential(
-            nn.Linear(2*input_size, hidden_size),
-            nn.ReLU(),
-            nn.Linear(hidden_size, hidden_size),
-            nn.ReLU(),
-            nn.Linear(hidden_size, latent_size),
-    )))
+        if i == 0:
+            blocks.append(RNBlock(nn.Sequential(
+                nn.Linear(2*input_size, hidden_size),
+                nn.ReLU(),
+                nn.Linear(hidden_size, hidden_size),
+                nn.ReLU(),
+                nn.Linear(hidden_size, latent_size),
+            )))
+        else:
+            blocks.append(RNBlock(nn.Sequential(
+                nn.Linear(2*latent_size, hidden_size),
+                nn.ReLU(),
+                nn.Linear(hidden_size, hidden_size),
+                nn.ReLU(),
+                nn.Linear(hidden_size, latent_size),
+            )))
+    
     encoder = nn.Sequential(*blocks)
     decoder = nn.Sequential(
         nn.Linear(latent_size, hidden_size),
