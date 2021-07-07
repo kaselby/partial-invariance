@@ -91,7 +91,7 @@ def kl_knn_simple(X, Y, k=1, xi=1e-5):
     nu = knn(X=Y, Y=X, k=k) + xi
     eps = knn(X=X, k=k) + xi
 
-    return torch.log(nu/eps).sum(dim=1)
+    return torch.log(nu/eps).sum(dim=1)/n
 
 def kl_1d_gaussian(mu1, sigma1, mu2, sigma2):
     return torch.log(sigma2/sigma1) + (sigma1*sigma1 + (mu1-mu2)*(mu1-mu2))/2/sigma2/sigma2 - 1./2
