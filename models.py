@@ -91,24 +91,35 @@ class DivergenceRN(nn.Module):
         return self.decoder(torch.cat([Z_X, Z_Y], dim=-1))
 
 class KLDivergenceRN(nn.Module):
-    def __init__(self, input_size, output_size, latent_size=4, hidden_size=32):
+    def __init__(self, input_size, output_size, latent_size=4, hidden_size=12):
         super().__init__()
-        pair_encoder = nn.Sequential(
-            nn.Linear(input_size, hidden_size),
+        self.e1_xx = nn.Sequential(
+            nn.Linear(2*input_size, hidden_size),
             nn.ReLU(),
             nn.Linear(hidden_size, hidden_size),
             nn.ReLU(),
             nn.Linear(hidden_size, latent_size),
         )
-        self.e1_xx = pair_encoder
-        self.e1_yx = pair_encoder
-        self.decoder = nn.Linear(latent_size, output_size)
+        self.e1_yx = nn.Sequential(
+            nn.Linear(2*input_size, hidden_size),
+            nn.ReLU(),
+            nn.Linear(hidden_size, hidden_size),
+            nn.ReLU(),
+            nn.Linear(hidden_size, latent_size),
+        )
+        decoder = nn.Sequential(
+            nn.Linear(latent_size, hidden_size),
+            nn.ReLU(),
+            nn.Linear(hidden_size, hidden_size),
+            nn.ReLU(),
+            nn.Linear(hidden_size, output_size),
+        )
 
     def forward(self, X, Y):
         N = X.size(1)
         M = Y.size(1)
-        XX = (X.unsqueeze(1).expand(-1,N,-1,-1) - X.unsqueeze(2).expand(-1,-1,N,-1)).norm(dim=-1, keepdim=True)
-        YX = (Y.unsqueeze(1).expand(-1,N,-1,-1) - X.unsqueeze(2).expand(-1,-1,M,-1)).norm(dim=-1, keepdim=True)
+        XX = torch.cat([X.unsqueeze(1).expand(-1,N,-1,-1), X.unsqueeze(2).expand(-1,-1,N,-1)], dim=-1)
+        YX = torch.cat([Y.unsqueeze(1).expand(-1,N,-1,-1), X.unsqueeze(2).expand(-1,-1,M,-1)], dim=-1)
 
         #XX = torch.cat([X.unsqueeze(1).expand(-1,N,-1,-1), X.unsqueeze(2).expand(-1,-1,N,-1)], dim=-1)
         #YX = torch.cat([Y.unsqueeze(1).expand(-1,N,-1,-1), X.unsqueeze(2).expand(-1,-1,M,-1)], dim=-1)
