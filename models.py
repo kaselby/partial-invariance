@@ -107,7 +107,7 @@ class KLDivergenceRN(nn.Module):
             nn.ReLU(),
             nn.Linear(hidden_size, latent_size),
         )
-        self.e2_yx = nn.Sequential(
+        self.e2_x = nn.Sequential(
             nn.Linear(2*latent_size, hidden_size),
             nn.ReLU(),
             nn.Linear(hidden_size, latent_size),
