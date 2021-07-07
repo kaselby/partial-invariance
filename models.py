@@ -107,7 +107,7 @@ class KLDivergenceRN(nn.Module):
             nn.ReLU(),
             nn.Linear(hidden_size, latent_size),
         )
-        decoder = nn.Sequential(
+        self.decoder = nn.Sequential(
             nn.Linear(latent_size, hidden_size),
             nn.ReLU(),
             nn.Linear(hidden_size, hidden_size),
