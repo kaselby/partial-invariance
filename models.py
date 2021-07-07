@@ -108,7 +108,7 @@ class KLDivergenceRN(nn.Module):
         N = X.size(1)
         M = Y.size(1)
         XX = X.unsqueeze(1).expand(-1,N,-1,-1) - X.unsqueeze(2).expand(-1,-1,N,-1)
-        YX = X.unsqueeze(1).expand(-1,M,-1,-1) - Y.unsqueeze(2).expand(-1,-1,N,-1)
+        YX = Y.unsqueeze(1).expand(-1,N,-1,-1) - X.unsqueeze(2).expand(-1,-1,M,-1)
 
         #XX = torch.cat([X.unsqueeze(1).expand(-1,N,-1,-1), X.unsqueeze(2).expand(-1,-1,N,-1)], dim=-1)
         #YX = torch.cat([Y.unsqueeze(1).expand(-1,N,-1,-1), X.unsqueeze(2).expand(-1,-1,M,-1)], dim=-1)
