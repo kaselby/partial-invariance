@@ -94,7 +94,7 @@ class KLDivergenceRN(nn.Module):
     def __init__(self, input_size, output_size, latent_size=4, hidden_size=32):
         super().__init__()
         pair_encoder = nn.Sequential(
-            nn.Linear(2*input_size, hidden_size),
+            nn.Linear(input_size, hidden_size),
             nn.ReLU(),
             nn.Linear(hidden_size, hidden_size),
             nn.ReLU(),
