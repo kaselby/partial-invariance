@@ -98,8 +98,6 @@ class KLDivergenceRN(nn.Module):
             nn.ReLU(),
             nn.Linear(hidden_size, hidden_size),
             nn.ReLU(),
-            nn.Linear(hidden_size, hidden_size),
-            nn.ReLU(),
             nn.Linear(hidden_size, latent_size),
         )
         self.e1_yx = nn.Sequential(
@@ -107,7 +105,10 @@ class KLDivergenceRN(nn.Module):
             nn.ReLU(),
             nn.Linear(hidden_size, hidden_size),
             nn.ReLU(),
-            nn.Linear(hidden_size, hidden_size),
+            nn.Linear(hidden_size, latent_size),
+        )
+        self.e2_yx = nn.Sequential(
+            nn.Linear(2*latent_size, hidden_size),
             nn.ReLU(),
             nn.Linear(hidden_size, latent_size),
         )
@@ -133,9 +134,9 @@ class KLDivergenceRN(nn.Module):
         Z_YX = torch.max(Z_YX, dim=2)[0]
         #Z_X = Z_XX/Z_YX
         #Z_Y = Z_YY/Z_XY
-        Z_X = Z_XX - Z_YX
+        #Z_X = Z_XX - Z_YX
         #Z_Y = Z_YY - Z_XY
-        #Z_X = self.e2_x(torch.cat([Z_XX, Z_YX],dim=-1))
+        Z_X = self.e2_x(torch.cat([Z_XX, Z_YX],dim=-1))
         #Z_Y = self.e2_y(torch.cat([Z_YY, Z_XY],dim=-1))
         Z_X = torch.sum(Z_X, dim=1)/N
         #Z_Y = torch.sum(Z_Y, dim=1)
