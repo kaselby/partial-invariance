@@ -90,6 +90,43 @@ class DivergenceRN(nn.Module):
         Z_Y = torch.sum(Z_Y, dim=1)
         return self.decoder(torch.cat([Z_X, Z_Y], dim=-1))
 
+class KLDivergenceRN(nn.Module):
+    def __init__(self, input_size, output_size, latent_size=4, hidden_size=32):
+        super().__init__()
+        pair_encoder = nn.Sequential(
+            nn.Linear(2*input_size, hidden_size),
+            nn.ReLU(),
+            nn.Linear(hidden_size, hidden_size),
+            nn.ReLU(),
+            nn.Linear(hidden_size, latent_size),
+        )
+        self.e1_xx = pair_encoder
+        self.e1_yx = pair_encoder
+        self.decoder = nn.Linear(latent_size, output_size)
+
+    def forward(self, X, Y):
+        N = X.size(1)
+        M = Y.size(1)
+        XX = X.unsqueeze(1).expand(-1,N,-1,-1) - X.unsqueeze(2).expand(-1,-1,N,-1)
+        YX = X.unsqueeze(1).expand(-1,M,-1,-1) - Y.unsqueeze(2).expand(-1,-1,N,-1)
+
+        #XX = torch.cat([X.unsqueeze(1).expand(-1,N,-1,-1), X.unsqueeze(2).expand(-1,-1,N,-1)], dim=-1)
+        #YX = torch.cat([Y.unsqueeze(1).expand(-1,N,-1,-1), X.unsqueeze(2).expand(-1,-1,M,-1)], dim=-1)
+        Z_XX = self.e1_xx(XX)
+        Z_YX = self.e1_yx(YX)
+        Z_XX = torch.max(Z_XX, dim=2)[0]
+        Z_YX = torch.max(Z_YX, dim=2)[0]
+        #Z_X = Z_XX/Z_YX
+        #Z_Y = Z_YY/Z_XY
+        Z_X = Z_XX - Z_YX
+        #Z_Y = Z_YY - Z_XY
+        #Z_X = self.e2_x(torch.cat([Z_XX, Z_YX],dim=-1))
+        #Z_Y = self.e2_y(torch.cat([Z_YY, Z_XY],dim=-1))
+        Z_X = torch.sum(Z_X, dim=1)
+        #Z_Y = torch.sum(Z_Y, dim=1)
+        #return self.decoder(torch.cat([Z_X, Z_Y], dim=-1))
+        return self.decoder(Z_X)
+
 
 
 class EquiNN(nn.Module):
