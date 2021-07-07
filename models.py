@@ -133,7 +133,7 @@ class KLDivergenceRN(nn.Module):
         #Z_Y = Z_YY - Z_XY
         #Z_X = self.e2_x(torch.cat([Z_XX, Z_YX],dim=-1))
         #Z_Y = self.e2_y(torch.cat([Z_YY, Z_XY],dim=-1))
-        Z_X = torch.sum(Z_X, dim=1)
+        Z_X = torch.sum(Z_X, dim=1)/N
         #Z_Y = torch.sum(Z_Y, dim=1)
         #return self.decoder(torch.cat([Z_X, Z_Y], dim=-1))
         return self.decoder(Z_X)
