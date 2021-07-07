@@ -94,6 +94,9 @@ def kl_knn_simple(X, Y, k=1, xi=1e-5):
 
     return torch.log(nu/eps).sum(dim=1)/n
 
+def entropy_1d_gaussian(mu, sigma):
+    return math.log(sigma)+1./2*math.log(2*math.pi) + 1./2
+
 def kl_1d_gaussian(mu1, sigma1, mu2, sigma2):
     return torch.log(sigma2/sigma1) + (sigma1*sigma1 + (mu1-mu2)*(mu1-mu2))/2/sigma2/sigma2 - 1./2
 
