@@ -55,7 +55,7 @@ class RNBlock(nn.Module):
             mask = torch.eye(N, N).unsqueeze(0).unsqueeze(-1) * -999999999
             if use_cuda:
                 mask=mask.cuda()
-            Z = Z * mask
+            Z = Z + mask
         Z = torch.max(Z, dim=2)[0]
         return Z
 
