@@ -1,7 +1,7 @@
 import torch.nn as nn
 import torch
 
-use_Cuda = torch.cuda.is_available()
+use_cuda = torch.cuda.is_available()
 
 class SetModel(nn.Module):
     def __init__(self, encoder, decoder):
