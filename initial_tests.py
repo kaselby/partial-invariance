@@ -104,9 +104,9 @@ def avg_nn_dist(X):
     dists = knn(X, 1)
     return dists.sum(dim=-1)/dists.size(-1)
 
-def avg_log_nn_dist(X):
+def avg_log_nn_dist(X, xi=1e-5):
     dists = knn(X, 1)
-    return torch.log(dists).sum(dim=-1)/dists.size(-1)
+    return torch.log(dists + xi).sum(dim=-1)/dists.size(-1)
 
 def wasserstein(X, Y):
     costs = ot.dist(X, Y)
