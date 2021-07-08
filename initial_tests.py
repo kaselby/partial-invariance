@@ -105,7 +105,7 @@ def avg_nn_dist(X):
     return dists.sum(dim=-1)/dists.size(-1)
 
 def avg_cross_nn_dist(X, Y):
-    dists = knn(X=X, Y=Y, k=1)
+    dists = knn(X=Y, Y=X, k=1)
     return dists.sum(dim=-1)/dists.size(-1)
 
 def avg_log_nn_dist(X, xi=1e-5):
