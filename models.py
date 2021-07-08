@@ -131,56 +131,26 @@ class DivergenceRN(nn.Module):
         Z_Y = torch.sum(Z_Y, dim=1)
         return self.decoder(torch.cat([Z_X, Z_Y], dim=-1))
 
-class KLDivergenceRN(nn.Module):
-    def __init__(self, input_size, output_size, latent_size=4, hidden_size=12):
+class ExactDivergenceModel(nn.Module):
+    def __init__(self):
         super().__init__()
-        self.e1_xx = nn.Sequential(
-            nn.Linear(2*input_size, hidden_size),
-            nn.ReLU(),
-            nn.Linear(hidden_size, hidden_size),
-            nn.ReLU(),
-            nn.Linear(hidden_size, latent_size),
-        )
-        self.e1_yx = nn.Sequential(
-            nn.Linear(2*input_size, hidden_size),
-            nn.ReLU(),
-            nn.Linear(hidden_size, hidden_size),
-            nn.ReLU(),
-            nn.Linear(hidden_size, latent_size),
-        )
-        self.e2_x = nn.Sequential(
-            nn.Linear(2*latent_size, latent_size)
-        )
-        self.decoder = nn.Sequential(
-            nn.Linear(latent_size, hidden_size),
-            nn.ReLU(),
-            nn.Linear(hidden_size, hidden_size),
-            nn.ReLU(),
-            nn.Linear(hidden_size, output_size),
-        )
+        
 
     def forward(self, X, Y):
         N = X.size(1)
         M = Y.size(1)
-        XX = torch.cat([X.unsqueeze(1).expand(-1,N,-1,-1), X.unsqueeze(2).expand(-1,-1,N,-1)], dim=-1)
-        YX = torch.cat([Y.unsqueeze(1).expand(-1,N,-1,-1), X.unsqueeze(2).expand(-1,-1,M,-1)], dim=-1)
-
-        #XX = torch.cat([X.unsqueeze(1).expand(-1,N,-1,-1), X.unsqueeze(2).expand(-1,-1,N,-1)], dim=-1)
-        #YX = torch.cat([Y.unsqueeze(1).expand(-1,N,-1,-1), X.unsqueeze(2).expand(-1,-1,M,-1)], dim=-1)
-        Z_XX = self.e1_xx(XX)
-        Z_YX = self.e1_yx(YX)
+        XX = (X.unsqueeze(1).expand(-1,N,-1,-1) - X.unsqueeze(2).expand(-1,-1,N,-1)).norm(dim=-1)
+        YX = (X.unsqueeze(1).expand(-1,M,-1,-1) - Y.unsqueeze(2).expand(-1,-1,N,-1)).norm(dim=-1)
+        mask = torch.eye(N, N).unsqueeze(0).unsqueeze(-1) * 999999999
+        if use_cuda:
+            mask=mask.cuda()
+        Z_XX = -1*torch.log(XX + mask)
+        Z_YX = -1*torch.log(YX)
         Z_XX = torch.max(Z_XX, dim=2)[0]
         Z_YX = torch.max(Z_YX, dim=2)[0]
-        #Z_X = Z_XX/Z_YX
-        #Z_Y = Z_YY/Z_XY
-        #Z_X = Z_XX - Z_YX
-        #Z_Y = Z_YY - Z_XY
-        Z_X = self.e2_x(torch.cat([Z_XX, Z_YX],dim=-1))
-        #Z_Y = self.e2_y(torch.cat([Z_YY, Z_XY],dim=-1))
+        Z_X = Z_XX/Z_YX
         Z_X = torch.sum(Z_X, dim=1)/N
-        #Z_Y = torch.sum(Z_Y, dim=1)
-        #return self.decoder(torch.cat([Z_X, Z_Y], dim=-1))
-        return self.decoder(Z_X)
+        return -1*Z_X
 
 
 
