@@ -42,10 +42,11 @@ class RelationNetwork(nn.Module):
         return self.decoder(Z)
 
 class RNBlock(nn.Module):
-    def __init__(self, net, remove_diag=False) -> None:
+    def __init__(self, net, remove_diag=False, pool='sum') -> None:
         super().__init__()
         self.net = net
         self.remove_diag = remove_diag
+        self.pool = pool
     
     def forward(self, X):
         N = X.size(1)
@@ -56,7 +57,12 @@ class RNBlock(nn.Module):
             if use_cuda:
                 mask=mask.cuda()
             Z = Z + mask
-        Z = torch.max(Z, dim=2)[0]
+        if self.pool == 'sum':
+            Z = torch.sum(Z, dim=2)
+        elif self.pool == 'max':
+            Z = torch.max(Z, dim=2)[0]
+        else:
+            raise NotImplementedError()
         return Z
 
 class EntropyRN(nn.Module):
