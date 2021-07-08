@@ -1,6 +1,8 @@
 import torch.nn as nn
 import torch
 
+use_Cuda = torch.cuda.is_available()
+
 class SetModel(nn.Module):
     def __init__(self, encoder, decoder):
         super().__init__()
@@ -51,6 +53,8 @@ class RNBlock(nn.Module):
         Z = self.net(pairs)
         if self.remove_diag:
             mask = (1 - torch.eye(N, N).unsqueeze(0).unsqueeze(-1)) * -999999999
+            if use_cuda:
+                mask=mask.cuda()
             Z = Z * mask
         Z = torch.max(Z, dim=2)[0]
         return Z
