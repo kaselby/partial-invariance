@@ -84,6 +84,16 @@ def kl_knn(X, Y, k=1, xi=1e-5):
 
     return d/n * torch.log(nu/eps).sum(dim=1) + math.log(m/(n-1))
 
+def simplified_divergence(X, Y, k=1, xi=1e-5):
+    n = X.size(1)
+    m = Y.size(1)
+    d = X.size(-1)
+
+    nu = knn(X=Y, Y=X, k=k) + xi
+    eps = knn(X=X, k=k) + xi
+
+    return 1/n * (nu + eps).sum(dim=1)
+
 def kl_knn_simple(X, Y, k=1, xi=1e-5):
     n = X.size(1)
     m = Y.size(1)
