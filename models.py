@@ -48,9 +48,10 @@ class RNBlock(nn.Module):
         self.remove_diag = remove_diag
         self.pool = pool
     
-    def forward(self, X):
+    def forward(self, X, Y):
         N = X.size(1)
-        pairs = torch.cat([X.unsqueeze(1).expand(-1,N,-1,-1), X.unsqueeze(2).expand(-1,-1,N,-1)], dim=-1)
+        M = X.size(1)
+        pairs = torch.cat([Y.unsqueeze(1).expand(-1,N,-1,-1), X.unsqueeze(2).expand(-1,-1,M,-1)], dim=-1)
         Z = self.net(pairs)
         if self.remove_diag:
             mask = torch.eye(N, N).unsqueeze(0).unsqueeze(-1) * -999999999
@@ -65,7 +66,7 @@ class RNBlock(nn.Module):
             raise NotImplementedError()
         return Z
 
-class EntropyRN(nn.Module):
+class RNModel(nn.Module):
     def __init__(self, encoder, decoder):
         super().__init__()
         self.encoder = encoder
@@ -73,7 +74,20 @@ class EntropyRN(nn.Module):
 
     def forward(self, X):
         N = X.size(1)
-        Z = self.encoder(X)
+        Z = self.encoder(X, X)
+        Z = torch.sum(Z, dim=1)
+        return self.decoder(Z)
+
+class MultiRNModel(nn.Module):
+    def __init__(self, encoder, decoder):
+        super().__init__()
+        self.encoder = encoder
+        self.decoder = decoder
+
+    def forward(self, X, Y):
+        N = X.size(1)
+        M = Y.size(1)
+        Z = self.encoder(X, Y)
         Z = torch.sum(Z, dim=1)
         return self.decoder(Z)
 
