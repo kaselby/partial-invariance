@@ -112,6 +112,10 @@ def avg_log_nn_dist(X, xi=1e-5):
     dists = knn(X, 1)
     return torch.log(dists + xi).sum(dim=-1)/dists.size(-1)
 
+def avg_log_cross_nn_dist(X, Y, xi=1e-5):
+    dists = knn(X=Y, Y=X, k=1)
+    return torch.log(dists+xi).sum(dim=-1)/dists.size(-1)
+
 def wasserstein(X, Y):
     costs = ot.dist(X, Y)
     return ot.emd2([],[],costs)
