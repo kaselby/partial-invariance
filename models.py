@@ -52,7 +52,7 @@ class RNBlock(nn.Module):
         pairs = torch.cat([X.unsqueeze(1).expand(-1,N,-1,-1), X.unsqueeze(2).expand(-1,-1,N,-1)], dim=-1)
         Z = self.net(pairs)
         if self.remove_diag:
-            mask = (1 - torch.eye(N, N).unsqueeze(0).unsqueeze(-1)) * -999999999
+            mask = torch.eye(N, N).unsqueeze(0).unsqueeze(-1) * -999999999
             if use_cuda:
                 mask=mask.cuda()
             Z = Z * mask
