@@ -95,7 +95,7 @@ def kl_knn_simple(X, Y, k=1, xi=1e-5):
     return torch.log(nu/eps).sum(dim=1)/n
 
 def entropy_1d_gaussian(mu, sigma):
-    return math.log(sigma)+1./2*math.log(2*math.pi) + 1./2
+    return torch.log(sigma)+1./2*math.log(2*math.pi) + 1./2
 
 def kl_1d_gaussian(mu1, sigma1, mu2, sigma2):
     return torch.log(sigma2/sigma1) + (sigma1*sigma1 + (mu1-mu2)*(mu1-mu2))/2/sigma2/sigma2 - 1./2
@@ -108,14 +108,21 @@ def wasserstein(X, Y):
     costs = ot.dist(X, Y)
     return ot.emd2([],[],costs)
 
-def train(model, sample_fct, label_fct, criterion=nn.L1Loss(), batch_size=64, steps=3000, lr=1e-5):
+def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(), batch_size=64, steps=3000, lr=1e-5):
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     losses = []
     for _ in tqdm.tqdm(range(steps)):
-        X = sample_fct(batch_size)
-        if use_cuda:
-            X = [x.cuda() for x in X]
-        labels = label_fct(*X)
+        if exact_loss:
+            X, theta = sample_fct(batch_size, return_params=True)
+            if use_cuda:
+                X = [x.cuda() for x in X]
+                theta = [t.cuda() for t in theta]
+            labels = label_fct(*theta)
+        else:
+            X = sample_fct(batch_size)
+            if use_cuda:
+                X = [x.cuda() for x in X]
+            labels = label_fct(*X)
         loss = criterion(model(*X).squeeze(-1), labels)
         optimizer.zero_grad()
         loss.backward()
