@@ -95,7 +95,7 @@ def kl_knn_simple(X, Y, k=1, xi=1e-5):
     return torch.log(nu/eps).sum(dim=1)/n
 
 def entropy_1d_gaussian(mu, sigma):
-    return torch.log(sigma)+1./2*math.log(2*math.pi) + 1./2
+    return torch.log(sigma).squeeze(-1)+1./2*math.log(2*math.pi) + 1./2
 
 def kl_1d_gaussian(mu1, sigma1, mu2, sigma2):
     return torch.log(sigma2/sigma1) + (sigma1*sigma1 + (mu1-mu2)*(mu1-mu2))/2/sigma2/sigma2 - 1./2
@@ -134,10 +134,17 @@ def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(),
         losses.append(loss.item())
     return losses
 
-def show_examples(model, sample_fct, label_fct, n=8):
-    X = sample_fct(n)
-    if use_cuda:
-        X = [x.cuda() for x in X]
+def show_examples(model, sample_fct, label_fct, exact_loss=False, n=8):
+    if exact_loss:
+        X, theta = sample_fct(n, return_params=True)
+        if use_cuda:
+            X = [x.cuda() for x in X]
+            theta = [t.cuda() for t in theta]
+        y = label_fct(*theta).cpu()
+    else:
+        X = sample_fct(n)
+        if use_cuda:
+            X = [x.cuda() for x in X]
+        y = label_fct(*X).cpu()
     yhat = model(*X).cpu().detach()
-    y = label_fct(*X).cpu()
     print("Y:", y, "\nYhat:", yhat)
