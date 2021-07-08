@@ -79,13 +79,17 @@ class RNModel(nn.Module):
         return self.decoder(Z)
 
 class MultiRNModel(nn.Module):
-    def __init__(self, encoder, decoder):
+    def __init__(self, encoder1, encoder2, merger, decoder):
         super().__init__()
-        self.encoder = encoder
+        self.encoder1 = encoder1
+        self.encoder2 = encoder2
+        self.merger = merger
         self.decoder = decoder
 
     def forward(self, X, Y):
-        Z = self.encoder(X, Y)
+        Z_XX = self.encoder1(X, Y)
+        Z_YX = self.encoder2(X, Y)
+        Z = self.merger(torch.cat([Z_XX, Z_YX],dim=-1))
         Z = torch.sum(Z, dim=1)
         return self.decoder(Z)
 
