@@ -104,6 +104,10 @@ def avg_nn_dist(X):
     dists = knn(X, 1)
     return dists.sum(dim=-1)/dists.size(-1)
 
+def avg_log_nn_dist(X):
+    dists = knn(X, 1)
+    return torch.log(dists).sum(dim=-1)/dists.size(-1)
+
 def wasserstein(X, Y):
     costs = ot.dist(X, Y)
     return ot.emd2([],[],costs)
