@@ -50,7 +50,7 @@ class RNBlock(nn.Module):
     
     def forward(self, X, Y):
         N = X.size(1)
-        M = X.size(1)
+        M = Y.size(1)
         pairs = torch.cat([Y.unsqueeze(1).expand(-1,N,-1,-1), X.unsqueeze(2).expand(-1,-1,M,-1)], dim=-1)
         Z = self.net(pairs)
         if self.remove_diag:
@@ -85,8 +85,6 @@ class MultiRNModel(nn.Module):
         self.decoder = decoder
 
     def forward(self, X, Y):
-        N = X.size(1)
-        M = Y.size(1)
         Z = self.encoder(X, Y)
         Z = torch.sum(Z, dim=1)
         return self.decoder(Z)
