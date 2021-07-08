@@ -89,6 +89,7 @@ class MultiRNModel(nn.Module):
         Z = torch.sum(Z, dim=1)
         return self.decoder(Z)
 
+
 import copy
 class DivergenceRN(nn.Module):
     def __init__(self, pair_encoder, merge_encoder, decoder):
@@ -145,6 +146,8 @@ class KLDivergenceRN(nn.Module):
         )
         self.e2_x = nn.Sequential(
             nn.Linear(2*latent_size, hidden_size),
+            nn.ReLU(),
+            nn.Linear(hidden_size, hidden_size),
             nn.ReLU(),
             nn.Linear(hidden_size, latent_size),
         )
