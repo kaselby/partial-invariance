@@ -40,14 +40,18 @@ class RelationNetwork(nn.Module):
         return self.decoder(Z)
 
 class RNBlock(nn.Module):
-    def __init__(self, net) -> None:
+    def __init__(self, net, remove_diag=False) -> None:
         super().__init__()
         self.net = net
+        self.remove_diag = remove_diag
     
     def forward(self, X):
         N = X.size(1)
         pairs = torch.cat([X.unsqueeze(1).expand(-1,N,-1,-1), X.unsqueeze(2).expand(-1,-1,N,-1)], dim=-1)
         Z = self.net(pairs)
+        if self.remove_diag:
+            mask = (1 - torch.eye(N, N).unsqueeze(0).unsqueeze(-1)) * -999999999
+            Z = Z * mask
         Z = torch.max(Z, dim=2)[0]
         return Z
 

@@ -128,5 +128,5 @@ def show_examples(model, sample_fct, label_fct, n=8):
     if use_cuda:
         X = [x.cuda() for x in X]
     yhat = model(*X).cpu().detach()
-    y = label_fct(*X)
+    y = label_fct(*X).cpu()
     print("Y:", y, "\nYhat:", yhat)
