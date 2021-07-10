@@ -134,6 +134,7 @@ def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(),
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     losses = []
     for _ in tqdm.tqdm(range(steps)):
+        optimizer.zero_grad()
         if exact_loss:
             X, theta = sample_fct(batch_size, return_params=True)
             if use_cuda:
@@ -146,9 +147,26 @@ def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(),
                 X = [x.cuda() for x in X]
             labels = label_fct(*X)
         loss = criterion(model(*X).squeeze(-1), labels)
-        optimizer.zero_grad()
         loss.backward()
         optimizer.step()
+        losses.append(loss.item())
+    return losses
+
+def evaluate(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(), batch_size=64, steps=3000):
+    losses = []
+    for _ in tqdm.tqdm(range(steps)):
+        if exact_loss:
+            X, theta = sample_fct(batch_size, return_params=True)
+            if use_cuda:
+                X = [x.cuda() for x in X]
+                theta = [t.cuda() for t in theta]
+            labels = label_fct(*theta)
+        else:
+            X = sample_fct(batch_size)
+            if use_cuda:
+                X = [x.cuda() for x in X]
+            labels = label_fct(*X)
+        loss = criterion(model(*X).squeeze(-1), labels)
         losses.append(loss.item())
     return losses
 

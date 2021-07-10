@@ -135,20 +135,19 @@ class ExactDivergenceModel(nn.Module):
     def __init__(self):
         super().__init__()
         
-
     def forward(self, X, Y):
         N = X.size(1)
         M = Y.size(1)
         XX = (X.unsqueeze(1).expand(-1,N,-1,-1) - X.unsqueeze(2).expand(-1,-1,N,-1)).norm(dim=-1)
-        YX = (X.unsqueeze(1).expand(-1,M,-1,-1) - Y.unsqueeze(2).expand(-1,-1,N,-1)).norm(dim=-1)
-        mask = torch.eye(N, N).unsqueeze(0).unsqueeze(-1) * 999999999
+        YX = (Y.unsqueeze(1).expand(-1,N,-1,-1) - X.unsqueeze(2).expand(-1,-1,M,-1)).norm(dim=-1)
+        mask = torch.eye(N, N).unsqueeze(0)* 999999999
         if use_cuda:
             mask=mask.cuda()
         Z_XX = -1*torch.log(XX + mask)
         Z_YX = -1*torch.log(YX)
         Z_XX = torch.max(Z_XX, dim=2)[0]
         Z_YX = torch.max(Z_YX, dim=2)[0]
-        Z_X = Z_XX/Z_YX
+        Z_X = Z_XX - Z_YX
         Z_X = torch.sum(Z_X, dim=1)/N
         return -1*Z_X
 
