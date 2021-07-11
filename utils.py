@@ -201,5 +201,5 @@ def show_examples(model, sample_fct, label_fct, exact_loss=False, n=8):
             X = [x.cuda() for x in X]
         y = label_fct(*X).cpu()
     yhat = model(*X).cpu().detach()
-    print(tabulate.tabulate([['y', *y.tolist()], ['yhat', *yhat.tolist()]]))
+    print(tabulate.tabulate([['y', *y.tolist()], ['yhat', *yhat.squeeze(-1).tolist()]]))
     #print("Y:", y, "\nYhat:", yhat)

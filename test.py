@@ -64,8 +64,9 @@ losses=train(model, generate_multi(generate_gaussian_1d), simplified_divergence2
 #losses=evaluate(model7, generate_multi(generate_gaussian_1d), simplified_divergence1, criterion=nn.MSELoss(), steps=1000)
 
 
-print(sum(losses[-100:])/100)
-show_examples(model, generate_multi(generate_gaussian_1d), simplified_divergence2, n=16)
+loglosses=torch.log10(torch.Tensor(losses))
+print([x.mean().item() for x in loglosses.chunk(20)])
+show_examples(model, generate_multi(generate_gaussian_1d), simplified_divergence2, n=8)
 
 #plt.plot(losses)
 #plt.legend()
