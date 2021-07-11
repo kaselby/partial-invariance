@@ -162,7 +162,7 @@ def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(),
         loss.backward()
         optimizer.step()
         if lr_decay and i % epoch_size == 0:
-            window_size = int(epoch_size / 5)
+            window_size = epoch_size#int(epoch_size / 5)
             windowed_avg= sum(losses[-window_size:])/window_size
             scheduler.step(windowed_avg)
 
