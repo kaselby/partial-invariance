@@ -187,6 +187,7 @@ def evaluate(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss
         losses.append(loss.item())
     return losses
 
+import tabulate
 def show_examples(model, sample_fct, label_fct, exact_loss=False, n=8):
     if exact_loss:
         X, theta = sample_fct(n, return_params=True)
@@ -200,4 +201,5 @@ def show_examples(model, sample_fct, label_fct, exact_loss=False, n=8):
             X = [x.cuda() for x in X]
         y = label_fct(*X).cpu()
     yhat = model(*X).cpu().detach()
-    print("Y:", y, "\nYhat:", yhat)
+    print(tabulate.tabulate([['y', *y.tolist()], ['yhat', *yhat.tolist()]]))
+    #print("Y:", y, "\nYhat:", yhat)
