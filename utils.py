@@ -140,10 +140,10 @@ def wasserstein(X, Y):
     costs = ot.dist(X, Y)
     return ot.emd2([],[],costs)
 
-def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(), batch_size=64, steps=3000, lr=1e-5, lr_decay=False, epoch_size=250, patience=3):
+def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(), batch_size=64, steps=3000, lr=1e-5, lr_decay=False, epoch_size=250, patience=3, factor=0.1):
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     if lr_decay:
-        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', patience=patience)
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', patience=patience, factor=factor)
     losses = []
     for i in tqdm.tqdm(range(1,steps+1)):
         optimizer.zero_grad()
