@@ -130,10 +130,12 @@ def wasserstein(X, Y):
     costs = ot.dist(X, Y)
     return ot.emd2([],[],costs)
 
-def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(), batch_size=64, steps=3000, lr=1e-5):
+def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(), batch_size=64, steps=3000, lr=1e-5, lr_decay=False, epoch_size=500, patience=3):
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+    if lr_decay:
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', patience=patience)
     losses = []
-    for _ in tqdm.tqdm(range(steps)):
+    for i in tqdm.tqdm(range(1,steps+1)):
         optimizer.zero_grad()
         if exact_loss:
             X, theta = sample_fct(batch_size, return_params=True)
@@ -149,6 +151,11 @@ def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(),
         loss = criterion(model(*X).squeeze(-1), labels)
         loss.backward()
         optimizer.step()
+        if lr_decay and i % epoch_size == 0:
+            window_size = int(epoch_size / 10)
+            windowed_avg= sum(losses[-window_size:])/window_size
+            scheduler.step(windowed_avg)
+
         losses.append(loss.item())
     return losses
 
