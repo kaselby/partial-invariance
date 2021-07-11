@@ -143,7 +143,8 @@ def wasserstein(X, Y):
 def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(), batch_size=64, steps=3000, lr=1e-5, lr_decay=False, epoch_size=250, **decay_kwargs):
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     if lr_decay:
-        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', **decay_kwargs)
+        #scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', **decay_kwargs)
+        scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, **decay_kwargs)
     losses = []
     for i in tqdm.tqdm(range(1,steps+1)):
         optimizer.zero_grad()
