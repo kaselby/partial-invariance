@@ -241,7 +241,7 @@ def entropy_model(input_size, output_size, latent_size=4, hidden_size=12, num_bl
         nn.ReLU(),
         nn.Linear(hidden_size, output_size),
     )
-    return EntropyRN(encoder, decoder)
+    return MultiSetModel(encoder, decoder)
 
 def divergence_model(input_size, output_size, latent_size=4, hidden_size=16):
     pair_encoder = nn.Sequential(
