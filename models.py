@@ -90,7 +90,7 @@ class MultiRNModel(nn.Module):
         Z_XX = self.encoder1(X, Y)
         Z_YX = self.encoder2(X, Y)
         Z = self.merger(torch.cat([Z_XX, Z_YX],dim=-1))
-        Z = torch.sum(Z, dim=1)
+        Z = torch.mean(Z, dim=1)
         return self.decoder(Z)
 
 
