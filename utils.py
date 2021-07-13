@@ -142,7 +142,7 @@ def wasserstein(X, Y):
 
 def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(), batch_size=64, steps=3000, lr=1e-5, lr_decay=False, epoch_size=250, warmup=4, **decay_kwargs):
     #model.train(True)
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=0.1)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     if lr_decay:
         #isqrt = lambda step: 1/math.sqrt(step - warmup) if step > warmup else 1
         #scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, isqrt)
