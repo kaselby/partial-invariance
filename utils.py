@@ -140,10 +140,13 @@ def wasserstein(X, Y):
     costs = ot.dist(X, Y)
     return ot.emd2([],[],costs)
 
-def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(), batch_size=64, steps=3000, lr=1e-5, lr_decay=False, epoch_size=250, **decay_kwargs):
+def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(), batch_size=64, steps=3000, lr=1e-5, lr_decay=False, epoch_size=250, warmup=4, **decay_kwargs):
+    model.train(True)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     if lr_decay:
-        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', **decay_kwargs)
+        isqrt = lambda step: 1/math.sqrt(step - warmup) if step > warmup else 1
+        scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, isqrt)
+        #scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', **decay_kwargs)
         #scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, **decay_kwargs)
     losses = []
     for i in tqdm.tqdm(range(1,steps+1)):
@@ -162,15 +165,18 @@ def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(),
         loss = criterion(model(*X).squeeze(-1), labels)
         loss.backward()
         optimizer.step()
+        #if lr_decay:
+        #    scheduler.step()
         if lr_decay and i % epoch_size == 0:
-            window_size = int(epoch_size / 10)
-            windowed_avg= sum(losses[-window_size:])/window_size
-            scheduler.step(windowed_avg)
+            #window_size = int(epoch_size / 10)
+            #windowed_avg= sum(losses[-window_size:])/window_size
+            scheduler.step()
 
         losses.append(loss.item())
     return losses
 
 def evaluate(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(), batch_size=64, steps=3000):
+    model.train(False)
     losses = []
     for _ in tqdm.tqdm(range(steps)):
         if exact_loss:
@@ -190,6 +196,7 @@ def evaluate(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss
 
 import tabulate
 def show_examples(model, sample_fct, label_fct, exact_loss=False, n=8):
+    model.train(False)
     if exact_loss:
         X, theta = sample_fct(n, return_params=True)
         if use_cuda:
