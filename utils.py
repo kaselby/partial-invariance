@@ -176,7 +176,7 @@ def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(),
     return losses
 
 def evaluate(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(), batch_size=64, steps=3000):
-    model.train(False)
+    #model.train(False)
     losses = []
     for _ in tqdm.tqdm(range(steps)):
         if exact_loss:
@@ -196,7 +196,7 @@ def evaluate(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss
 
 import tabulate
 def show_examples(model, sample_fct, label_fct, exact_loss=False, n=8):
-    model.train(False)
+    #model.train(False)
     if exact_loss:
         X, theta = sample_fct(n, return_params=True)
         if use_cuda:
