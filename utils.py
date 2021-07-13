@@ -144,9 +144,9 @@ def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(),
     model.train(True)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     if lr_decay:
-        isqrt = lambda step: 1/math.sqrt(step - warmup) if step > warmup else 1
-        scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, isqrt)
-        #scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', **decay_kwargs)
+        #isqrt = lambda step: 1/math.sqrt(step - warmup) if step > warmup else 1
+        #scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, isqrt)
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', **decay_kwargs)
         #scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, **decay_kwargs)
     losses = []
     for i in tqdm.tqdm(range(1,steps+1)):
@@ -168,9 +168,9 @@ def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(),
         #if lr_decay:
         #    scheduler.step()
         if lr_decay and i % epoch_size == 0:
-            #window_size = int(epoch_size / 10)
-            #windowed_avg= sum(losses[-window_size:])/window_size
-            scheduler.step()
+            window_size = int(epoch_size / 10)
+            windowed_avg= sum(losses[-window_size:])/window_size
+            scheduler.step(windowed_avg)
 
         losses.append(loss.item())
     return losses
