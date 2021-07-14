@@ -156,7 +156,7 @@ def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(),
             if use_cuda:
                 X = [x.cuda() for x in X]
                 theta = [t.cuda() for t in theta]
-            labels = label_fct(*theta)
+            labels = label_fct(*theta).squeeze(-1)
         else:
             X = sample_fct(batch_size)
             if use_cuda:
