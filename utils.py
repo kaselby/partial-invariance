@@ -152,7 +152,7 @@ def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(),
     for i in tqdm.tqdm(range(1,steps+1)):
         optimizer.zero_grad()
         if exact_loss:
-            X, theta = sample_fct(batch_size, return_params=True)
+            X, theta = sample_fct(batch_size)
             if use_cuda:
                 X = [x.cuda() for x in X]
                 theta = [t.cuda() for t in theta]
