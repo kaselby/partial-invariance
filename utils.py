@@ -34,7 +34,7 @@ def generate_multi_params(fct):
     def generate(*args):
         (X,), T_x = fct(*args, return_params=True)
         (Y,), T_y = fct(*args, return_params=True)
-        return (X,Y), (T_x, T_y)
+        return (X,Y), (*T_x, *T_y)
     return generate
 
 def mode(samples):
