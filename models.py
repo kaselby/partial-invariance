@@ -414,5 +414,5 @@ class MultiSetTransformer(nn.Module):
 
     def forward(self, X, Y):
         ZX, ZY = self.enc((X,Y))
-        return self.dec(torch.cat([ZX, ZY], dim=1))
+        return self.dec(torch.cat([ZX, ZY], dim=1)).squeeze(-1)
 
