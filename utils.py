@@ -198,7 +198,7 @@ import tabulate
 def show_examples(model, sample_fct, label_fct, exact_loss=False, n=8):
     #model.train(False)
     if exact_loss:
-        X, theta = sample_fct(n, return_params=True)
+        X, theta = sample_fct(n)
         if use_cuda:
             X = [x.cuda() for x in X]
             theta = [t.cuda() for t in theta]

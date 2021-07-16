@@ -320,7 +320,8 @@ class CSAB(nn.Module):
         self.mab = MAB(dim_in, dim_in, dim_out, num_heads, ln=ln)
 
     def forward(self, inputs):
-        return self.mab(*inputs)
+        X,Y=inputs
+        return self.mab(X, Y)
 
 class ISAB(nn.Module):
     def __init__(self, dim_in, dim_out, num_heads, num_inds, ln=False):
@@ -407,8 +408,8 @@ class MultiSetTransformer1(nn.Module):
                 nn.Linear(dim_hidden, dim_output))
 
     def forward(self, X, Y):
-        XX = self.enc_xx([X, X])
-        YX = self.enc_yx([X, Y])
+        XX = self.enc_xx((X, X))
+        YX = self.enc_yx((X, Y))
         Z = self.pool_xy(torch.cat([XX, YX], dim=-1))
         return self.dec(Z).squeeze(-1)
 
