@@ -314,6 +314,14 @@ class SAB(nn.Module):
     def forward(self, X):
         return self.mab(X, X)
 
+class CSAB(nn.Module):
+    def __init__(self, dim_in, dim_out, num_heads, ln=False):
+        super(SAB, self).__init__()
+        self.mab = MAB(dim_in, dim_in, dim_out, num_heads, ln=ln)
+
+    def forward(self, inputs):
+        return self.mab(*inputs)
+
 class ISAB(nn.Module):
     def __init__(self, dim_in, dim_out, num_heads, num_inds, ln=False):
         super(ISAB, self).__init__()
@@ -322,7 +330,7 @@ class ISAB(nn.Module):
         self.mab0 = MAB(dim_out, dim_in, dim_out, num_heads, ln=ln)
         self.mab1 = MAB(dim_in, dim_out, dim_out, num_heads, ln=ln)
 
-    def forward(self, X):
+    def forward(self, X, Y):
         H = self.mab0(self.I.repeat(X.size(0), 1, 1), X)
         return self.mab1(X, H)
 
@@ -378,4 +386,29 @@ class SetTransformer(nn.Module):
 
     def forward(self, X):
         return self.dec(self.enc(X)).squeeze(-1)
+
+class MultiSetTransformer1(nn.Module):
+    def __init__(self, dim_input, num_outputs, dim_output,
+            num_inds=32, dim_hidden=128, num_heads=4, ln=False):
+        super(MultiSetTransformer1, self).__init__()
+        self.enc_xx = nn.Sequential(
+                CSAB(dim_input, dim_hidden, num_heads, ln=ln),
+                CSAB(dim_hidden, dim_hidden, num_heads, ln=ln))
+        self.enc_yx = nn.Sequential(
+                MAB(dim_input, dim_hidden, num_heads, ln=ln),
+                MAB(dim_hidden, dim_hidden, num_heads, ln=ln))
+        self.pool_xy = nn.Sequential(
+            nn.Linear(dim_hidden * 2, dim_hidden),
+        )
+        self.dec = nn.Sequential(
+                PMA(dim_hidden, num_heads, num_outputs, ln=ln),
+                SAB(dim_hidden, dim_hidden, num_heads, ln=ln),
+                SAB(dim_hidden, dim_hidden, num_heads, ln=ln),
+                nn.Linear(dim_hidden, dim_output))
+
+    def forward(self, X, Y):
+        XX = self.enc_xx([X, X])
+        YX = self.enc_yx([X, Y])
+        Z = self.pool_xy(torch.cat([XX, YX], dim=-1))
+        return self.dec(Z).squeeze(-1)
 
