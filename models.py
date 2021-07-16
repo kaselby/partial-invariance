@@ -395,8 +395,8 @@ class MultiSetTransformer1(nn.Module):
                 CSAB(dim_input, dim_hidden, num_heads, ln=ln),
                 CSAB(dim_hidden, dim_hidden, num_heads, ln=ln))
         self.enc_yx = nn.Sequential(
-                MAB(dim_input, dim_hidden, num_heads, ln=ln),
-                MAB(dim_hidden, dim_hidden, num_heads, ln=ln))
+                CSAB(dim_input, dim_hidden, num_heads, ln=ln),
+                CSAB(dim_hidden, dim_hidden, num_heads, ln=ln))
         self.pool_xy = nn.Sequential(
             nn.Linear(dim_hidden * 2, dim_hidden),
         )
