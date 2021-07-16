@@ -317,11 +317,22 @@ class SAB(nn.Module):
 class CSAB(nn.Module):
     def __init__(self, dim_in, dim_out, num_heads, ln=False):
         super(CSAB, self).__init__()
-        self.mab = MAB(dim_in, dim_in, dim_out, num_heads, ln=ln)
+        self.SAB_X = MAB(dim_in, dim_in, dim_out, num_heads, ln=ln)
+        self.SAB_Y = MAB(dim_in, dim_in, dim_out, num_heads, ln=ln)
+        self.SAB_XY = MAB(dim_in, dim_in, dim_out, num_heads, ln=ln)
+        self.SAB_YX = MAB(dim_in, dim_in, dim_out, num_heads, ln=ln)
+        self.fc_X = nn.Linear(dim_out*2, dim_out)
+        self.fc_Y = nn.Linear(dim_out*2, dim_out)
 
     def forward(self, inputs):
-        X,Y=inputs
-        return self.mab(X, Y)
+        X, Y = inputs
+        XX = self.SAB_X(X, X)
+        YY = self.SAB_Y(Y, Y)
+        XY = self.SAB_XY(X, Y)
+        YX = self.SAB_YX(Y, X)
+        X_out = X + F.relu(self.fc_X(torch.cat([XX, XY], dim=-1)))
+        Y_out = Y + F.relu(self.fc_Y(torch.cat([YY, YX], dim=-1)))
+        return (X_out, Y_out)
 
 class ISAB(nn.Module):
     def __init__(self, dim_in, dim_out, num_heads, num_inds, ln=False):
@@ -388,19 +399,13 @@ class SetTransformer(nn.Module):
     def forward(self, X):
         return self.dec(self.enc(X)).squeeze(-1)
 
-class MultiSetTransformer1(nn.Module):
+class MultiSetTransformer(nn.Module):
     def __init__(self, dim_input, num_outputs, dim_output,
             num_inds=32, dim_hidden=128, num_heads=4, ln=False):
-        super(MultiSetTransformer1, self).__init__()
-        self.enc_xx = nn.Sequential(
+        super(MultiSetTransformer2, self).__init__()
+        self.enc = nn.Sequential(
                 CSAB(dim_input, dim_hidden, num_heads, ln=ln),
                 CSAB(dim_hidden, dim_hidden, num_heads, ln=ln))
-        self.enc_yx = nn.Sequential(
-                CSAB(dim_input, dim_hidden, num_heads, ln=ln),
-                CSAB(dim_hidden, dim_hidden, num_heads, ln=ln))
-        self.pool_xy = nn.Sequential(
-            nn.Linear(dim_hidden * 2, dim_hidden),
-        )
         self.dec = nn.Sequential(
                 PMA(dim_hidden, num_heads, num_outputs, ln=ln),
                 SAB(dim_hidden, dim_hidden, num_heads, ln=ln),
@@ -408,8 +413,6 @@ class MultiSetTransformer1(nn.Module):
                 nn.Linear(dim_hidden, dim_output))
 
     def forward(self, X, Y):
-        XX = self.enc_xx((X, X))
-        YX = self.enc_yx((X, Y))
-        Z = self.pool_xy(torch.cat([XX, YX], dim=-1))
-        return self.dec(Z).squeeze(-1)
+        ZX, ZY = self.enc((X,Y))
+        return self.dec(torch.cat([ZX, ZY], dim=1))
 
