@@ -402,7 +402,7 @@ class SetTransformer(nn.Module):
 class MultiSetTransformer(nn.Module):
     def __init__(self, dim_input, num_outputs, dim_output,
             num_inds=32, dim_hidden=128, num_heads=4, ln=False):
-        super(MultiSetTransformer2, self).__init__()
+        super(MultiSetTransformer, self).__init__()
         self.enc = nn.Sequential(
                 CSAB(dim_input, dim_hidden, num_heads, ln=ln),
                 CSAB(dim_hidden, dim_hidden, num_heads, ln=ln))
