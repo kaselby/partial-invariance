@@ -184,7 +184,7 @@ def evaluate(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss
             if use_cuda:
                 X = [x.cuda() for x in X]
                 theta = [t.cuda() for t in theta]
-            labels = label_fct(*theta)
+            labels = label_fct(*theta).squeeze(-1)
         else:
             X = sample_fct(batch_size)
             if use_cuda:
@@ -202,12 +202,12 @@ def show_examples(model, sample_fct, label_fct, exact_loss=False, n=8):
         if use_cuda:
             X = [x.cuda() for x in X]
             theta = [t.cuda() for t in theta]
-        y = label_fct(*theta).cpu()
+        y = label_fct(*theta).cpu().squeeze(-1)
     else:
         X = sample_fct(n)
         if use_cuda:
             X = [x.cuda() for x in X]
         y = label_fct(*X).cpu()
-    yhat = model(*X).cpu().detach()
-    print(tabulate.tabulate([['y', *y.tolist()], ['yhat', *yhat.squeeze(-1).tolist()]]))
+    yhat = model(*X).cpu().detach().squeeze(-1)
+    print(tabulate.tabulate([['y', *y.tolist()], ['yhat', *yhat.tolist()]]))
     #print("Y:", y, "\nYhat:", yhat)
