@@ -26,6 +26,16 @@ def generate_gaussian_1d(batch_size, return_params=False):
     else:
         return [samples.float().contiguous()], (mus, sigmas)
 
+def generate_gaussian_nd(batch_size, n, return_params=False):
+    mus, sigmas = (1+5*torch.rand(size=(batch_size, 2*n))).chunk(2, dim=-1)
+    n_samples = torch.randint(100,150,(1,))
+    dist = Normal(mus, sigmas)
+    samples=dist.sample(n_samples).transpose(0,1)
+    if not return_params:
+        return [samples.float().contiguous()]
+    else:
+        return [samples.float().contiguous()], (mus, sigmas)
+
 def generate_multi(fct):
     def generate(*args, **kwargs):
         return fct(*args, **kwargs)[0], fct(*args, **kwargs)[0]
