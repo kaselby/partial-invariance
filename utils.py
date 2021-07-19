@@ -5,6 +5,7 @@ import math
 from torch.distributions import OneHotCategorical, Normal
 import tqdm
 import ot
+from geomloss import SamplesLoss
 
 use_cuda=torch.cuda.is_available()
 
@@ -139,6 +140,10 @@ def avg_log_cross_nn_dist(X, Y, xi=1e-5):
 def wasserstein(X, Y):
     costs = ot.dist(X, Y)
     return ot.emd2([],[],costs)
+
+def wasserstein2(X, Y):
+    loss = SamplesLoss()
+    return loss(X, Y)
 
 def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(), batch_size=64, steps=3000, lr=1e-5, lr_decay=False, epoch_size=250, warmup=4, **decay_kwargs):
     #model.train(True)
