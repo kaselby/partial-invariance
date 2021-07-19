@@ -22,9 +22,9 @@ def generate_gaussian_1d(batch_size, return_params=False):
     dist = Normal(mus, sigmas)
     samples=dist.sample(n_samples).transpose(0,1)
     if not return_params:
-        return [samples.float()]
+        return [samples.float().contiguous()]
     else:
-        return [samples.float()], (mus, sigmas)
+        return [samples.float().contiguous()], (mus, sigmas)
 
 def generate_multi(fct):
     def generate(*args, **kwargs):
