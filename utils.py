@@ -2,7 +2,7 @@ from models import *
 import torch
 import torch.nn as nn
 import math
-from torch.distributions import OneHotCategorical, Normal
+from torch.distributions import OneHotCategorical, Normal, MultivariateNormal
 import tqdm
 import ot
 from geomloss import SamplesLoss
@@ -27,9 +27,11 @@ def generate_gaussian_1d(batch_size, return_params=False):
         return [samples.float().contiguous()], (mus, sigmas)
 
 def generate_gaussian_nd(batch_size, n, return_params=False):
-    mus, sigmas = (1+5*torch.rand(size=(batch_size, 2*n))).chunk(2, dim=-1)
+    mus= (1+5*torch.rand(size=(batch_size, n)))
+    A = 5*torch.rand(size=(batch_size, n, n))
+    sigmas = torch.bmm(A, A.transpose(1,2))
     n_samples = torch.randint(100,150,(1,))
-    dist = Normal(mus, sigmas)
+    dist = MultivariateNormal(mus, sigmas)
     samples=dist.sample(n_samples).transpose(0,1)
     if not return_params:
         return [samples.float().contiguous()]
