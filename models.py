@@ -480,8 +480,8 @@ class MultiSetTransformer2(nn.Module):
             num_inds=32, dim_hidden=128, num_heads=4, ln=False):
         super(MultiSetTransformer2, self).__init__()
         self.enc = nn.Sequential(
-                CSAB2(dim_input, dim_hidden, num_heads, ln=ln),
-                CSAB2(dim_hidden, dim_hidden, num_heads, ln=ln))
+                CSAB2(dim_input, dim_input, dim_hidden, num_heads, ln=ln),
+                CSAB2(dim_hidden, dim_hidden, dim_hidden, num_heads, ln=ln))
         self.pool_x = PMA(dim_hidden, num_heads, num_outputs, ln=ln)
         self.pool_y = PMA(dim_hidden, num_heads, num_outputs, ln=ln)
         self.dec = nn.Sequential(
