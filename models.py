@@ -336,6 +336,7 @@ class CSAB(nn.Module):
 
 class CSAB2(nn.Module):
     def __init__(self, dim_Q, dim_K, dim_V, num_heads, ln=False):
+        super(CSAB2, self).__init__()
         self.dim_V = dim_V
         self.num_heads = num_heads
         self.fc_q_x = nn.Linear(dim_Q, dim_V)
