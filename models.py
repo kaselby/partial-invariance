@@ -522,7 +522,7 @@ class MultiSetTransformer3(nn.Module):
         return torch.cat([X,Y], dim=1)
 
     def forward(self, X, Y):
-        return self.dec(self.enc(self.prepare_inputs(X,Y)))
+        return self.dec(self.enc(self.prepare_inputs(X,Y))).squeeze(-1)
 
 class MultiSetTransformer4(nn.Module):
     def __init__(self, dim_input, num_outputs, dim_output,
@@ -544,5 +544,5 @@ class MultiSetTransformer4(nn.Module):
 
     def forward(self, X, Y):
         inputs = torch.cat([X+self.X_encoding, Y+self.Y_encoding], dim=1)
-        return self.dec(self.enc(inputs))
+        return self.dec(self.enc(inputs)).squeeze(-1)
 
