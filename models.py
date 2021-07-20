@@ -539,8 +539,8 @@ class MultiSetTransformer4(nn.Module):
                 #SAB(dim_hidden, dim_hidden, num_heads, ln=ln),
                 nn.Linear(dim_hidden, dim_output))
 
-        nn.init.uniform_(self.X_encoding, math.sqrt(5))
-        nn.init.uniform_(self.Y_encoding, math.sqrt(5))
+        nn.init.uniform_(self.X_encoding, 0, math.sqrt(5))
+        nn.init.uniform_(self.Y_encoding, 0, math.sqrt(5))
 
     def forward(self, X, Y):
         inputs = torch.cat([X+self.X_encoding, Y+self.Y_encoding], dim=1)
