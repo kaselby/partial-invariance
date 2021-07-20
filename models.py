@@ -354,9 +354,9 @@ class CSAB2(nn.Module):
     def forward(self, inputs):
         X, Y = inputs
         Q_x = self.fc_q_x(X)
-        K_x, V_x = self.fc_k_x(X), self.fc_v(X)
+        K_x, V_x = self.fc_k_x(X), self.fc_v_x(X)
         Q_y = self.fc_q_x(Y)
-        K_y, V_y = self.fc_k_x(Y), self.fc_v(Y)
+        K_y, V_y = self.fc_k_x(Y), self.fc_v_y(Y)
 
         dim_split = self.dim_V // self.num_heads
         Q_x_ = torch.cat(Q_x.split(dim_split, 2), 0)
