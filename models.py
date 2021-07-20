@@ -382,8 +382,8 @@ class CSAB2(nn.Module):
             O_yx = self.ln0(O_yx)
             O_yy = self.ln0(O_yy)
 
-        O_x = F.relu(self.fc_X(torch.cat([O_xx,O_xy])))
-        O_y = F.relu(self.fc_Y(torch.cat([O_yx,O_yy])))
+        O_x = F.relu(self.fc_X(torch.cat([O_xx,O_xy], dim=-1)))
+        O_y = F.relu(self.fc_Y(torch.cat([O_yx,O_yy], dim=-1)))
 
         if getattr(self, 'ln1', None) is not None:
             O_x = self.ln1(O_x)
