@@ -487,7 +487,7 @@ class MultiSetTransformer2(nn.Module):
         self.dec = nn.Sequential(
                 #SAB(dim_hidden, dim_hidden, num_heads, ln=ln),
                 #SAB(dim_hidden, dim_hidden, num_heads, ln=ln),
-                nn.Linear(dim_hidden, dim_output))
+                nn.Linear(dim_hidden*2, dim_output))
 
     def forward(self, X, Y):
         ZX, ZY = self.enc((self.proj(X),self.proj(Y)))
