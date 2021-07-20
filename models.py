@@ -334,6 +334,61 @@ class CSAB(nn.Module):
         Y_out = Y + F.relu(self.fc_Y(torch.cat([YY, YX], dim=-1)))
         return (X_out, Y_out)
 
+class CSAB2(nn.Module):
+    def __init__(self, dim_Q, dim_K, dim_V, num_heads, ln=False):
+        self.dim_V = dim_V
+        self.num_heads = num_heads
+        self.fc_q_x = nn.Linear(dim_Q, dim_V)
+        self.fc_k_x = nn.Linear(dim_K, dim_V)
+        self.fc_v_x = nn.Linear(dim_K, dim_V)
+        self.fc_q_y = nn.Linear(dim_Q, dim_V)
+        self.fc_k_y = nn.Linear(dim_K, dim_V)
+        self.fc_v_y = nn.Linear(dim_K, dim_V)
+        self.fc_X = nn.Linear(dim_V*2, dim_V)
+        self.fc_Y = nn.Linear(dim_V*2, dim_V)
+        if ln:
+            self.ln0 = nn.LayerNorm(dim_V)
+            self.ln1 = nn.LayerNorm(dim_V)
+
+    def forward(self, X, Y):
+        Q_x = self.fc_q_x(X)
+        K_x, V_x = self.fc_k_x(X), self.fc_v(X)
+        Q_y = self.fc_q_x(Y)
+        K_y, V_y = self.fc_k_x(Y), self.fc_v(Y)
+
+        dim_split = self.dim_V // self.num_heads
+        Q_x_ = torch.cat(Q_x.split(dim_split, 2), 0)
+        K_x_ = torch.cat(K_x.split(dim_split, 2), 0)
+        V_x_ = torch.cat(V_x.split(dim_split, 2), 0)
+        Q_y_ = torch.cat(Q_y.split(dim_split, 2), 0)
+        K_y_ = torch.cat(K_y.split(dim_split, 2), 0)
+        V_y_ = torch.cat(V_y.split(dim_split, 2), 0)
+
+        A_xx = torch.softmax(Q_x_.bmm(K_x_.transpose(1,2))/math.sqrt(self.dim_V), 2)
+        A_xy = torch.softmax(Q_x_.bmm(K_y_.transpose(1,2))/math.sqrt(self.dim_V), 2)
+        A_yx = torch.softmax(Q_y_.bmm(K_x_.transpose(1,2))/math.sqrt(self.dim_V), 2)
+        A_yy = torch.softmax(Q_y_.bmm(K_y_.transpose(1,2))/math.sqrt(self.dim_V), 2)
+
+        O_xx = torch.cat((Q_x_ + A_xx.bmm(V_x_)).split(Q_x.size(0), 0), 2)
+        O_xy = torch.cat((Q_x_ + A_xy.bmm(V_y_)).split(Q_x.size(0), 0), 2)
+        O_yx = torch.cat((Q_y_ + A_yx.bmm(V_x_)).split(Q_y.size(0), 0), 2)
+        O_yy = torch.cat((Q_y_ + A_yy.bmm(V_y_)).split(Q_y.size(0), 0), 2)
+
+        if getattr(self, 'ln0', None) is not None:
+            O_xx = self.ln0(O_xx)
+            O_xy = self.ln0(O_xy)
+            O_yx = self.ln0(O_yx)
+            O_yy = self.ln0(O_yy)
+
+        O_x = F.relu(self.fc_X(torch.cat([O_xx,O_xy])))
+        O_y = F.relu(self.fc_Y(torch.cat([O_yx,O_yy])))
+
+        if getattr(self, 'ln1', None) is not None:
+            O_x = self.ln1(O_x)
+            O_y = self.ln1(O_y)
+
+        return O_x, O_y
+
 class ISAB(nn.Module):
     def __init__(self, dim_in, dim_out, num_heads, num_inds, ln=False):
         super(ISAB, self).__init__()
@@ -399,20 +454,89 @@ class SetTransformer(nn.Module):
     def forward(self, X):
         return self.dec(self.enc(X)).squeeze(-1)
 
-class MultiSetTransformer(nn.Module):
+class MultiSetTransformer1(nn.Module):
     def __init__(self, dim_input, num_outputs, dim_output,
             num_inds=32, dim_hidden=128, num_heads=4, ln=False):
-        super(MultiSetTransformer, self).__init__()
+        super(MultiSetTransformer1, self).__init__()
+        self.proj = nn.Linear(dim_input, dim_hidden)
         self.enc = nn.Sequential(
                 CSAB(dim_input, dim_hidden, num_heads, ln=ln),
                 CSAB(dim_hidden, dim_hidden, num_heads, ln=ln))
+        self.pool_x = PMA(dim_hidden, num_heads, num_outputs, ln=ln)
+        self.pool_y = PMA(dim_hidden, num_heads, num_outputs, ln=ln)
         self.dec = nn.Sequential(
-                PMA(dim_hidden, num_heads, num_outputs, ln=ln),
-                SAB(dim_hidden, dim_hidden, num_heads, ln=ln),
-                SAB(dim_hidden, dim_hidden, num_heads, ln=ln),
+                #SAB(dim_hidden, dim_hidden, num_heads, ln=ln),
+                #SAB(dim_hidden, dim_hidden, num_heads, ln=ln),
                 nn.Linear(dim_hidden, dim_output))
 
     def forward(self, X, Y):
-        ZX, ZY = self.enc((X,Y))
-        return self.dec(torch.cat([ZX, ZY], dim=1)).squeeze(-1)
+        ZX, ZY = self.enc((self.proj(X),self.proj(Y)))
+        ZX = self.pool_x(ZX)
+        ZY = self.pool_y(ZY)
+        return self.dec(torch.cat([ZX, ZY], dim=-1)).squeeze(-1)
+
+class MultiSetTransformer2(nn.Module):
+    def __init__(self, dim_input, num_outputs, dim_output,
+            num_inds=32, dim_hidden=128, num_heads=4, ln=False):
+        super(MultiSetTransformer2, self).__init__()
+        self.proj = nn.Linear(dim_input, dim_hidden)
+        self.enc = nn.Sequential(
+                CSAB2(dim_input, dim_hidden, num_heads, ln=ln),
+                CSAB2(dim_hidden, dim_hidden, num_heads, ln=ln))
+        self.pool_x = PMA(dim_hidden, num_heads, num_outputs, ln=ln)
+        self.pool_y = PMA(dim_hidden, num_heads, num_outputs, ln=ln)
+        self.dec = nn.Sequential(
+                #SAB(dim_hidden, dim_hidden, num_heads, ln=ln),
+                #SAB(dim_hidden, dim_hidden, num_heads, ln=ln),
+                nn.Linear(dim_hidden, dim_output))
+
+    def forward(self, X, Y):
+        ZX, ZY = self.enc((self.proj(X),self.proj(Y)))
+        ZX = self.pool_x(ZX)
+        ZY = self.pool_y(ZY)
+        return self.dec(torch.cat([ZX, ZY], dim=-1)).squeeze(-1)
+
+class MultiSetTransformer3(nn.Module):
+    def __init__(self, dim_input, num_outputs, dim_output,
+            num_inds=32, dim_hidden=128, num_heads=4, ln=False):
+        super(MultiSetTransformer3, self).__init__()
+        self.enc = nn.Sequential(
+                SAB(dim_input+1, dim_hidden, num_heads, ln=ln),
+                SAB(dim_hidden, dim_hidden, num_heads, ln=ln))
+        self.dec = nn.Sequential(
+                PMA(dim_hidden, num_heads, num_outputs, ln=ln),
+                #SAB(dim_hidden, dim_hidden, num_heads, ln=ln),
+                #SAB(dim_hidden, dim_hidden, num_heads, ln=ln),
+                nn.Linear(dim_hidden, dim_output))
+
+    def prepare_inputs(self, X, Y):
+        # each should be size batch_size x n_elements x dim
+        X = torch.cat([X, torch.zeros(*X.size()[:-1], 1)], dim=-1)
+        Y = torch.cat([Y, torch.ones(*Y.size()[:-1], 1)], dim=-1)
+        return torch.cat([X,Y], dim=1)
+
+    def forward(self, X, Y):
+        return self.dec(self.enc(self.prepare_inputs(X,Y)))
+
+class MultiSetTransformer4(nn.Module):
+    def __init__(self, dim_input, num_outputs, dim_output,
+            num_inds=32, dim_hidden=128, num_heads=4, ln=False):
+        super(MultiSetTransformer4, self).__init__()
+        self.X_encoding = nn.Parameter(torch.empty(dim_input))
+        self.Y_encoding = nn.Parameter(torch.empty(dim_input))
+        self.enc = nn.Sequential(
+                SAB(dim_input, dim_hidden, num_heads, ln=ln),
+                SAB(dim_hidden, dim_hidden, num_heads, ln=ln))
+        self.dec = nn.Sequential(
+                PMA(dim_hidden, num_heads, num_outputs, ln=ln),
+                #SAB(dim_hidden, dim_hidden, num_heads, ln=ln),
+                #SAB(dim_hidden, dim_hidden, num_heads, ln=ln),
+                nn.Linear(dim_hidden, dim_output))
+
+        nn.init.uniform_(self.X_encoding, math.sqrt(5))
+        nn.init.uniform_(self.Y_encoding, math.sqrt(5))
+
+    def forward(self, X, Y):
+        inputs = torch.cat([X+self.X_encoding, Y+self.Y_encoding], dim=1)
+        return self.dec(self.enc(inputs))
 
