@@ -479,7 +479,6 @@ class MultiSetTransformer2(nn.Module):
     def __init__(self, dim_input, num_outputs, dim_output,
             num_inds=32, dim_hidden=128, num_heads=4, ln=False):
         super(MultiSetTransformer2, self).__init__()
-        self.proj = nn.Linear(dim_input, dim_hidden)
         self.enc = nn.Sequential(
                 CSAB2(dim_input, dim_hidden, num_heads, ln=ln),
                 CSAB2(dim_hidden, dim_hidden, num_heads, ln=ln))
