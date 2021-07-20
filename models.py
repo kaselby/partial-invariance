@@ -351,7 +351,8 @@ class CSAB2(nn.Module):
             self.ln0 = nn.LayerNorm(dim_V)
             self.ln1 = nn.LayerNorm(dim_V)
 
-    def forward(self, X, Y):
+    def forward(self, inputs):
+        X, Y = inputs
         Q_x = self.fc_q_x(X)
         K_x, V_x = self.fc_k_x(X), self.fc_v(X)
         Q_y = self.fc_q_x(Y)
