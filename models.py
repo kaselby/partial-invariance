@@ -512,8 +512,13 @@ class MultiSetTransformer3(nn.Module):
 
     def prepare_inputs(self, X, Y):
         # each should be size batch_size x n_elements x dim
-        X = torch.cat([X, torch.zeros(*X.size()[:-1], 1)], dim=-1)
-        Y = torch.cat([Y, torch.ones(*Y.size()[:-1], 1)], dim=-1)
+        zeros = torch.zeros(*X.size()[:-1], 1)
+        ones = torch.ones(*Y.size()[:-1], 1)
+        if use_cuda:
+            zeros = zeros.cuda()
+            ones = ones.cuda()
+        X = torch.cat([X, zeros], dim=-1)
+        Y = torch.cat([Y, ones], dim=-1)
         return torch.cat([X,Y], dim=1)
 
     def forward(self, X, Y):
