@@ -133,6 +133,14 @@ def entropy_1d_gaussian(mu, sigma):
 def kl_1d_gaussian(mu1, sigma1, mu2, sigma2):
     return torch.log(sigma2/sigma1) + (sigma1*sigma1 + (mu1-mu2)*(mu1-mu2))/2/sigma2/sigma2 - 1./2
 
+def kl_nd_gaussian(mu1, Sigma1, mu2, Sigma2):
+    d = mu1.size(-1)
+    return 1./2 * ( torch.logdet(Sigma2) - torch.logdet(Sigma1) -
+                d +
+                torch.diagonal(Sigma2.transpose(-1,-2).bmm(Sigma1), dim1=-2, dim2=-1).sum() +
+                (mu2-mu1).unsqueeze(-1).transpose(-1, -2).bmm().bmm((mu2-mu1).unsqueeze(-1))
+    )
+
 def avg_nn_dist(X):
     dists = knn(X, 1)
     return dists.sum(dim=-1)/dists.size(-1)
@@ -212,16 +220,16 @@ def evaluate(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss
     return losses
 
 import tabulate
-def show_examples(model, sample_fct, label_fct, exact_loss=False, n=8):
+def show_examples(model, sample_fct, label_fct, exact_loss=False, samples=8, **sample_kwargs):
     #model.train(False)
     if exact_loss:
-        X, theta = sample_fct(n)
+        X, theta = sample_fct(samples, **sample_kwargs)
         if use_cuda:
             X = [x.cuda() for x in X]
             theta = [t.cuda() for t in theta]
         y = label_fct(*theta).cpu().squeeze(-1)
     else:
-        X = sample_fct(n)
+        X = sample_fct(samples, **sample_kwargs)
         if use_cuda:
             X = [x.cuda() for x in X]
         y = label_fct(*X).cpu()
