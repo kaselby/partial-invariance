@@ -135,10 +135,11 @@ def kl_1d_gaussian(mu1, sigma1, mu2, sigma2):
 
 def kl_nd_gaussian(mu1, Sigma1, mu2, Sigma2):
     d = mu1.size(-1)
+    Lambda2 = torch.inverse(Sigma2)
     return 1./2 * ( torch.logdet(Sigma2) - torch.logdet(Sigma1) -
                 d +
-                torch.diagonal(Sigma2.transpose(-1,-2).bmm(Sigma1), dim1=-2, dim2=-1).sum() +
-                (mu2-mu1).unsqueeze(-1).transpose(-1, -2).bmm().bmm((mu2-mu1).unsqueeze(-1))
+                torch.diagonal(Lambda2.bmm(Sigma1), dim1=-2, dim2=-1).sum() +
+                (mu2-mu1).unsqueeze(-1).transpose(-1, -2).bmm(Lambda2).bmm((mu2-mu1).unsqueeze(-1))
     )
 
 def avg_nn_dist(X):
