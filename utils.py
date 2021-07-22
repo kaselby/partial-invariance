@@ -28,7 +28,7 @@ def generate_gaussian_1d(batch_size, return_params=False):
 
 def generate_gaussian_nd(batch_size, n, return_params=False):
     mus= (1+5*torch.rand(size=(batch_size, n)))
-    A = 5*torch.rand(size=(batch_size, n, n))
+    A = torch.rand(size=(batch_size, n, n))
     sigmas = torch.bmm(A.transpose(1,2), A) + 0.1*torch.diag_embed(torch.rand(batch_size, 2))
     n_samples = torch.randint(100,150,(1,))
     dist = MultivariateNormal(mus, sigmas)
@@ -218,7 +218,7 @@ def evaluate(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss
             labels = label_fct(*X)
         loss = criterion(model(*X).squeeze(-1), labels)
         losses.append(loss.item())
-    return losses
+    return sum(losses)/len(losses)
 
 import tabulate
 def show_examples(model, sample_fct, label_fct, exact_loss=False, samples=8, **sample_kwargs):
