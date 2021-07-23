@@ -211,7 +211,7 @@ def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(),
         losses.append(loss.item())
     return losses
 
-def evaluate(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(), batch_size=64, steps=3000):
+def evaluate(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(), batch_size=64, steps=3000, **sample_kwargs):
     #model.train(False)
     l1=nn.L1Loss()
     l2=nn.MSELoss()
@@ -219,13 +219,13 @@ def evaluate(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss
     l2_losses=[]
     for _ in tqdm.tqdm(range(steps)):
         if exact_loss:
-            X, theta = sample_fct(batch_size)
+            X, theta = sample_fct(batch_size, **sample_kwargs)
             if use_cuda:
                 X = [x.cuda() for x in X]
                 theta = [t.cuda() for t in theta]
             labels = label_fct(*theta).squeeze(-1)
         else:
-            X = sample_fct(batch_size)
+            X = sample_fct(batch_size, **sample_kwargs)
             if use_cuda:
                 X = [x.cuda() for x in X]
             labels = label_fct(*X)
@@ -234,6 +234,11 @@ def evaluate(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss
         l1_losses.append(l1loss.item())
         l2_losses.append(l2loss.item())
     return sum(l1_losses)/len(l1_losses), sum(l2_losses)/len(l2_losses)
+
+def eval_all(*models, sample_fct, label_fct, train_kwargs={}, eval_kwargs={}):
+    for model in models:
+        model_losses = train(model, sample_fct, label_fct, **train_kwargs)
+        l1, l2 = evaluate(model, sample_fct, label_fct, **eval_kwargs)
 
 import tabulate
 def show_examples(model, sample_fct, label_fct, exact_loss=False, samples=8, **sample_kwargs):
