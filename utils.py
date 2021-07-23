@@ -41,7 +41,7 @@ def generate_gaussian_nd(batch_size, n, return_params=False):
 def generate_uniform_nd(batch_size, n):
     n_samples = torch.randint(100,150,(1,))
     samples = torch.rand(size=(batch_size, n_samples, n))
-    return samples
+    return [samples.float().contiguous()]
 
 def generate_multi(fct):
     def generate(*args, **kwargs):
