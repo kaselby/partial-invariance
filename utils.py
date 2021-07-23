@@ -38,6 +38,11 @@ def generate_gaussian_nd(batch_size, n, return_params=False):
     else:
         return [samples.float().contiguous()], (mus, sigmas)
 
+def generate_uniform_nd(batch_size, n):
+    n_samples = torch.randint(100,150,(1,))
+    samples = torch.rand(size=(batch_size, n_samples, n))
+    return samples
+
 def generate_multi(fct):
     def generate(*args, **kwargs):
         return fct(*args, **kwargs)[0], fct(*args, **kwargs)[0]
@@ -49,6 +54,11 @@ def generate_multi_params(fct):
         (Y,), T_y = fct(*args, return_params=True, **kwargs)
         return (X,Y), (*T_x, *T_y)
     return generate
+
+def join(f1, f2):
+    def f(*args, **kwargs):
+        return f1(*args, **kwargs)[0], f2(*args, **kwargs)[0]
+    return f
 
 def mode(samples):
     return samples.sum(dim=1).argmax(dim=-1)
@@ -203,7 +213,10 @@ def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(),
 
 def evaluate(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(), batch_size=64, steps=3000):
     #model.train(False)
-    losses = []
+    l1=nn.L1Loss()
+    l2=nn.MSELoss()
+    l1_losses=[]
+    l2_losses=[]
     for _ in tqdm.tqdm(range(steps)):
         if exact_loss:
             X, theta = sample_fct(batch_size)
@@ -216,9 +229,11 @@ def evaluate(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss
             if use_cuda:
                 X = [x.cuda() for x in X]
             labels = label_fct(*X)
-        loss = criterion(model(*X).squeeze(-1), labels)
-        losses.append(loss.item())
-    return sum(losses)/len(losses)
+        l1loss = l1(model(*X).squeeze(-1), labels)
+        l2loss = l2(model(*X).squeeze(-1), labels)
+        l1_losses.append(l1loss.item())
+        l2_losses.append(l2loss.item())
+    return sum(l1_losses)/len(l1_losses), sum(l2_losses)/len(l2_losses)
 
 import tabulate
 def show_examples(model, sample_fct, label_fct, exact_loss=False, samples=8, **sample_kwargs):
