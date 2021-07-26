@@ -489,7 +489,7 @@ class MultiSetTransformer2(nn.Module):
                 nn.Linear(dim_hidden*2, dim_output))
 
     def forward(self, X, Y):
-        ZX, ZY = self.enc((X,Y))
+        ZX, ZY = self.enc((self.proj(X),self.proj(Y)))
         ZX = self.pool_x(ZX)
         ZY = self.pool_y(ZY)
         return self.dec(torch.cat([ZX, ZY], dim=-1)).squeeze(-1)
