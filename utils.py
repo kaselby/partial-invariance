@@ -167,8 +167,8 @@ def kl_nd_gaussian(mu1, Sigma1, mu2, Sigma2):
     Lambda2 = torch.inverse(Sigma2)
     return 1./2 * ( torch.logdet(Sigma2) - torch.logdet(Sigma1) -
                 d +
-                torch.diagonal(Lambda2.bmm(Sigma1), dim1=-2, dim2=-1).sum(dim=-1) +
-                (mu2-mu1).unsqueeze(-1).transpose(-1, -2).bmm(Lambda2).bmm((mu2-mu1).unsqueeze(-1)).squeeze(-1).squeeze(-1)
+                torch.diagonal(Lambda2.matmul(Sigma1), dim1=-2, dim2=-1).sum(dim=-1) +
+                (mu2-mu1).unsqueeze(-1).transpose(-1, -2).matmul(Lambda2).matmul((mu2-mu1).unsqueeze(-1)).squeeze(-1).squeeze(-1)
     )
 
 # bs x nc (x d for mu and x d x d for Sigma)
@@ -287,13 +287,6 @@ def eval_all(*models, sample_fct, label_fct, train_kwargs={}, eval_kwargs={}):
     for model in models:
         model_losses = train(model, sample_fct, label_fct, **train_kwargs)
         l1, l2 = evaluate(model, sample_fct, label_fct, **eval_kwargs)
-
-        plt.plot(model_losses)
-        plt.legend()
-        plt.xlabel("Steps")
-        plt.ylabel("Mean Squared Error")
-        plt.yscale("log")
-        plt.show()
 
         print("\nL1:", str(l1), "\tL2:", str(l2))
 
