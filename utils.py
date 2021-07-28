@@ -2,7 +2,7 @@ from models import *
 import torch
 import torch.nn as nn
 import math
-from torch.distributions import OneHotCategorical, Normal, MultivariateNormal
+from torch.distributions import OneHotCategorical, Normal, MultivariateNormal, Categorical, MixtureSameFamily
 import tqdm
 #import ot
 from geomloss import SamplesLoss
@@ -42,6 +42,25 @@ def generate_uniform_nd(batch_size, n):
     n_samples = torch.randint(100,150,(1,))
     samples = torch.rand(size=(batch_size, n_samples, n))
     return [samples.float().contiguous()]
+
+def generate_gaussian_mixture(batch_size, n, return_params=False):
+    n_samples = torch.randint(100,150,(1,))
+    n_components = torch.randint(3,10,(1,))
+    mus= (1+5*torch.rand(size=(batch_size, n_components, n)))
+    A = torch.rand(size=(batch_size, n_components, n, n))
+    sigmas = A.transpose(-1,-2).matmul(A) + 1*torch.diag_embed(torch.rand(batch_size, n_components, n))
+    logits = torch.randint(5, size=(batch_size, n_components)).float()
+    mix = Categorical(logits=logits)
+    dist = MultivariateNormal(mus, sigmas)
+    indices = mix.sample(n_samples).transpose(0,1)
+    samples = dist.sample(n_samples).transpose(0,1)
+    out = torch.gather(samples, 2, indices.unsqueeze(-1).unsqueeze(-1).expand(-1,-1,-1,n)).squeeze(2)
+    if not return_params:
+        return [out.float().contiguous()]
+    else:
+        return [out.float().contiguous()], (mus, sigmas, mix.probs)
+
+
 
 def generate_multi(fct):
     def generate(*args, **kwargs):
@@ -152,6 +171,35 @@ def kl_nd_gaussian(mu1, Sigma1, mu2, Sigma2):
                 (mu2-mu1).unsqueeze(-1).transpose(-1, -2).bmm(Lambda2).bmm((mu2-mu1).unsqueeze(-1)).squeeze(-1).squeeze(-1)
     )
 
+# bs x nc (x d for mu and x d x d for Sigma)
+def kl_gmm_bounds(mu1, Sigma1, w1, mu2, Sigma2, w2):
+    d = mu1.size(-1)
+    H = gaussian_nd_entropy(Sigma1)
+    lower_term1 = weighted_logsumexp(kl_nd_gaussian(mu1.unsqueeze(2), Sigma1.unsqueeze(2), mu1.unsqueeze(1), Sigma1.unsqueeze(1)), w1, dim=2) #dim=1 or 2?
+    lower_term2 = weighted_logsumexp(gaussian_product_lognorm(mu1.unsqueeze(2), Sigma1.unsqueeze(2), mu2.unsqueeze(1), Sigma2.unsqueeze(1)), w2, dim=2) #dim=1 or 2?
+    lower_bound = (w1 * (lower_term1 - lower_term2 - H)).sum(dim=1) 
+
+    upper_term1 = weighted_logsumexp(gaussian_product_lognorm(mu1.unsqueeze(2), Sigma1.unsqueeze(2), mu1.unsqueeze(1), Sigma1.unsqueeze(1)), w1, dim=2) #dim=1 or 2?
+    upper_term2 = weighted_logsumexp(kl_nd_gaussian(mu1.unsqueeze(2), Sigma1.unsqueeze(2), mu2.unsqueeze(1), Sigma2.unsqueeze(1)), w2, dim=2) #dim=1 or 2?
+    upper_bound = (w1 * (upper_term1 - upper_term2 + H)).sum(dim=1)
+
+    return lower_bound, upper_bound
+
+# logits and weights both (*, N)
+# add eps?
+def weighted_logsumexp(logits, weights, dim=-1):
+    max_logits = torch.max(logits, dim=dim)
+    out = torch.log(torch.sum(weights * torch.exp(logits - max_logits), dim=dim)) + max_logits
+    return out
+
+def gaussian_product_lognorm(mu1, Sigma1, mu2, Sigma2):
+    d = mu1.size(-1)
+    return -1./2 * (d*math.log(2*math.pi) + torch.logdet(Sigma1 + Sigma2) + (mu2-mu1).unsqueeze(-2).matmul(torch.inverse(Sigma1+Sigma2)).matmul((mu2-mu1).unsqueeze(-1)))
+
+def gaussian_nd_entropy(Sigma):
+    d = Sigma.size(-1)
+    return 1./2 * (d*math.log(2*math.pi) + d + torch.logdet(Sigma))
+
 def avg_nn_dist(X):
     dists = knn(X, 1)
     return dists.sum(dim=-1)/dists.size(-1)
@@ -239,6 +287,15 @@ def eval_all(*models, sample_fct, label_fct, train_kwargs={}, eval_kwargs={}):
     for model in models:
         model_losses = train(model, sample_fct, label_fct, **train_kwargs)
         l1, l2 = evaluate(model, sample_fct, label_fct, **eval_kwargs)
+
+        plt.plot(model_losses)
+        plt.legend()
+        plt.xlabel("Steps")
+        plt.ylabel("Mean Squared Error")
+        plt.yscale("log")
+        plt.show()
+
+        print("\nL1:", str(l1), "\tL2:", str(l2))
 
 import tabulate
 def show_examples(model, sample_fct, label_fct, exact_loss=False, samples=8, **sample_kwargs):
