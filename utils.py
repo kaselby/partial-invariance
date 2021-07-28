@@ -188,7 +188,7 @@ def kl_gmm_bounds(mu1, Sigma1, w1, mu2, Sigma2, w2):
 # logits and weights both (*, N)
 # add eps?
 def weighted_logsumexp(logits, weights, dim=-1):
-    max_logits = torch.max(logits, dim=dim)
+    max_logits = torch.max(logits, dim=dim)[0]
     out = torch.log(torch.sum(weights * torch.exp(logits - max_logits), dim=dim)) + max_logits
     return out
 
