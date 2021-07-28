@@ -188,13 +188,13 @@ def kl_gmm_bounds(mu1, Sigma1, w1, mu2, Sigma2, w2):
 # logits and weights both (*, N)
 # add eps?
 def weighted_logsumexp(logits, weights, dim=-1):
-    max_logits = torch.max(logits, dim=dim)[0]
+    max_logits = torch.max(logits, dim=dim, keepdim=True)[0]
     out = torch.log(torch.sum(weights * torch.exp(logits - max_logits), dim=dim)) + max_logits
     return out
 
 def gaussian_product_lognorm(mu1, Sigma1, mu2, Sigma2):
     d = mu1.size(-1)
-    return -1./2 * (d*math.log(2*math.pi) + torch.logdet(Sigma1 + Sigma2) + (mu2-mu1).unsqueeze(-2).matmul(torch.inverse(Sigma1+Sigma2)).matmul((mu2-mu1).unsqueeze(-1)))
+    return -1./2 * (d*math.log(2*math.pi) + torch.logdet(Sigma1 + Sigma2) + (mu2-mu1).unsqueeze(-2).matmul(torch.inverse(Sigma1+Sigma2)).matmul((mu2-mu1).unsqueeze(-1))).squeeze(-1).squeeze(-1)
 
 def gaussian_nd_entropy(Sigma):
     d = Sigma.size(-1)
