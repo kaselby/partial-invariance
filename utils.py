@@ -175,12 +175,12 @@ def kl_nd_gaussian(mu1, Sigma1, mu2, Sigma2):
 def kl_gmm_bounds(mu1, Sigma1, w1, mu2, Sigma2, w2):
     d = mu1.size(-1)
     H = gaussian_nd_entropy(Sigma1)
-    lower_term1 = weighted_logsumexp(kl_nd_gaussian(mu1.unsqueeze(2), Sigma1.unsqueeze(2), mu1.unsqueeze(1), Sigma1.unsqueeze(1)), w1, dim=2) #dim=1 or 2?
-    lower_term2 = weighted_logsumexp(gaussian_product_lognorm(mu1.unsqueeze(2), Sigma1.unsqueeze(2), mu2.unsqueeze(1), Sigma2.unsqueeze(1)), w2, dim=2) #dim=1 or 2?
+    lower_term1 = weighted_logsumexp(kl_nd_gaussian(mu1.unsqueeze(2), Sigma1.unsqueeze(2), mu1.unsqueeze(1), Sigma1.unsqueeze(1)), w1.unsqueeze(1), dim=2) #dim=1 or 2?
+    lower_term2 = weighted_logsumexp(gaussian_product_lognorm(mu1.unsqueeze(2), Sigma1.unsqueeze(2), mu2.unsqueeze(1), Sigma2.unsqueeze(1)), w2.unsqueeze(1), dim=2) #dim=1 or 2?
     lower_bound = (w1 * (lower_term1 - lower_term2 - H)).sum(dim=1) 
 
-    upper_term1 = weighted_logsumexp(gaussian_product_lognorm(mu1.unsqueeze(2), Sigma1.unsqueeze(2), mu1.unsqueeze(1), Sigma1.unsqueeze(1)), w1, dim=2) #dim=1 or 2?
-    upper_term2 = weighted_logsumexp(kl_nd_gaussian(mu1.unsqueeze(2), Sigma1.unsqueeze(2), mu2.unsqueeze(1), Sigma2.unsqueeze(1)), w2, dim=2) #dim=1 or 2?
+    upper_term1 = weighted_logsumexp(gaussian_product_lognorm(mu1.unsqueeze(2), Sigma1.unsqueeze(2), mu1.unsqueeze(1), Sigma1.unsqueeze(1)), w1.unsqueeze(1), dim=2) #dim=1 or 2?
+    upper_term2 = weighted_logsumexp(kl_nd_gaussian(mu1.unsqueeze(2), Sigma1.unsqueeze(2), mu2.unsqueeze(1), Sigma2.unsqueeze(1)), w2.unsqueeze(1), dim=2) #dim=1 or 2?
     upper_bound = (w1 * (upper_term1 - upper_term2 + H)).sum(dim=1)
 
     return lower_bound, upper_bound
