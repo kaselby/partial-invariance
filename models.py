@@ -163,6 +163,13 @@ class EquiNN(nn.Module):
         self.b = nn.Parameter(torch.empty(1))
         self.maxpool = maxpool
 
+        self._init_weights()
+
+    def _init_weights(self):
+        nn.init.uniform_(self.l)
+        nn.init.uniform_(self.g)
+        nn.init.uniform_(self.b)
+
     def forward(self, X):
         N = X.size(-1)
         if self.maxpool:
