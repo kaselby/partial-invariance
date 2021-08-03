@@ -164,9 +164,9 @@ class EquiNN(nn.Module):
     def forward(self, X, maxpool=False):
         N = X.size(-1)
         if maxpool:
-            return X.matmul(self.l * torch.eye(N)) + self.g * X.max(dim=-1)[0] * torch.ones_like(X)
+            return X.matmul(self.l * torch.eye(N, device=X.device)) + self.g * X.max(dim=-1)[0] * torch.ones_like(X, device=X.device)
         else:
-            return X.matmul(self.l * torch.eye(N) + self.g*torch.ones(N, N))
+            return X.matmul(self.l * torch.eye(N, device=X.device) + self.g*torch.ones(N, N, device=X.device))
         
 
 class PEquiNN(nn.Module):
