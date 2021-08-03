@@ -156,26 +156,35 @@ class ExactDivergenceModel(nn.Module):
 
 
 class EquiNN(nn.Module):
-    def __init__(self, maxpool=False):
+    def __init__(self, bias=False, maxpool=False):
         super().__init__()
+        self.maxpool = maxpool
+        self.bias = bias
+
         self.l = nn.Parameter(torch.empty(1))
         self.g = nn.Parameter(torch.empty(1))
-        self.b = nn.Parameter(torch.empty(1))
-        self.maxpool = maxpool
-
+        if self.bias:
+            self.b = nn.Parameter(torch.empty(1))
+        
         self._init_weights()
 
     def _init_weights(self):
         nn.init.uniform_(self.l)
         nn.init.uniform_(self.g)
-        nn.init.uniform_(self.b)
+        if self.bias:
+            nn.init.uniform_(self.b)
 
     def forward(self, X):
         N = X.size(-1)
         if self.maxpool:
-            return X.matmul(self.l * torch.eye(N, device=X.device)) + self.g * X.max(dim=-1)[0] * torch.ones_like(X, device=X.device) + self.b * torch.ones_like(X, device=X.device)
+            out= X.matmul(self.l * torch.eye(N, device=X.device)) + self.g * X.max(dim=-1)[0] * torch.ones_like(X, device=X.device)
         else:
-            return X.matmul(self.l * torch.eye(N, device=X.device) + self.g*torch.ones(N, N, device=X.device)) + self.b * torch.ones_like(X, device=X.device)
+            out= X.matmul(self.l * torch.eye(N, device=X.device) + self.g*torch.ones(N, N, device=X.device)) 
+
+        if self.bias:
+            out += self.b * torch.ones_like(X, device=X.device)
+        
+        return out
         
 
 class PEquiNN(nn.Module):
