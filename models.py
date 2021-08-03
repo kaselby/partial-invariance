@@ -157,6 +157,7 @@ class ExactDivergenceModel(nn.Module):
 
 class EquiNN(nn.Module):
     def __init__(self):
+        super().__init__()
         self.l = nn.Parameter(torch.empty(1))
         self.g = nn.Parameter(torch.empty(1))
 
