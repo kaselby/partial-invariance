@@ -156,17 +156,19 @@ class ExactDivergenceModel(nn.Module):
 
 
 class EquiNN(nn.Module):
-    def __init__(self):
+    def __init__(self, maxpool=False):
         super().__init__()
         self.l = nn.Parameter(torch.empty(1))
         self.g = nn.Parameter(torch.empty(1))
+        self.b = nn.Parameter(torch.empty(1))
+        self.maxpool = maxpool
 
-    def forward(self, X, maxpool=False):
+    def forward(self, X):
         N = X.size(-1)
-        if maxpool:
-            return X.matmul(self.l * torch.eye(N, device=X.device)) + self.g * X.max(dim=-1)[0] * torch.ones_like(X, device=X.device)
+        if self.maxpool:
+            return X.matmul(self.l * torch.eye(N, device=X.device)) + self.g * X.max(dim=-1)[0] * torch.ones_like(X, device=X.device) + self.b * torch.ones_like(X, device=X.device)
         else:
-            return X.matmul(self.l * torch.eye(N, device=X.device) + self.g*torch.ones(N, N, device=X.device))
+            return X.matmul(self.l * torch.eye(N, device=X.device) + self.g*torch.ones(N, N, device=X.device)) + self.b * torch.ones_like(X, device=X.device)
         
 
 class PEquiNN(nn.Module):
