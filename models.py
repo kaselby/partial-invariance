@@ -221,12 +221,12 @@ class EquiLinearBlock1(nn.Module):
     def __init__(self, hidden_size, num_layers):
         self.hidden_size = hidden_size
         self.num_layers = num_layers
-        self.net = nn.Sequential([
+        self.net = nn.Sequential(
             nn.Linear(1, hidden_size),
             nn.ReLU(),
             *[x for i in range(num_layers-1) for x in [nn.Linear(hidden_size, hidden_size), nn.ReLU()]],
             nn.Linear(hidden_size, 1)
-        ])
+        )
     
     def forward(self, x):
         return self.net(x.unsqueeze(-1)).squeeze(-1)
@@ -236,12 +236,12 @@ class EquiLinearBlock2(nn.Module):
         assert num_layers >= 1
         self.hidden_size = hidden_size
         self.num_layers = num_layers
-        self.net = nn.Sequential([
+        self.net = nn.Sequential(
             layer(1, hidden_size),
             nn.ReLU(),
             *[x for i in range(num_layers-1) for x in [layer(hidden_size, hidden_size), nn.ReLU()]],
             layer(hidden_size, 1)
-        ])
+        )
     
     def forward(self, x):
         return self.net(x.unsqueeze(-1)).squeeze(-1)
