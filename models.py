@@ -219,6 +219,8 @@ class EquiLinearLayer3(nn.Module):
         
 class EquiLinearBlock1(nn.Module):
     def __init__(self, hidden_size, num_layers):
+        assert num_layers >= 1
+        super().__init__()
         self.hidden_size = hidden_size
         self.num_layers = num_layers
         self.net = nn.Sequential(
@@ -234,6 +236,7 @@ class EquiLinearBlock1(nn.Module):
 class EquiLinearBlock2(nn.Module):
     def __init__(self, hidden_size, num_layers, layer=EquiLinearLayer1):
         assert num_layers >= 1
+        super().__init__()
         self.hidden_size = hidden_size
         self.num_layers = num_layers
         self.net = nn.Sequential(
