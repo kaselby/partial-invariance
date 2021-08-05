@@ -38,6 +38,11 @@ def generate_gaussian_nd(batch_size, n, return_params=False):
     else:
         return [samples.float().contiguous()], (mus, sigmas)
 
+def generate_uniform(batch_size):
+    n_samples = torch.randint(100,150,(1,))
+    samples = torch.rand(size=(batch_size, n_samples))
+    return [samples.float().contiguous()]
+
 def generate_uniform_nd(batch_size, n):
     n_samples = torch.randint(100,150,(1,))
     samples = torch.rand(size=(batch_size, n_samples, n))
@@ -307,3 +312,5 @@ def show_examples(model, sample_fct, label_fct, exact_loss=False, samples=8, **s
     yhat = model(*X).cpu().detach().squeeze(-1)
     print(tabulate.tabulate([['y', *y.tolist()], ['yhat', *yhat.tolist()]]))
     #print("Y:", y, "\nYhat:", yhat)
+
+

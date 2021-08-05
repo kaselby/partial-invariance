@@ -185,25 +185,105 @@ class EquiNN(nn.Module):
             out += self.b * torch.ones_like(X, device=X.device)
         
         return out
+
+
+class EquiLinearLayer1(nn.Module):
+    def __init__(self, input_size, output_size):
+        super().__init__()
+        self.Lambda = nn.Linear(input_size, output_size, bias=False)
+        self.Gamma = nn.Linear(input_size, output_size, bias=False)
+
+    def forward(self, X):
+        m = X.size(-2)
+        return self.Lambda(X) - self.Gamma(torch.ones(m, m, device=X.device).matmul(X))
+
+class EquiLinearLayer2(nn.Module):
+    def __init__(self, input_size, output_size):
+        super().__init__()
+        self.Lambda = nn.Linear(input_size, output_size, bias=False)
+        self.Gamma = nn.Linear(input_size, output_size, bias=False)
+
+    def forward(self, X):
+        m = X.size(-2)
+        return self.Lambda(X) - self.Gamma(torch.ones(m,1, device=X.device).matmul(X.max(dim=-2)))
+
+class EquiLinearLayer3(nn.Module):
+    def __init__(self, input_size, output_size):
+        super().__init__()
+        self.Gamma = nn.Linear(input_size, output_size, bias=True)
+
+    def forward(self, X):
+        m = X.size(-2)
+        return self.Gamma(X - torch.ones(m,1, device=X.device).matmul(X.max(dim=-2)))
+
         
+class EquiLinearBlock1(nn.Module):
+    def __init__(self, hidden_size, num_layers):
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        self.net = nn.Sequential([
+            nn.Linear(1, hidden_size),
+            nn.ReLU()
+            *[x for i in range(num_layers-1) for x in [nn.Linear(hidden_size, hidden_size), nn.ReLU()]],
+            nn.Linear(hidden_size, 1)
+        ])
+    
+    def forward(self, x):
+        return self.net(x.unsqueeze(-1)).squeeze(-1)
+
+class EquiLinearBlock2(nn.Module):
+    def __init__(self, hidden_size, num_layers, layer=EquiLinearLayer1):
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        self.net = nn.Sequential([
+            layer(1, hidden_size),
+            nn.ReLU()
+            *[x for i in range(num_layers-1) for x in [layer(hidden_size, hidden_size), nn.ReLU()]],
+            layer(hidden_size, 1)
+        ])
+    
+    def forward(self, x):
+        return self.net(x.unsqueeze(-1)).squeeze(-1)
 
 class PEquiNN(nn.Module):
-    def __init__(self):
+    def __init__(self, bias=False):
+        super().__init__()
+        self.bias=bias
+
         self.l_xx = nn.Parameter(torch.empty(1))
         self.l_yy = nn.Parameter(torch.empty(1))
         self.g_xx = nn.Parameter(torch.empty(1))
         self.g_xy = nn.Parameter(torch.empty(1))
         self.g_yx = nn.Parameter(torch.empty(1))
         self.g_yy = nn.Parameter(torch.empty(1))
+        if self.bias:
+            self.b_x = nn.Parameter(torch.empty(1))
+            self.b_y = nn.Parameter(torch.empty(1))
+
+    def _init_weights(self):
+        nn.init.uniform_(self.l_xx)
+        nn.init.uniform_(self.l_yy)
+        nn.init.uniform_(self.g_xx)
+        nn.init.uniform_(self.g_xy)
+        nn.init.uniform_(self.g_yx)
+        nn.init.uniform_(self.g_yy)
+        if self.bias:
+            nn.init.uniform_(self.b_x)
+            nn.init.uniform_(self.b_y)
 
     def forward(self, X, Y):
         n = X.size(-1)
         m = Y.size(-1)
-        theta_xx = torch.eye(n) * self.l_xx + torch.ones(n,n) * self.g_xx
-        theta_yy = torch.eye(m) * self.l_yy + torch.ones(m,m) * self.g_yy
-        theta_xy = torch.ones(m, n) * self.g_xy
-        theta_yx = torch.ones(n, m) * self.g_yx
-        return X.mm(theta_xx) + Y.mm(theta_yx), Y.mm(theta_yy) + X.mm(theta_xy)
+        theta_xx = torch.eye(n, device=X.device) * self.l_xx + torch.ones(n,n, device=X.device) * self.g_xx
+        theta_yy = torch.eye(m, device=X.device) * self.l_yy + torch.ones(m,m, device=X.device) * self.g_yy
+        theta_xy = torch.ones(m, n, device=X.device) * self.g_xy
+        theta_yx = torch.ones(n, m, device=X.device) * self.g_yx
+        o_x = X.mm(theta_xx) + Y.mm(theta_yx)
+        o_y = Y.mm(theta_yy) + X.mm(theta_xy)
+        if self.bias:
+            o_x += self.b_x
+            o_y += self.b_y
+        return o_x, o_y
 
 
 def simple_model(input_size, output_size, latent_size=16, hidden_size=32):
