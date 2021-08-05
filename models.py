@@ -205,7 +205,7 @@ class EquiLinearLayer2(nn.Module):
 
     def forward(self, X):
         m = X.size(-2)
-        return self.Lambda(X) - self.Gamma(torch.ones(m,1, device=X.device).matmul(X.max(dim=-2)[0]))
+        return self.Lambda(X) - self.Gamma(torch.ones(m,1, device=X.device).matmul(X.max(dim=-2, keepdim=True)[0]))
 
 class EquiLinearLayer3(nn.Module):
     def __init__(self, input_size, output_size):
@@ -214,7 +214,7 @@ class EquiLinearLayer3(nn.Module):
 
     def forward(self, X):
         m = X.size(-2)
-        return self.Gamma(X - torch.ones(m,1, device=X.device).matmul(X.max(dim=-2)[0]))
+        return self.Gamma(X - torch.ones(m,1, device=X.device).matmul(X.max(dim=-2,keepdim=True)[0]))
 
         
 class EquiLinearBlock1(nn.Module):
