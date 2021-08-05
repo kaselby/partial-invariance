@@ -223,7 +223,7 @@ class EquiLinearBlock1(nn.Module):
         self.num_layers = num_layers
         self.net = nn.Sequential([
             nn.Linear(1, hidden_size),
-            nn.ReLU()
+            nn.ReLU(),
             *[x for i in range(num_layers-1) for x in [nn.Linear(hidden_size, hidden_size), nn.ReLU()]],
             nn.Linear(hidden_size, 1)
         ])
@@ -238,7 +238,7 @@ class EquiLinearBlock2(nn.Module):
         self.num_layers = num_layers
         self.net = nn.Sequential([
             layer(1, hidden_size),
-            nn.ReLU()
+            nn.ReLU(),
             *[x for i in range(num_layers-1) for x in [layer(hidden_size, hidden_size), nn.ReLU()]],
             layer(hidden_size, 1)
         ])
