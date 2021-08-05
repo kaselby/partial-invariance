@@ -233,6 +233,7 @@ class EquiLinearBlock1(nn.Module):
 
 class EquiLinearBlock2(nn.Module):
     def __init__(self, hidden_size, num_layers, layer=EquiLinearLayer1):
+        assert num_layers >= 1
         self.hidden_size = hidden_size
         self.num_layers = num_layers
         self.net = nn.Sequential([
