@@ -352,8 +352,9 @@ class EquiEncoder1(nn.Module):
 
 
 class EquiRNBlock1(nn.Module):
-    def __init__(self, latent_size, hidden_size, layer=EquiLinearLayer2, equi_layers=1):
+    def __init__(self, latent_size, hidden_size, layer=EquiLinearLayer2, equi_layers=1, pool='max'):
         super().__init__()
+        self.pool = pool
         self.eq = nn.Sequential(*[
             layer(2, hidden_size),
             nn.ReLU(),
