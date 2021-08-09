@@ -357,13 +357,16 @@ class EquiRNBlock1(nn.Module):
         self.pool = pool
         self.remove_diag=remove_diag
         self.eq = nn.Sequential(*[
-            layer(2, hidden_size),
+            nn.Linear(2, hidden_size),
             nn.ReLU(),
-            #*[x for i in range(equi_layers-1) for x in [layer(hidden_size, hidden_size), nn.ReLU()]],
-            layer(hidden_size, 1)
+            nn.Linear(hidden_size, hidden_size),
+            nn.ReLU(),
+            nn.Linear(hidden_size, 1)
         ])
         self.enc = nn.Sequential(
             nn.Linear(1, hidden_size),
+            nn.ReLU(),
+            nn.Linear(hidden_size, hidden_size),
             nn.ReLU(),
             nn.Linear(hidden_size, latent_size),
         )
