@@ -250,7 +250,7 @@ class EquiLinearBlock2(nn.Module):
         return self.net(x.unsqueeze(-1)).squeeze(-1)
 
 class PEquiNN(nn.Module):
-    def __init__(self, bias=False):
+    def __init__(self, bias=False, f=nn.ReLU):
         super().__init__()
         self.bias=bias
 
@@ -288,6 +288,103 @@ class PEquiNN(nn.Module):
             o_x += self.b_x
             o_y += self.b_y
         return o_x, o_y
+
+class PEquiLinearLayer(nn.Module):
+    def __init__(self, input_size, output_size):
+        super().__init__()
+        self.Lambda_xx = nn.Linear(input_size, output_size, bias=False)
+        self.Lambda_yy = nn.Linear(input_size, output_size, bias=False)
+        self.Gamma_xx = nn.Linear(input_size, output_size, bias=False)
+        self.Gamma_xy = nn.Linear(input_size, output_size, bias=False)
+        self.Gamma_yx = nn.Linear(input_size, output_size, bias=False)
+        self.Gamma_yy = nn.Linear(input_size, output_size, bias=False)
+
+    def forward(self, X, Y):
+        m_x = X.size(-2)
+        m_y = Y.size(-2)
+        out_xx = self.Lambda_xx(X) + self.Gamma_xx(torch.ones(m_x,1, device=X.device).matmul(X.max(dim=-2, keepdim=True)[0]))
+        out_yy = self.Lambda_yy(Y) + self.Gamma_yy(torch.ones(m_y,1, device=X.device).matmul(Y.max(dim=-2, keepdim=True)[0]))
+        out_xy = self.Gamma_xy(torch.ones(m_y,1, device=X.device).matmul(X.max(dim=-2, keepdim=True)[0]))
+        out_yx = self.Gamma_yx(torch.ones(m_x,1, device=X.device).matmul(Y.max(dim=-2, keepdim=True)[0]))
+
+        out_x = out_xx + out_yx
+        out_y = out_yy + out_xy
+
+        return out_x, out_y
+
+class PEquiLinearBlock1(nn.Module):
+    def __init__(self, hidden_size, num_layers, layer=PEquiLinearLayer):
+        assert num_layers >= 1
+        super().__init__()
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        self.net = nn.Sequential(
+            layer(1, hidden_size),
+            nn.ReLU(),
+            *[x for i in range(num_layers-1) for x in [layer(hidden_size, hidden_size), nn.ReLU()]],
+            layer(hidden_size, 1)
+        )
+    
+    def forward(self, x):
+        return self.net(x.unsqueeze(-1)).squeeze(-1)
+
+
+class EquiEncoder1(nn.Module):
+    def __init__(self, input_size, latent_size, hidden_size, layer=EquiLinearLayer2, equi_layers=1, ff_layers=1):
+        super().__init__()
+        self.eq = nn.Sequential(*[
+            layer(input_size, hidden_size),
+            nn.ReLU(),
+            *[x for i in range(equi_layers-1) for x in [layer(hidden_size, hidden_size), nn.ReLU()]],
+            layer(hidden_size, 1)
+        ])
+        self.enc = nn.Sequential(
+            nn.Linear(1, hidden_size),
+            nn.ReLU(),
+            nn.Linear(hidden_size, latent_size),
+        )
+
+    def forward(self, X):
+        Z = self.eq(X).squeeze(-1)
+        Z = Z.sum(dim=-1, keepdim=True)
+        Z = self.enc(Z)
+        return Z
+
+
+class EquiRNBlock1(nn.Module):
+    def __init__(self, latent_size, hidden_size, layer=EquiLinearLayer2, equi_layers=1):
+        super().__init__()
+        self.eq = nn.Sequential(*[
+            layer(2, hidden_size),
+            nn.ReLU(),
+            *[x for i in range(equi_layers-1) for x in [layer(hidden_size, hidden_size), nn.ReLU()]],
+            layer(hidden_size, 1)
+        ])
+        self.enc = nn.Sequential(
+            nn.Linear(1, hidden_size),
+            nn.ReLU(),
+            nn.Linear(hidden_size, latent_size),
+        )
+    
+    def forward(self, X, Y):
+        N = X.size(1)
+        M = Y.size(1)
+        pairs = torch.cat([Y.unsqueeze(1).expand(-1,N,-1,-1).unsqueeze(-1), X.unsqueeze(2).expand(-1,-1,M,-1).unsqueeze(-1)], dim=-1)
+        Z = self.eq(pairs).squeeze(-1)
+        Z = Z.sum(dim=-1, keepdim=True)
+        Z = self.enc(Z)
+        if self.remove_diag:
+            mask = torch.eye(N, N).unsqueeze(0).unsqueeze(-1) * -999999999
+            if use_cuda:
+                mask=mask.cuda()
+            Z = Z + mask
+        if self.pool == 'sum':
+            Z = torch.sum(Z, dim=2)
+        elif self.pool == 'max':
+            Z = torch.max(Z, dim=2)[0]
+        else:
+            raise NotImplementedError()
+        return Z
 
 
 def simple_model(input_size, output_size, latent_size=16, hidden_size=32):
