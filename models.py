@@ -531,8 +531,8 @@ class EquiMAB(nn.Module):
         K_ = K.permute(1,2,3,0)#torch.cat(K.split(self.num_heads, 3), 0)
         V_ = V.permute(1,2,3,0)#torch.cat(V.split(self.num_heads, 3), 0)
 
-        A = torch.softmax(Q_.bmm(K_.transpose(2,3)), 2)
-        O = (Q_ + A.bmm(V_)).permute(3,0,1,2)
+        A = torch.softmax(Q_.matmul(K_.transpose(2,3)), 2)
+        O = (Q_ + A.matmul(V_)).permute(3,0,1,2)
         #O = O if getattr(self, 'ln0', None) is None else self.ln0(O)
         O = F.relu(self.fc_o(O)).squeeze(-1)
         #O = O if getattr(self, 'ln1', None) is None else self.ln1(O)
