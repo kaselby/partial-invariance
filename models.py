@@ -798,6 +798,23 @@ class MultiSetTransformer4(nn.Module):
         inputs = torch.cat([X+self.X_encoding, Y+self.Y_encoding], dim=1)
         return self.dec(self.enc(inputs)).squeeze(-1)
 
+
+class EquiSetTransformer(nn.Module):
+    def __init__(self, dim_output,
+            num_inds=32, dim_hidden=128, num_heads=4, ln=False):
+        super().__init__()
+        self.enc = nn.Sequential(
+                EquiMAB(num_heads, ln=ln),
+                EquiMAB(num_heads, ln=ln))
+        self.pool = EquiEncoder(dim_hidden, input_size=1)
+        self.dec = nn.Linear(dim_hidden, dim_output)
+
+    def forward(self, X):
+        Z = self.enc(X).sum(dim=1)
+        Z = self.pool(Z)
+        return self.dec(Z).squeeze(-1)
+
+
 class EquiMultiSetTransformer1(nn.Module):
     def __init__(self, dim_output, dim_hidden=128, num_heads=4, num_blocks=2, ln=False):
         super().__init__()
@@ -811,7 +828,7 @@ class EquiMultiSetTransformer1(nn.Module):
                 nn.Linear(2*dim_hidden, dim_output),)
 
     def forward(self, X, Y):
-        ZX, ZY = self.enc((self.proj(X),self.proj(Y)))
+        ZX, ZY = self.enc((X,Y))
         ZX = torch.sum(ZX, dim=1)
         ZY = torch.sum(ZY, dim=1)
         Z = self.pool(torch.cat([ZX.unsqueeze(-1), ZY.unsqueeze(-1)], dim=-1))
