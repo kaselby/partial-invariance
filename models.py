@@ -551,7 +551,7 @@ class SAB(nn.Module):
 
 class EquiSAB(nn.Module):
     def __init__(self, num_heads, ln=False):
-        super(SAB, self).__init__()
+        super().__init__()
         self.mab = EquiMAB(num_heads, ln=ln)
 
     def forward(self, X):
