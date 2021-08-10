@@ -515,6 +515,7 @@ class MAB(nn.Module):
 
 class EquiMAB(nn.Module):
     def __init__(self, num_heads, ln=False):
+        super().__init__()
         self.num_heads = num_heads
         self.fc_q = nn.Linear(1, num_heads)
         self.fc_k = nn.Linear(1, num_heads)
@@ -570,7 +571,7 @@ class CSAB(nn.Module):
 
 class EquiCSAB(nn.Module):
     def __init__(self, num_heads, ln=False):
-        super(CSAB, self).__init__()
+        super().__init__()
         self.SAB_X = EquiMAB(num_heads, ln=ln)
         self.SAB_Y = EquiMAB(num_heads, ln=ln)
         self.SAB_XY = EquiMAB(num_heads, ln=ln)
