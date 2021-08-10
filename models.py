@@ -520,7 +520,7 @@ class EquiMAB(nn.Module):
         self.fc_q = nn.Linear(1, num_heads)
         self.fc_k = nn.Linear(1, num_heads)
         self.fc_v = nn.Linear(1, num_heads)
-        self.fc_v = nn.Linear(num_heads, 1)
+        self.fc_o = nn.Linear(num_heads, 1)
     
     def forward(self, Q, K):
         inp_size = Q.size(-1)
