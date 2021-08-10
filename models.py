@@ -812,8 +812,8 @@ class EquiSetTransformer(nn.Module):
             num_inds=32, dim_hidden=128, num_heads=4, ln=False):
         super().__init__()
         self.enc = nn.Sequential(
-                EquiMAB(num_heads, ln=ln),
-                EquiMAB(num_heads, ln=ln))
+                EquiSAB(num_heads, ln=ln),
+                EquiSAB(num_heads, ln=ln))
         self.pool = EquiEncoder(dim_hidden, input_size=1)
         self.dec = nn.Linear(dim_hidden, dim_output)
 
