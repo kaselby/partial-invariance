@@ -329,25 +329,26 @@ class PEquiLinearBlock1(nn.Module):
         return self.net(x.unsqueeze(-1)).squeeze(-1)
 
 
-class EquiEncoder1(nn.Module):
-    def __init__(self, input_size, latent_size, hidden_size, layer=EquiLinearLayer2, equi_layers=1, ff_layers=1):
+class EquiEncoder(nn.Module):
+    def __init__(self, latent_size, input_size=1, set_dim=-2, pool='max'):
         super().__init__()
-        self.eq = nn.Sequential(*[
-            layer(input_size, hidden_size),
-            nn.ReLU(),
-            *[x for i in range(equi_layers-1) for x in [layer(hidden_size, hidden_size), nn.ReLU()]],
-            layer(hidden_size, 1)
-        ])
-        self.enc = nn.Sequential(
-            nn.Linear(1, hidden_size),
-            nn.ReLU(),
-            nn.Linear(hidden_size, latent_size),
-        )
+        self.input_size=input_size
+        self.set_dim=set_dim
+        self.pool=pool
+        self.net = nn.Linear(input_size, latent_size)
 
     def forward(self, X):
-        Z = self.eq(X).squeeze(-1)
-        Z = Z.sum(dim=-1, keepdim=True)
-        Z = self.enc(Z)
+        if self.input_size == 1:
+            Z = self.net(X.unsqueeze(-1))
+        else:
+            Z = self.net(X)
+
+        if self.pool == 'sum':
+            Z = torch.sum(Z, dim=self.set_dim)
+        elif self.pool == 'max':
+            Z = torch.max(Z, dim=self.set_dim)[0]
+        else:
+            raise NotImplementedError()
         return Z
 
 
@@ -361,7 +362,7 @@ class EquiRNBlock1(nn.Module):
             nn.ReLU(),
             nn.Linear(hidden_size, hidden_size),
             nn.ReLU(),
-            nn.Linear(hidden_size, 1)
+            nn.Linear(hidden_size, latent_size)
         ])
         self.enc = nn.Sequential(
             nn.Linear(1, hidden_size),
@@ -512,8 +513,30 @@ class MAB(nn.Module):
         return O
 
 
-#class EquiMAB(nn.Module):
-#    def __init__(self, num_heads, ln=False):
+class EquiMAB(nn.Module):
+    def __init__(self, num_heads, ln=False):
+        self.num_heads = num_heads
+        self.fc_q = nn.Linear(1, num_heads)
+        self.fc_k = nn.Linear(1, num_heads)
+        self.fc_v = nn.Linear(1, num_heads)
+        self.fc_v = nn.Linear(num_heads, 1)
+    
+    def forward(self, Q, K):
+        inp_size = Q.size(-1)
+        Q = self.fc_q(Q.unsqueeze(-1))
+        K, V = self.fc_k(K.unsqueeze(-1)), self.fc_v(K.unsqueeze(-1))
+
+        Q_ = Q.permute(1,2,3,0)#torch.cat(Q.split(self.num_heads, 3), 0)
+        K_ = K.permute(1,2,3,0)#torch.cat(K.split(self.num_heads, 3), 0)
+        V_ = V.permute(1,2,3,0)#torch.cat(V.split(self.num_heads, 3), 0)
+
+        A = torch.softmax(Q_.bmm(K_.transpose(2,3)), 2)
+        O = (Q_ + A.bmm(V_)).permute(3,0,1,2)
+        #O = O if getattr(self, 'ln0', None) is None else self.ln0(O)
+        O = F.relu(self.fc_o(O)).squeeze(-1)
+        #O = O if getattr(self, 'ln1', None) is None else self.ln1(O)
+
+
 
 
 
@@ -543,6 +566,26 @@ class CSAB(nn.Module):
         YX = self.SAB_YX(Y, X)
         X_out = X + F.relu(self.fc_X(torch.cat([XX, XY], dim=-1)))
         Y_out = Y + F.relu(self.fc_Y(torch.cat([YY, YX], dim=-1)))
+        return (X_out, Y_out)
+
+class EquiCSAB(nn.Module):
+    def __init__(self, num_heads, ln=False):
+        super(CSAB, self).__init__()
+        self.SAB_X = EquiMAB(num_heads, ln=ln)
+        self.SAB_Y = EquiMAB(num_heads, ln=ln)
+        self.SAB_XY = EquiMAB(num_heads, ln=ln)
+        self.SAB_YX = EquiMAB(num_heads, ln=ln)
+        self.fc_X = nn.Linear(2, 1)
+        self.fc_Y = nn.Linear(2, 1)
+
+    def forward(self, inputs):
+        X, Y = inputs
+        XX = self.SAB_X(X, X)
+        YY = self.SAB_Y(Y, Y)
+        XY = self.SAB_XY(X, Y)
+        YX = self.SAB_YX(Y, X)
+        X_out = X + F.relu(self.fc_X(torch.cat([XX.unsqueeze(-1), XY.unsqueeze(-1)], dim=-1))).squeeze(-1)
+        Y_out = Y + F.relu(self.fc_Y(torch.cat([YY.unsqueeze(-1), YX.unsqueeze(-1)], dim=-1))).squeeze(-1)
         return (X_out, Y_out)
 
 class CSAB2(nn.Module):
@@ -754,3 +797,22 @@ class MultiSetTransformer4(nn.Module):
         inputs = torch.cat([X+self.X_encoding, Y+self.Y_encoding], dim=1)
         return self.dec(self.enc(inputs)).squeeze(-1)
 
+class EquiMultiSetTransformer1(nn.Module):
+    def __init__(self, dim_input, num_outputs, dim_output,
+            num_inds=32, dim_hidden=128, num_heads=4, num_blocks=2, ln=False):
+        super(MultiSetTransformer1, self).__init__()
+        self.enc = nn.Sequential(*[EquiCSAB(num_heads, ln=ln) for i in range(num_blocks)])
+        #self.pool_x = PMA(dim_hidden, num_heads, num_outputs, ln=ln)
+        #self.pool_y = PMA(dim_hidden, num_heads, num_outputs, ln=ln)
+        self.pool = EquiEncoder(dim_hidden, input_size=2)
+        self.dec = nn.Sequential(
+                #SAB(dim_hidden, dim_hidden, num_heads, ln=ln),
+                #SAB(dim_hidden, dim_hidden, num_heads, ln=ln),
+                nn.Linear(2*dim_hidden, dim_output),)
+
+    def forward(self, X, Y):
+        ZX, ZY = self.enc((self.proj(X),self.proj(Y)))
+        ZX = torch.sum(ZX, dim=1)
+        ZY = torch.sum(ZY, dim=1)
+        Z = self.pool(torch.cat([ZX.unsqueeze(-1), ZY.unsqueeze(-1)], dim=-1))
+        return self.dec(Z).squeeze(-1)
