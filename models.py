@@ -536,6 +536,7 @@ class EquiMAB(nn.Module):
         #O = O if getattr(self, 'ln0', None) is None else self.ln0(O)
         O = F.relu(self.fc_o(O)).squeeze(-1)
         #O = O if getattr(self, 'ln1', None) is None else self.ln1(O)
+        return O
 
 
 
