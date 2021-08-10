@@ -549,6 +549,14 @@ class SAB(nn.Module):
     def forward(self, X):
         return self.mab(X, X)
 
+class EquiSAB(nn.Module):
+    def __init__(self, num_heads, ln=False):
+        super(SAB, self).__init__()
+        self.mab = EquiMAB(num_heads, ln=ln)
+
+    def forward(self, X):
+        return self.mab(X, X)
+
 class CSAB(nn.Module):
     def __init__(self, dim_in, dim_out, num_heads, ln=False):
         super(CSAB, self).__init__()
