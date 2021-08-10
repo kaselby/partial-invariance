@@ -511,6 +511,12 @@ class MAB(nn.Module):
         O = O if getattr(self, 'ln1', None) is None else self.ln1(O)
         return O
 
+
+#class EquiMAB(nn.Module):
+#    def __init__(self, num_heads, ln=False):
+
+
+
 class SAB(nn.Module):
     def __init__(self, dim_in, dim_out, num_heads, ln=False):
         super(SAB, self).__init__()
