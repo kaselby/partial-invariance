@@ -56,10 +56,17 @@ def generate_uniform(batch_size, eps=1e-4):
     samples = torch.rand(size=(batch_size, n_samples)) * (1-2*eps) + eps
     return [samples.float().contiguous()]
 
+def generate_uniform_nd_scaleinv(batch_size, n):
+    scale = torch.exp(torch.random()*3)
+    n_samples = torch.randint(100,150,(1,))
+    samples = torch.rand(size=(batch_size, n_samples, n)) * scale
+    return [samples.float().contiguous()]
+
 def generate_uniform_nd(batch_size, n):
     n_samples = torch.randint(100,150,(1,))
     samples = torch.rand(size=(batch_size, n_samples, n))
     return [samples.float().contiguous()]
+
 
 def generate_gaussian_mixture(batch_size, n, return_params=False):
     n_samples = torch.randint(100,150,(1,))

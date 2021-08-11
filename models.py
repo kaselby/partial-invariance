@@ -362,7 +362,7 @@ class EquiRNBlock1(nn.Module):
             nn.ReLU(),
             nn.Linear(hidden_size, hidden_size),
             nn.ReLU(),
-            nn.Linear(hidden_size, latent_size)
+            nn.Linear(hidden_size, 1)
         ])
         self.enc = nn.Sequential(
             nn.Linear(1, hidden_size),
@@ -379,6 +379,38 @@ class EquiRNBlock1(nn.Module):
         Z = self.eq(pairs).squeeze(-1)
         Z = Z.sum(dim=-1, keepdim=True)
         Z = self.enc(Z)
+        if self.remove_diag:
+            mask = torch.eye(N, N).unsqueeze(0).unsqueeze(-1) * -999999999
+            if use_cuda:
+                mask=mask.cuda()
+            Z = Z + mask
+        if self.pool == 'sum':
+            Z = torch.sum(Z, dim=2)
+        elif self.pool == 'max':
+            Z = torch.max(Z, dim=2)[0]
+        else:
+            raise NotImplementedError()
+        return Z
+
+class EquiRNBlock2(nn.Module):
+    def __init__(self, latent_size, hidden_size, layer=EquiLinearLayer2, equi_layers=1, pool='max', remove_diag=False):
+        super().__init__()
+        self.pool = pool
+        self.remove_diag=remove_diag
+        self.eq = nn.Sequential(*[
+            nn.Linear(2, hidden_size),
+            nn.ReLU(),
+            nn.Linear(hidden_size, hidden_size),
+            nn.ReLU(),
+            nn.Linear(hidden_size, latent_size)
+        ])
+    
+    def forward(self, X, Y):
+        N = X.size(1)
+        M = Y.size(1)
+        pairs = torch.cat([Y.unsqueeze(1).expand(-1,N,-1,-1).unsqueeze(-1), X.unsqueeze(2).expand(-1,-1,M,-1).unsqueeze(-1)], dim=-1)
+        Z = self.eq(pairs)
+        Z = Z.max(dim=-2, keepdim=False)
         if self.remove_diag:
             mask = torch.eye(N, N).unsqueeze(0).unsqueeze(-1) * -999999999
             if use_cuda:
@@ -537,6 +569,7 @@ class EquiMAB(nn.Module):
         O = F.relu(self.fc_o(O)).squeeze(-1)
         #O = O if getattr(self, 'ln1', None) is None else self.ln1(O)
         return O
+        
 
 
 
@@ -663,7 +696,7 @@ class ISAB(nn.Module):
         self.mab0 = MAB(dim_out, dim_in, dim_out, num_heads, ln=ln)
         self.mab1 = MAB(dim_in, dim_out, dim_out, num_heads, ln=ln)
 
-    def forward(self, X, Y):
+    def forward(self, X):
         H = self.mab0(self.I.repeat(X.size(0), 1, 1), X)
         return self.mab1(X, H)
 
