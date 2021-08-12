@@ -879,7 +879,7 @@ class MultiSetTransformer4(nn.Module):
         return self.dec(self.enc(inputs)).squeeze(-1)
 
 
-class EquiSetTransformer(nn.Module):
+class EquiSetTransformer1(nn.Module):
     def __init__(self, dim_output,
             num_inds=32, dim_hidden=128, num_heads=4, ln=False):
         super().__init__()
@@ -894,7 +894,7 @@ class EquiSetTransformer(nn.Module):
         Z = self.pool(Z)
         return self.dec(Z).squeeze(-1)
 
-class EquiSetTransformer(nn.Module):
+class EquiSetTransformer2(nn.Module):
     def __init__(self, dim_output,
             num_inds=32, dim_hidden=128, num_heads=4, ln=False):
         super().__init__()
@@ -907,7 +907,7 @@ class EquiSetTransformer(nn.Module):
         Z = self.enc(X).sum(dim=1)
         return self.dec(Z).squeeze(-1)
 
-class EquiSetTransformer2(nn.Module):
+class EquiSetTransformer3(nn.Module):
     def __init__(self, dim_output, num_outputs=1,
             dim_hidden=128, num_heads=4, ln=False):
         super().__init__()
