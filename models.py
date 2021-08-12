@@ -590,10 +590,14 @@ class EquiMAB2(nn.Module):
         K_ = torch.cat(K.split(dim_split, 3), 0)
         V_ = torch.cat(V.split(dim_split, 3), 0)
 
+        Q_ = torch.max(Q_, dim=2)[0]
+        K_ = torch.max(K_, dim=2)[0]
+        V_ = torch.max(V_, dim=2)[0]
+
         A = torch.softmax(Q_.matmul(K_.transpose(2,3)), 3)
         O = torch.cat((Q_ + A.matmul(V_)).split(Q.size(0), 0), 3)
         
-        O = torch.max(O, dim=2)[0]
+        #O = torch.max(O, dim=2)[0]
 
         #O = O if getattr(self, 'ln0', None) is None else self.ln0(O)
         O = F.relu(self.fc_o(O)).squeeze(-1)
@@ -622,9 +626,9 @@ class EquiSAB1(nn.Module):
         return self.mab(X, X)
 
 class EquiSAB2(nn.Module):
-    def __init__(self, num_heads, ln=False):
+    def __init__(self, latent_size, num_heads, ln=False):
         super().__init__()
-        self.mab = EquiMAB2(num_heads, ln=ln)
+        self.mab = EquiMAB2(latent_size, num_heads, ln=ln)
 
     def forward(self, X):
         return self.mab(X, X)
