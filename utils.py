@@ -16,9 +16,9 @@ def generate_categorical(batch_size, classes=5):
     samples=dist.sample(n_samples).transpose(0,1)
     return [samples.float()]
 
-def generate_gaussian_1d(batch_size, return_params=False):
+def generate_gaussian_1d(batch_size, return_params=False, set_size=(100,150)):
     mus, sigmas = (1+5*torch.rand(size=(batch_size, 2))).chunk(2, dim=-1)
-    n_samples = torch.randint(100,150,(1,))
+    n_samples = torch.randint(*set_size,(1,))
     dist = Normal(mus, sigmas)
     samples=dist.sample(n_samples).transpose(0,1)
     if not return_params:
@@ -26,11 +26,11 @@ def generate_gaussian_1d(batch_size, return_params=False):
     else:
         return [samples.float().contiguous()], (mus, sigmas)
 
-def generate_gaussian_nd(batch_size, n, return_params=False):
+def generate_gaussian_nd(batch_size, n, return_params=False, set_size=(100,150)):
     mus= (1+5*torch.rand(size=(batch_size, n)))
     A = torch.rand(size=(batch_size, n, n))
     sigmas = torch.bmm(A.transpose(1,2), A) + 1*torch.diag_embed(torch.rand(batch_size, n))
-    n_samples = torch.randint(100,150,(1,))
+    n_samples = torch.randint(*set_size,(1,))
     dist = MultivariateNormal(mus, sigmas)
     samples=dist.sample(n_samples).transpose(0,1)
     if not return_params:
@@ -38,12 +38,12 @@ def generate_gaussian_nd(batch_size, n, return_params=False):
     else:
         return [samples.float().contiguous()], (mus, sigmas)
 
-def generate_gaussian_variable_dim(batch_size, return_params=False):
+def generate_gaussian_variable_dim(batch_size, return_params=False, set_size=(100,150)):
     n = torch.randint(2,6,(1,)).item()
     mus= (1+5*torch.rand(size=(batch_size, n)))
     A = torch.rand(size=(batch_size, n, n))
     sigmas = torch.bmm(A.transpose(1,2), A) + 1*torch.diag_embed(torch.rand(batch_size, n))
-    n_samples = torch.randint(100,150,(1,))
+    n_samples = torch.randint(*set_size,(1,))
     dist = MultivariateNormal(mus, sigmas)
     samples=dist.sample(n_samples).transpose(0,1)
     if not return_params:
