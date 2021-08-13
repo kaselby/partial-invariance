@@ -334,3 +334,8 @@ def show_examples(model, sample_fct, label_fct, exact_loss=False, samples=8, **s
     #print("Y:", y, "\nYhat:", yhat)
 
 
+def masked_softmax(x, mask, **kwargs):
+    x_masked = x.clone()
+    x_masked[mask == 0] = -float("inf")
+
+    return torch.softmax(x_masked, **kwargs)
