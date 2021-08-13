@@ -410,7 +410,7 @@ class EquiRNBlock2(nn.Module):
         M = Y.size(1)
         pairs = torch.cat([Y.unsqueeze(1).expand(-1,N,-1,-1).unsqueeze(-1), X.unsqueeze(2).expand(-1,-1,M,-1).unsqueeze(-1)], dim=-1)
         Z = self.eq(pairs)
-        Z = Z.sum(dim=3, keepdim=False)[0]
+        Z = Z.sum(dim=3, keepdim=False)#[0]
         if self.remove_diag:
             mask = torch.eye(N, N).unsqueeze(0).unsqueeze(-1) * -999999999
             if use_cuda:
