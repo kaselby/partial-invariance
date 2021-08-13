@@ -594,13 +594,13 @@ class EquiMAB2(nn.Module):
         K_ = torch.max(K_, dim=2)[0]
         V_ = torch.max(V_, dim=2)[0]
 
-        A = torch.softmax(Q_.matmul(K_.transpose(2,3)), 3)
-        O = torch.cat((Q_ + A.matmul(V_)).split(Q.size(0), 0), 3)
+        A = torch.softmax(Q_.matmul(K_.transpose(1,2)/math.sqrt(self.latent_size)), 2)
+        O = torch.cat((Q_ + A.matmul(V_)).split(Q.size(0), 0), 2)
         
         #O = torch.max(O, dim=2)[0]
 
         #O = O if getattr(self, 'ln0', None) is None else self.ln0(O)
-        O = F.relu(self.fc_o(O)).squeeze(-1)
+        O = O + F.relu(self.fc_o(O))
         #O = O if getattr(self, 'ln1', None) is None else self.ln1(O)
         return O
         
