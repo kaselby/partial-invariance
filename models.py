@@ -68,6 +68,28 @@ class RNBlock(nn.Module):
             raise NotImplementedError()
         return Z
 
+class MultiRNBlock(nn.Module):
+    def __init__(self, input_size, hidden_size, latent_size, remove_diag=False, pool='sum') -> None:
+        super().__init__()
+        self.e_xx = RNBlock(nn.Sequential(nn.Linear(input_size, hidden_size), nn.ReLU(), nn.Linear(hidden_size, latent_size)), pool=pool, remove_diag=remove_diag)
+        self.e_xy = RNBlock(nn.Sequential(nn.Linear(input_size, hidden_size), nn.ReLU(), nn.Linear(hidden_size, latent_size)), pool=pool, remove_diag=False)
+        self.e_yx = RNBlock(nn.Sequential(nn.Linear(input_size, hidden_size), nn.ReLU(), nn.Linear(hidden_size, latent_size)), pool=pool, remove_diag=False)
+        self.e_yy = RNBlock(nn.Sequential(nn.Linear(input_size, hidden_size), nn.ReLU(), nn.Linear(hidden_size, latent_size)), pool=pool, remove_diag=remove_diag)
+        self.fc_X = nn.Linear(2*latent_size, latent_size)
+        self.fc_Y = nn.Linear(2*latent_size, latent_size)
+        self.remove_diag = remove_diag
+        self.pool = pool
+    
+    def forward(self, X, Y):
+        Z_XX = self.e_xx(X, X)
+        Z_XY = self.e_xy(X, Y)
+        Z_YX = self.e_yx(Y, X)
+        Z_YY = self.e_yy(Y, Y)
+        X_out = X + F.relu(self.fc_X(torch.cat([Z_XX, Z_XY], dim=-1)))
+        Y_out = Y + F.relu(self.fc_Y(torch.cat([Z_YY, Z_YX], dim=-1)))
+
+        return X_out, Y_out
+
 class RNModel(nn.Module):
     def __init__(self, encoder, decoder):
         super().__init__()
@@ -81,19 +103,17 @@ class RNModel(nn.Module):
         return self.decoder(Z)
 
 class MultiRNModel(nn.Module):
-    def __init__(self, encoder1, encoder2, merger, decoder):
+    def __init__(self, input_size, output_size, hidden_size, latent_size, **kwargs):
         super().__init__()
-        self.encoder1 = encoder1
-        self.encoder2 = encoder2
-        self.merger = merger
-        self.decoder = decoder
+        self.encoder = MultiRNBlock(input_size, hidden_size, latent_size, **kwargs)
+        self.decoder = nn.Sequential(nn.Linear(2*latent_size, hidden_size), nn.ReLU(), nn.Linear(hidden_size, output_size))
 
     def forward(self, X, Y):
-        Z_XX = self.encoder1(X, X)
-        Z_YX = self.encoder2(X, Y)
-        Z = self.merger(torch.cat([Z_XX, Z_YX],dim=-1))
-        Z = torch.mean(Z, dim=1)
-        return self.decoder(Z)
+        Z_X, Z_Y = self.encoder(X, Y)
+        Z_X = torch.max(Z_X, dim=1)[0]
+        Z_Y = torch.max(Z_Y, dim=1)[0]
+        out = self.decoder(torch.cat([Z_X, Z_Y], dim=-1))
+        return out
 
 
 import copy
@@ -537,7 +557,7 @@ class MAB(nn.Module):
         K_ = torch.cat(K.split(dim_split, 2), 0)
         V_ = torch.cat(V.split(dim_split, 2), 0)
 
-        
+
         A = torch.softmax(Q_.bmm(K_.transpose(1,2))/math.sqrt(self.dim_V), 2)
         O = torch.cat((Q_ + A.bmm(V_)).split(Q.size(0), 0), 2)
         O = O if getattr(self, 'ln0', None) is None else self.ln0(O)
@@ -576,9 +596,9 @@ class EquiMAB2(nn.Module):
         super().__init__()
         self.latent_size=latent_size
         self.num_heads = num_heads
-        self.fc_q = nn.Linear(1, latent_size)
-        self.fc_k = nn.Linear(1, latent_size)
-        self.fc_v = nn.Linear(1, latent_size)
+        self.fc_q = nn.Sequential(nn.Linear(1, latent_size), nn.ReLU(), nn.Linear(latent_size, latent_size))
+        self.fc_k = nn.Sequential(nn.Linear(1, latent_size), nn.ReLU(), nn.Linear(latent_size, latent_size))
+        self.fc_v = nn.Sequential(nn.Linear(1, latent_size), nn.ReLU(), nn.Linear(latent_size, latent_size))
         self.fc_o = nn.Linear(latent_size, latent_size)
     
     def forward(self, Q, K):
