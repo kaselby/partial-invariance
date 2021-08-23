@@ -1,13 +1,15 @@
+from torch.distributions.distribution import Distribution
 from models import *
 import torch
 import torch.nn as nn
 import math
-from torch.distributions import OneHotCategorical, Normal, MultivariateNormal, Categorical, MixtureSameFamily
+from torch.distributions import OneHotCategorical, Normal, MultivariateNormal, Categorical, MixtureSameFamily, Distribution
 import tqdm
 #import ot
 from geomloss import SamplesLoss
 
 use_cuda=torch.cuda.is_available()
+
 
 def generate_categorical(batch_size, classes=5):
     logits = torch.randint(5, size=(batch_size, classes)).float()
@@ -26,7 +28,7 @@ def generate_gaussian_1d(batch_size, return_params=False, set_size=(100,150)):
     else:
         return [samples.float().contiguous()], (mus, sigmas)
 
-def generate_gaussian_nd(batch_size, n, return_params=False, return_dist=False, set_size=(100,150)):
+def generate_gaussian_nd(batch_size, n, return_params=False, set_size=(100,150)):
     mus= (1+5*torch.rand(size=(batch_size, n)))
     A = torch.rand(size=(batch_size, n, n))
     sigmas = torch.bmm(A.transpose(1,2), A) + 1*torch.diag_embed(torch.rand(batch_size, n))
@@ -34,9 +36,7 @@ def generate_gaussian_nd(batch_size, n, return_params=False, return_dist=False, 
     dist = MultivariateNormal(mus, sigmas)
     samples=dist.sample(n_samples).transpose(0,1)
     if return_params:
-        return [samples.float().contiguous()], (mus, sigmas)
-    elif return_dist:
-        return [samples.float().contiguous()], (dist,)
+        return [samples.float().contiguous()], [dist]
     else:
         return [samples.float().contiguous()]
         
@@ -70,7 +70,23 @@ def generate_uniform_nd(batch_size, n):
     samples = torch.rand(size=(batch_size, n_samples, n))
     return [samples.float().contiguous()]
 
+def generate_gaussian_mixture(batch_size, n, return_params=False, set_size=(100,150), component_range=(3,10)):
+    n_samples = torch.randint(*set_size,(1,))
+    n_components = torch.randint(*component_range,(1,))
+    mus= (1+5*torch.rand(size=(batch_size, n_components, n)))
+    A = torch.rand(size=(batch_size, n_components, n, n))
+    sigmas = A.transpose(2,3).matmul(A) + 1*torch.diag_embed(torch.rand(batch_size, n_components, n))
+    base_dist = MultivariateNormal(mus, sigmas)
+    logits = torch.randint(5, size=(batch_size, n_components)).float()
+    mixing_dist = Categorical(logits=logits)
+    dist = MixtureSameFamily(mixing_dist, base_dist)
+    samples = dist.sample(n_samples).transpose(0,1)
+    if return_params:
+        return [samples.float().contiguous()], [dist]
+    else:
+        return [samples.float().contiguous()]
 
+'''
 def generate_gaussian_mixture(batch_size, n, return_params=False):
     n_samples = torch.randint(100,150,(1,))
     n_components = torch.randint(3,10,(1,))
@@ -87,6 +103,7 @@ def generate_gaussian_mixture(batch_size, n, return_params=False):
         return [out.float().contiguous()]
     else:
         return [out.float().contiguous()], (mus, sigmas, mix.probs)
+'''
 
 
 
@@ -190,16 +207,18 @@ def entropy_1d_gaussian(mu, sigma):
 def kl_1d_gaussian(mu1, sigma1, mu2, sigma2):
     return torch.log(sigma2/sigma1) + (sigma1*sigma1 + (mu1-mu2)*(mu1-mu2))/2/sigma2/sigma2 - 1./2
 
-def kl_nd_gaussian(mu1, Sigma1, mu2, Sigma2):
+def kl_nd_gaussian(P, Q):
+    mu1, Sigma1 = P.loc, P.covariance_matrix
+    mu2, Sigma2 = Q.loc, Q.covariance_matrix
     d = mu1.size(-1)
-    Lambda2 = torch.inverse(Sigma2)
+    Lambda2 = Q.precision_matrix
     return 1./2 * ( torch.logdet(Sigma2) - torch.logdet(Sigma1) -
                 d +
                 torch.diagonal(Lambda2.matmul(Sigma1), dim1=-2, dim2=-1).sum(dim=-1) +
                 (mu2-mu1).unsqueeze(-1).transpose(-1, -2).matmul(Lambda2).matmul((mu2-mu1).unsqueeze(-1)).squeeze(-1).squeeze(-1)
     )
 
-def kl_mc(p, q, N):
+def kl_mc(p, q, N=500):
     X = p.sample((N,))
     return (p.log_prob(X) - q.log_prob(X)).mean(dim=0)    
 
