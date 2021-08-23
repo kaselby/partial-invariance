@@ -196,6 +196,11 @@ def kl_nd_gaussian(mu1, Sigma1, mu2, Sigma2):
                 (mu2-mu1).unsqueeze(-1).transpose(-1, -2).matmul(Lambda2).matmul((mu2-mu1).unsqueeze(-1)).squeeze(-1).squeeze(-1)
     )
 
+def kl_mc(p, q, N):
+    X = p.sample((N,))
+    return (p.log_prob(X) - q.log_prob(X)).mean(dim=-1)    
+
+
 # bs x nc (x d for mu and x d x d for Sigma)
 def kl_gmm_bounds(mu1, Sigma1, w1, mu2, Sigma2, w2):
     d = mu1.size(-1)
