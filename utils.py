@@ -33,6 +33,8 @@ def generate_gaussian_nd(batch_size, n, return_params=False, set_size=(100,150))
     A = torch.rand(size=(batch_size, n, n))
     sigmas = torch.bmm(A.transpose(1,2), A) + 1*torch.diag_embed(torch.rand(batch_size, n))
     n_samples = torch.randint(*set_size,(1,))
+    if use_cuda:
+        mus, sigmas = mus.cuda(), sigmas.cuda()
     dist = MultivariateNormal(mus, sigmas)
     samples=dist.sample(n_samples).transpose(0,1)
     if return_params:
@@ -76,8 +78,10 @@ def generate_gaussian_mixture(batch_size, n, return_params=False, set_size=(100,
     mus= (1+5*torch.rand(size=(batch_size, n_components, n)))
     A = torch.rand(size=(batch_size, n_components, n, n))
     sigmas = A.transpose(2,3).matmul(A) + 1*torch.diag_embed(torch.rand(batch_size, n_components, n))
-    base_dist = MultivariateNormal(mus, sigmas)
     logits = torch.randint(5, size=(batch_size, n_components)).float()
+    if use_cuda:
+      mus, sigmas, logits = mus.cuda(), sigmas.cuda(), logits.cuda()
+    base_dist = MultivariateNormal(mus, sigmas)
     mixing_dist = Categorical(logits=logits)
     dist = MixtureSameFamily(mixing_dist, base_dist)
     samples = dist.sample(n_samples).transpose(0,1)
@@ -291,7 +295,7 @@ def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(),
             X, theta = sample_fct(batch_size, *sample_args, **sample_kwargs)
             if use_cuda:
                 X = [x.cuda() for x in X]
-                theta = [t.cuda() for t in theta]
+                #theta = [t.cuda() for t in theta]
             labels = label_fct(*theta).squeeze(-1)
         else:
             X = sample_fct(batch_size, *sample_args, **sample_kwargs)
