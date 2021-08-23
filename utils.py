@@ -36,7 +36,7 @@ def generate_gaussian_nd(batch_size, n, return_params=False, return_dist=False, 
     if return_params:
         return [samples.float().contiguous()], (mus, sigmas)
     elif return_dist:
-        return [samples.float().contiguous()], dist
+        return [samples.float().contiguous()], (dist,)
     else:
         return [samples.float().contiguous()]
         
