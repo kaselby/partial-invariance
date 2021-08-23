@@ -201,7 +201,7 @@ def kl_nd_gaussian(mu1, Sigma1, mu2, Sigma2):
 
 def kl_mc(p, q, N):
     X = p.sample((N,))
-    return (p.log_prob(X) - q.log_prob(X)).mean(dim=-1)    
+    return (p.log_prob(X) - q.log_prob(X)).mean(dim=0)    
 
 
 # bs x nc (x d for mu and x d x d for Sigma)
