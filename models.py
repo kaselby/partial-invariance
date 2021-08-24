@@ -982,7 +982,7 @@ class EquiSetTransformer3(nn.Module):
 
     def forward(self, X):
         Z = self.enc(X.unsqueeze(-1))
-        Z = Z.max(dim=2)
+        Z = Z.max(dim=2)[0]
         return self.dec(Z).squeeze(-1)
 
 
