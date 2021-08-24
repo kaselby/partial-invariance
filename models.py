@@ -637,8 +637,7 @@ class EquiMAB3(nn.Module):
     
     def forward(self, Q, K):
         Q = self.fc_q(Q)
-        K = self.fc_k(K)
-        V = self.fc_v(K)
+        K, V = self.fc_k(K), self.fc_v(K)
 
         dim_split = self.latent_size // self.num_heads
         Q_ = torch.cat(Q.split(dim_split, 3), 0)
