@@ -580,12 +580,12 @@ class EquiMAB1(nn.Module):
         Q = self.fc_q(Q.unsqueeze(-1))
         K, V = self.fc_k(K.unsqueeze(-1)), self.fc_v(K.unsqueeze(-1))
 
-        Q_ = Q.permute(1,2,3,0)#torch.cat(Q.split(self.num_heads, 3), 0)
-        K_ = K.permute(1,2,3,0)#torch.cat(K.split(self.num_heads, 3), 0)
-        V_ = V.permute(1,2,3,0)#torch.cat(V.split(self.num_heads, 3), 0)
+        Q_ = Q.permute(3,0,1,2)#torch.cat(Q.split(self.num_heads, 3), 0)
+        K_ = K.permute(3,0,1,2)#torch.cat(K.split(self.num_heads, 3), 0)
+        V_ = V.permute(3,0,1,2)#torch.cat(V.split(self.num_heads, 3), 0)
 
         A = torch.softmax(Q_.matmul(K_.transpose(2,3)), 2)
-        O = (Q_ + A.matmul(V_)).permute(3,0,1,2)
+        O = (Q_ + A.matmul(V_)).permute(1,2,3,0)
         #O = O if getattr(self, 'ln0', None) is None else self.ln0(O)
         O = F.relu(self.fc_o(O)).squeeze(-1)
         #O = O if getattr(self, 'ln1', None) is None else self.ln1(O)
@@ -624,7 +624,36 @@ class EquiMAB2(nn.Module):
         O = O + F.relu(self.fc_o(O))
         #O = O if getattr(self, 'ln1', None) is None else self.ln1(O)
         return O
-        
+
+class EquiMAB3(nn.Module):
+    def __init__(self, input_size, latent_size, num_heads, ln=False):
+        super().__init__()
+        self.latent_size=latent_size
+        self.num_heads = num_heads
+        self.fc_q = nn.Linear(input_size, latent_size)
+        self.fc_k = nn.Linear(input_size, latent_size)
+        self.fc_v = nn.Linear(input_size, latent_size)
+        self.fc_o = nn.Linear(latent_size, latent_size)
+    
+    def forward(self, Q, K):
+        Q = self.fc_q(Q)
+        K = self.fc_k(K)
+        V = self.fc_v(K)
+
+        dim_split = self.latent_size // self.num_heads
+        Q_ = torch.cat(Q.split(dim_split, 3), 0)
+        K_ = torch.cat(K.split(dim_split, 3), 0)
+        V_ = torch.cat(V.split(dim_split, 3), 0)
+
+        E = Q_.transpose(1,2).matmul(K_.transpose(1,2).transpose(2,3)).sum(dim=1) / math.sqrt(self.latent_size)
+        A = torch.softmax(E, 2)
+        O = Q_ + A.matmul(V_.view(*V_.size()[:-2], -1)).view(*V_.size())
+        O = torch.cat(O.split(Q.size(0), 0), 3)
+
+        #O = O if getattr(self, 'ln0', None) is None else self.ln0(O)
+        O = O + F.relu(self.fc_o(O))
+        #O = O if getattr(self, 'ln1', None) is None else self.ln1(O)
+        return O
 
 
 
@@ -650,6 +679,14 @@ class EquiSAB2(nn.Module):
     def __init__(self, latent_size, num_heads, ln=False):
         super().__init__()
         self.mab = EquiMAB2(latent_size, num_heads, ln=ln)
+
+    def forward(self, X):
+        return self.mab(X, X)
+
+class EquiSAB3(nn.Module):
+    def __init__(self, input_size, latent_size, num_heads, ln=False):
+        super().__init__()
+        self.mab = EquiMAB3(input_size, latent_size, num_heads, ln=ln)
 
     def forward(self, X):
         return self.mab(X, X)
@@ -936,17 +973,16 @@ class EquiSetTransformer3(nn.Module):
     def __init__(self, dim_output, num_outputs=1,
             dim_hidden=128, num_heads=4, ln=False):
         super().__init__()
-        self.eq = EquiEncoder(dim_hidden)
         self.enc = nn.Sequential(
-                SAB(dim_hidden, dim_hidden, num_heads, ln=ln),
-                SAB(dim_hidden, dim_hidden, num_heads, ln=ln))
+                EquiSAB3(1, dim_hidden, num_heads, ln=ln),
+                EquiSAB3(dim_hidden, dim_hidden, num_heads, ln=ln))
         self.dec = nn.Sequential(
                 PMA(dim_hidden, num_heads, num_outputs, ln=ln),
                 nn.Linear(dim_hidden, dim_output))
 
     def forward(self, X):
-        Z = self.eq(X)
-        Z = self.enc(Z)
+        Z = self.enc(X.unsqueeze(-1))
+        Z = Z.max(dim=2)
         return self.dec(Z).squeeze(-1)
 
 
