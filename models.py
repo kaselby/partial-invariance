@@ -592,7 +592,8 @@ class EquiMAB1(nn.Module):
         K_ = K.permute(3,0,1,2)#torch.cat(K.split(self.num_heads, 3), 0)
         V_ = V.permute(3,0,1,2)#torch.cat(V.split(self.num_heads, 3), 0)
 
-        A = torch.softmax(Q_.matmul(K_.transpose(2,3)), 2)
+        E = Q_.matmul(K_.transpose(2,3))
+        A = torch.softmax(E, 2)
         O = (Q_ + A.matmul(V_)).permute(1,2,3,0)
         #O = O if getattr(self, 'ln0', None) is None else self.ln0(O)
         O = F.relu(self.fc_o(O)).squeeze(-1)
@@ -609,7 +610,7 @@ class EquiMAB2(nn.Module):
         self.fc_v = nn.Sequential(nn.Linear(1, latent_size), nn.ReLU(), nn.Linear(latent_size, latent_size))
         self.fc_o = nn.Linear(latent_size, latent_size)
     
-    def forward(self, Q, K):
+    def forward(self, Q, K, mask=None):
         inp_size = Q.size(-1)
         Q = self.fc_q(Q.unsqueeze(-1))
         K, V = self.fc_k(K.unsqueeze(-1)), self.fc_v(K.unsqueeze(-1))
@@ -623,7 +624,11 @@ class EquiMAB2(nn.Module):
         K_ = torch.max(K_, dim=2)[0]
         V_ = torch.max(V_, dim=2)[0]
 
-        A = torch.softmax(Q_.matmul(K_.transpose(1,2)/math.sqrt(self.latent_size)), 2)
+        E = Q_.matmul(K_.transpose(1,2)/math.sqrt(self.latent_size))
+        if mask is not None:
+            A = masked_softmax(E, mask.unsqueeze(0).expand_as(E), dim=2)
+        else:
+            A = torch.softmax(E, 2)
         O = torch.cat((Q_ + A.matmul(V_)).split(Q.size(0), 0), 2)
         
         #O = torch.max(O, dim=2)[0]
@@ -645,7 +650,7 @@ class EquiMAB3(nn.Module):
         self.fc_v = nn.Linear(input_size, latent_size)
         self.fc_o = nn.Linear(latent_size, latent_size)
     
-    def forward(self, Q, K):
+    def forward(self, Q, K, mask=None):
         Q = self.fc_q(Q)
         K, V = self.fc_k(K), self.fc_v(K)
 
@@ -655,7 +660,10 @@ class EquiMAB3(nn.Module):
         V_ = torch.cat(V.split(dim_split, 3), 0)
 
         E = Q_.transpose(1,2).matmul(K_.transpose(1,2).transpose(2,3)).sum(dim=1) / math.sqrt(self.latent_size)
-        A = torch.softmax(E, 2)
+        if mask is not None:
+            A = masked_softmax(E, mask.unsqueeze(0).expand_as(E), dim=2)
+        else:
+            A = torch.softmax(E, 2)
         O = Q_ + A.matmul(V_.view(*V_.size()[:-2], -1)).view(*V_.size())
         O = torch.cat(O.split(Q.size(0), 0), 3)
 
