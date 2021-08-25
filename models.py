@@ -534,6 +534,11 @@ def divergence_model(input_size, output_size, latent_size=4, hidden_size=16):
 #
 #   From Set Transformers
 #
+def masked_softmax(x, mask, **kwargs):
+    x_masked = x.clone()
+    x_masked[mask == 0] = -float("inf")
+
+    return torch.softmax(x_masked, **kwargs)
 
 class MAB(nn.Module):
     def __init__(self, dim_Q, dim_K, dim_V, num_heads, ln=False):
@@ -548,7 +553,7 @@ class MAB(nn.Module):
             self.ln1 = nn.LayerNorm(dim_V)
         self.fc_o = nn.Linear(dim_V, dim_V)
 
-    def forward(self, Q, K):
+    def forward(self, Q, K, mask=None):
         Q = self.fc_q(Q)
         K, V = self.fc_k(K), self.fc_v(K)
 
@@ -557,8 +562,11 @@ class MAB(nn.Module):
         K_ = torch.cat(K.split(dim_split, 2), 0)
         V_ = torch.cat(V.split(dim_split, 2), 0)
 
-
-        A = torch.softmax(Q_.bmm(K_.transpose(1,2))/math.sqrt(self.dim_V), 2)
+        E = Q_.bmm(K_.transpose(1,2))/math.sqrt(self.dim_V)
+        if mask is not None:
+            A = masked_softmax(E, mask.unsqueeze(0).expand_as(E), dim=2)
+        else:
+            A = torch.softmax(E, 2)
         O = torch.cat((Q_ + A.bmm(V_)).split(Q.size(0), 0), 2)
         O = O if getattr(self, 'ln0', None) is None else self.ln0(O)
         O = O + F.relu(self.fc_o(O))
@@ -625,6 +633,8 @@ class EquiMAB2(nn.Module):
         #O = O if getattr(self, 'ln1', None) is None else self.ln1(O)
         return O
 
+
+
 class EquiMAB3(nn.Module):
     def __init__(self, input_size, latent_size, num_heads, ln=False):
         super().__init__()
@@ -663,8 +673,8 @@ class SAB(nn.Module):
         super(SAB, self).__init__()
         self.mab = MAB(dim_in, dim_in, dim_out, num_heads, ln=ln)
 
-    def forward(self, X):
-        return self.mab(X, X)
+    def forward(self, X, mask=None):
+        return self.mab(X, X, mask=mask)
 
 class EquiSAB1(nn.Module):
     def __init__(self, num_heads, ln=False):
