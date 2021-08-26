@@ -280,14 +280,14 @@ def wasserstein(X, Y):
     loss = SamplesLoss(p=1)
     return loss(X, Y)
 
-def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(), batch_size=64, steps=3000, lr=1e-5, lr_decay=False, epoch_size=250, warmup=4, *sample_args, **sample_kwargs):
+def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(), batch_size=64, steps=3000, lr=1e-5, lr_decay=False, epoch_size=250, milestones=[], *sample_args, **sample_kwargs):
     #model.train(True)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     if lr_decay:
         #isqrt = lambda step: 1/math.sqrt(step - warmup) if step > warmup else 1
         #scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, isqrt)
-        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min')
-        #scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, **decay_kwargs)
+        #scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min')
+        scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones, gamma=0.1)
     losses = []
     for i in tqdm.tqdm(range(1,steps+1)):
         optimizer.zero_grad()
