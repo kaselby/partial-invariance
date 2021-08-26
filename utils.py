@@ -287,7 +287,7 @@ def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(),
         #isqrt = lambda step: 1/math.sqrt(step - warmup) if step > warmup else 1
         #scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, isqrt)
         #scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min')
-        scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones, gamma=0.1)
+        scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=milestones, gamma=0.1)
     losses = []
     for i in tqdm.tqdm(range(1,steps+1)):
         optimizer.zero_grad()
@@ -310,7 +310,7 @@ def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(),
         if lr_decay and i % epoch_size == 0:
             window_size = int(epoch_size / 10)
             windowed_avg= sum(losses[-window_size:])/window_size
-            scheduler.step(windowed_avg)
+            scheduler.step()
 
         losses.append(loss.item())
     return losses
