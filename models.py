@@ -648,6 +648,9 @@ class EquiMAB3(nn.Module):
         self.fc_q = nn.Linear(input_size, latent_size)
         self.fc_k = nn.Linear(input_size, latent_size)
         self.fc_v = nn.Linear(input_size, latent_size)
+        if ln:
+            self.ln0 = nn.LayerNorm(latent_size)
+            self.ln1 = nn.LayerNorm(latent_size)
         self.fc_o = nn.Linear(latent_size, latent_size)
     
     def forward(self, Q, K, mask=None):
@@ -664,12 +667,12 @@ class EquiMAB3(nn.Module):
             A = masked_softmax(E, mask.unsqueeze(0).expand_as(E), dim=2)
         else:
             A = torch.softmax(E, 2)
-        O = Q_ + A.matmul(V_.view(*V_.size()[:-2], -1)).view(*V_.size())
+        O = Q_ + A.matmul(V_.view(*V_.size()[:-2], -1)).view(*Q_.size())
         O = torch.cat(O.split(Q.size(0), 0), 3)
 
-        #O = O if getattr(self, 'ln0', None) is None else self.ln0(O)
+        O = O if getattr(self, 'ln0', None) is None else self.ln0(O)
         O = O + F.relu(self.fc_o(O))
-        #O = O if getattr(self, 'ln1', None) is None else self.ln1(O)
+        O = O if getattr(self, 'ln1', None) is None else self.ln1(O)
         return O
 
 
