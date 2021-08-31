@@ -1026,7 +1026,7 @@ class EquiMultiSetTransformer1(nn.Module):
 class EquiMultiSetTransformer1(nn.Module):
     def __init__(self, num_outputs, dim_output,
             num_inds=32, dim_hidden=128, num_heads=4, num_blocks=2, ln=False):
-        super(MultiSetTransformer1, self).__init__()
+        super().__init__()
         self.proj = nn.Linear(1, dim_hidden)
         self.enc = nn.Sequential(*[EquiCSAB(dim_hidden, dim_hidden, num_heads, ln=ln) for i in range(num_blocks)])
         self.pool_x = PMA(dim_hidden, num_heads, num_outputs, ln=ln)
