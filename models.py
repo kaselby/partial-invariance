@@ -732,7 +732,7 @@ class CSAB(nn.Module):
         return (X_out, Y_out)
 
 class EquiCSAB(nn.Module):
-    def __init__(self, input_size, latent_size, num_heads, ln=False):
+    def __init__(self, input_size, latent_size, num_heads, ln=False, remove_diag=False):
         super().__init__()
         self.SAB_X = EquiMAB3(input_size, latent_size, num_heads, ln=ln)
         self.SAB_Y = EquiMAB3(input_size, latent_size, num_heads, ln=ln)
@@ -740,11 +740,17 @@ class EquiCSAB(nn.Module):
         self.SAB_YX = EquiMAB3(input_size, latent_size, num_heads, ln=ln)
         self.fc_X = nn.Linear(2*latent_size, latent_size)
         self.fc_Y = nn.Linear(2*latent_size, latent_size)
+        self.remove_diag=remove_diag
 
     def forward(self, inputs):
         X, Y = inputs
-        XX = self.SAB_X(X, X)
-        YY = self.SAB_Y(Y, Y)
+        if self.remove_diag:
+            mask_x = (1 - torch.eye(X.size(1))).cuda()
+            mask_y = (1 - torch.eye(Y.size(1))).cuda()
+        else:
+            mask_x, mask_y=None,None
+        XX = self.SAB_X(X, X, mask=mask_x)
+        YY = self.SAB_Y(Y, Y, mask=mask_y)
         XY = self.SAB_XY(X, Y)
         YX = self.SAB_YX(Y, X)
         X_out = X + F.relu(self.fc_X(torch.cat([XX, XY], dim=-1)))
@@ -1028,10 +1034,10 @@ class EquiMultiSetTransformer1(nn.Module):
 
 class EquiMultiSetTransformer1(nn.Module):
     def __init__(self, num_outputs, dim_output,
-            num_inds=32, dim_hidden=128, num_heads=4, num_blocks=2, ln=False):
+            num_inds=32, dim_hidden=128, num_heads=4, num_blocks=2, ln=False, remove_diag=False):
         super().__init__()
         self.proj = nn.Linear(1, dim_hidden)
-        self.enc = nn.Sequential(*[EquiCSAB(dim_hidden, dim_hidden, num_heads, ln=ln) for i in range(num_blocks)])
+        self.enc = nn.Sequential(*[EquiCSAB(dim_hidden, dim_hidden, num_heads, ln=ln, remove_diag=remove_diag) for i in range(num_blocks)])
         self.pool_x = PMA(dim_hidden, num_heads, num_outputs, ln=ln)
         self.pool_y = PMA(dim_hidden, num_heads, num_outputs, ln=ln)
         self.dec = nn.Sequential(
