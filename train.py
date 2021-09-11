@@ -44,7 +44,6 @@ class EquiMultiSetTransformer1(nn.Module):
                 #SAB(dim_hidden, dim_hidden, num_heads, ln=ln),
                 #SAB(dim_hidden, dim_hidden, num_heads, ln=ln),
                 nn.Linear(2*dim_hidden, dim_output),)
-
     def forward(self, X, Y):
         ZX, ZY = self.enc((self.proj(X.unsqueeze(-1)),self.proj(Y.unsqueeze(-1))))
         ZX = ZX.sum(dim=2)
@@ -54,7 +53,10 @@ class EquiMultiSetTransformer1(nn.Module):
         return self.dec(torch.cat([ZX, ZY], dim=-1)).squeeze(-1)
 
 model=EquiMultiSetTransformer1(1,1, dim_hidden=32, ln=True, remove_diag=True, num_blocks=2).cuda()
-losses=train(model, generate_multi(generate_gaussian_nd), wasserstein, exact_loss=False, criterion=nn.MSELoss(), steps=15000, lr=1e-3, n=2, set_size=(50,75))
+if torch.cuda.device_count() > 1:
+    print("Let's use", torch.cuda.device_count(), "GPUs!")
+    model = nn.DataParallel(model)
+losses=train(model, generate_multi(generate_gaussian_nd), wasserstein, criterion=nn.MSELoss(), steps=15000, lr=1e-3, n=2, set_size=(50,75), batch_size=8)
       
 '''
 d=2
