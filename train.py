@@ -56,7 +56,7 @@ model=EquiMultiSetTransformer1(1,1, dim_hidden=32, ln=True, remove_diag=True, nu
 if torch.cuda.device_count() > 1:
     print("Let's use", torch.cuda.device_count(), "GPUs!")
     model = nn.DataParallel(model)
-losses=train(model, generate_multi(generate_gaussian_nd), wasserstein, criterion=nn.MSELoss(), steps=15000, lr=1e-3, n=2, set_size=(50,75), batch_size=8)
+losses=train(model, generate_multi(generate_gaussian_nd), wasserstein, criterion=nn.MSELoss(), steps=15000, lr=1e-3, n=2, set_size=(50,75), batch_size=64)
       
 '''
 d=2
