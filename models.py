@@ -1047,8 +1047,8 @@ class EquiMultiSetTransformer1(nn.Module):
 
     def forward(self, X, Y):
         ZX, ZY = self.enc((self.proj(X.unsqueeze(-1)),self.proj(Y.unsqueeze(-1))))
-        ZX = ZX.max(dim=2)[0]
-        ZY = ZY.max(dim=2)[0]
+        ZX = ZX.sum(dim=2)[0]
+        ZY = ZY.sum(dim=2)[0]
         ZX = self.pool_x(ZX)
         ZY = self.pool_y(ZY)
         return self.dec(torch.cat([ZX, ZY], dim=-1)).squeeze(-1)

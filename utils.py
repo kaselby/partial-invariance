@@ -43,8 +43,8 @@ def generate_gaussian_nd(batch_size, n, return_params=False, set_size=(100,150))
         return [samples.float().contiguous()]
         
 
-def generate_gaussian_variable_dim(batch_size, return_params=False, set_size=(100,150)):
-    n = torch.randint(2,6,(1,)).item()
+def generate_gaussian_variable_dim(batch_size, return_params=False, set_size=(100,150), dims=(2,6)):
+    n = torch.randint(*dims,(1,)).item()
     mus= (1+5*torch.rand(size=(batch_size, n)))
     A = torch.rand(size=(batch_size, n, n))
     sigmas = torch.bmm(A.transpose(1,2), A) + 1*torch.diag_embed(torch.rand(batch_size, n))
