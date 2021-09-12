@@ -52,7 +52,9 @@ class EquiMultiSetTransformer1(nn.Module):
         ZY = self.pool_y(ZY)
         return self.dec(torch.cat([ZX, ZY], dim=-1)).squeeze(-1)
 
-model=EquiMultiSetTransformer1(1,1, dim_hidden=32, ln=True, remove_diag=True, num_blocks=2).cuda()
+device = torch.device("cuda:0")
+
+model=EquiMultiSetTransformer1(1,1, dim_hidden=32, ln=True, remove_diag=True, num_blocks=2).to(device)
 if torch.cuda.device_count() > 1:
     print("Let's use", torch.cuda.device_count(), "GPUs!")
     model = nn.DataParallel(model)
