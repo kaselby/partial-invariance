@@ -58,6 +58,8 @@ if torch.cuda.device_count() > 1:
     model = nn.DataParallel(model)
 losses=train(model, generate_gaussian_variable_dim_multi, wasserstein, criterion=nn.MSELoss(), steps=30000, lr=5e-4, n=2, set_size=(25,150), dims=(64,96), batch_size=64)
       
+
+torch.save(model, "wasserstein_model.pt")      
 '''
 d=2
 hs=32
