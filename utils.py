@@ -43,18 +43,15 @@ def generate_gaussian_nd(batch_size, n, return_params=False, set_size=(100,150))
         return [samples.float().contiguous()]
         
 
-def generate_gaussian_variable_dim(batch_size, return_params=False, set_size=(100,150), dims=(2,6)):
+def generate_gaussian_variable_dim(batch_size, dims=(2,6), **kwargs):
     n = torch.randint(*dims,(1,)).item()
-    mus= (1+5*torch.rand(size=(batch_size, n)))
-    A = torch.rand(size=(batch_size, n, n))
-    sigmas = torch.bmm(A.transpose(1,2), A) + 1*torch.diag_embed(torch.rand(batch_size, n))
-    n_samples = torch.randint(*set_size,(1,))
-    dist = MultivariateNormal(mus, sigmas)
-    samples=dist.sample(n_samples).transpose(0,1)
-    if not return_params:
-        return [samples.float().contiguous()]
-    else:
-        return [samples.float().contiguous()], (mus, sigmas)
+    return generate_gaussian_nd(batch_size, n, **kwargs)
+
+def generate_gaussian_variable_dim_multi(batch_size, dims=(2,6), **kwargs):
+    n = torch.randint(*dims,(1,)).item()
+    X = generate_gaussian_nd(batch_size, n, **kwargs)
+    Y = generate_gaussian_nd(batch_size, n, **kwargs)
+    return X[0],Y[0]
 
 def generate_uniform(batch_size, eps=1e-4):
     n_samples = torch.randint(100,150,(1,))
