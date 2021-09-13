@@ -1,5 +1,5 @@
 from models import *
-from utils import *
+from utils import wasserstein, generate_gaussian_variable_dim_multi
 import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
@@ -7,6 +7,7 @@ import argparse
 import os
 import shutil
 import glob
+import tqdm
 
 def parse_args():
     parser = argparse.ArgumentParser()
