@@ -29,7 +29,7 @@ def main(rank, world_size, out_dir):
     model=EquiMultiSetTransformer1(1,1, dim_hidden=16, ln=True, remove_diag=True, num_blocks=2).to(rank)
     ddp_model = DDP(model, device_ids=[rank], output_device=rank, find_unused_parameters=True)
 
-    losses = train(rank, world_size, ddp_model, generate_gaussian_variable_dim_multi, wasserstein, steps=30000, lr=5e-4, batch_size=64/world_size)
+    losses = train(rank, world_size, ddp_model, generate_gaussian_variable_dim_multi, wasserstein, steps=30000, lr=5e-4, batch_size=int(64/world_size))
 
     if rank == 0:
         torch.save(model.module, os.path.join(out_dir,"model.pt"))  
