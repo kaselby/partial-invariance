@@ -8,4 +8,4 @@
 #SBATCH -c 1
 #SBATCH --mem=25GB
 
-python3 train.py $1
+python3 train.py $1 --overwrite
