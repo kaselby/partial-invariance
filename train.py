@@ -6,60 +6,57 @@ import torch.nn as nn
 import argparse
 import os
 import shutil
+import glob
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('run_name', type=str)
     parser.add_argument('--overwrite', action='store_true')
+    parser.add_argument('--checkpoint_dir', type=str, default="/checkpoint/kaselby")
+
     return parser.parse_args()
 
+def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(), batch_size=64, steps=3000, lr=1e-5, checkpoint_dir=None, output_dir=None, save_every=1000, *sample_args, **sample_kwargs):
+    #model.train(True)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+    losses = []
+    initial_step=1
+    if checkpoint_dir is not None:
+        checkpoint_path = os.path.join(checkpoint_dir, "checkpoint.pt")
+        if os.path.exists(checkpoint_path):
+            load_dict = torch.load(checkpoint_path)
+            model, optimizer, initial_step, losses = load_dict['model'], load_dict['optimizer'], load_dict['initial_step'], load_dict['losses']
 
-def nn_dist(X):
-  dists = knn(X, 1)
-  return dists
+    for i in tqdm.tqdm(range(initial_step,steps+1)):
+        optimizer.zero_grad()
+        if exact_loss:
+            X, theta = sample_fct(batch_size, *sample_args, **sample_kwargs)
+            if use_cuda:
+                X = [x.cuda() for x in X]
+                #theta = [t.cuda() for t in theta]
+            labels = label_fct(*theta).squeeze(-1)
+        else:
+            X = sample_fct(batch_size, *sample_args, **sample_kwargs)
+            if use_cuda:
+                X = [x.cuda() for x in X]
+            labels = label_fct(*X)
+        loss = criterion(model(*X).squeeze(-1), labels)
+        loss.backward()
+        optimizer.step()
 
-class MaskedESAB(nn.Module):
-    def __init__(self, input_size, latent_size, num_heads, ln=False):
-        super(MaskedESAB, self).__init__()
-        self.mab = EquiMAB3(input_size, latent_size, num_heads, ln=ln)
-        #self.mab = EquiMAB2(latent_size, num_heads, ln=ln)
+        losses.append(loss.item())
 
-    def forward(self, X):
-      mask = (1 - torch.eye(X.size(1))).cuda()
-      return self.mab(X, X, mask=mask)
+        if i % save_every == 0 and checkpoint_dir is not None:
+            checkpoint_path = os.path.join(checkpoint_dir, "checkpoint.pt")
+            if os.path.exists(checkpoint_path):
+                os.remove(checkpoint_path)
+            torch.save({'model':model,'optimizer':optimizer, 'step': i, 'losses':losses}, checkpoint_path)
+    
+    if output_dir is not None:
+        torch.save(model._modules['module'], os.path.join(output_dir,"model.pt"))  
+        torch.save({'losses':losses}, os.path.join(output_dir,"logs.pt"))   
 
-class EquiEncoder(nn.Module):
-  def __init__(self, latent_size, n_blocks, n_heads, ln=False):
-    super().__init__()
-    self.enc = nn.Sequential(
-                MaskedESAB(1, latent_size, n_heads, ln=ln),
-                *[MaskedESAB(latent_size, latent_size, n_heads, ln=ln) for i in range(n_blocks-1)],
-    )
-    self.out = nn.Linear(latent_size, 1)
-
-  def forward(self, X):
-    Z = self.enc(X.unsqueeze(-1)).max(dim=2)[0]
-    return self.out(Z)
-
-class EquiMultiSetTransformer1(nn.Module):
-    def __init__(self, num_outputs, dim_output,
-            num_inds=32, dim_hidden=128, num_heads=4, num_blocks=2, ln=False, remove_diag=False):
-        super().__init__()
-        self.proj = nn.Linear(1, dim_hidden)
-        self.enc = nn.Sequential(*[EquiCSAB(dim_hidden, dim_hidden, num_heads, ln=ln, remove_diag=remove_diag) for i in range(num_blocks)])
-        self.pool_x = PMA(dim_hidden, num_heads, num_outputs, ln=ln)
-        self.pool_y = PMA(dim_hidden, num_heads, num_outputs, ln=ln)
-        self.dec = nn.Sequential(
-                #SAB(dim_hidden, dim_hidden, num_heads, ln=ln),
-                #SAB(dim_hidden, dim_hidden, num_heads, ln=ln),
-                nn.Linear(2*dim_hidden, dim_output),)
-    def forward(self, X, Y):
-        ZX, ZY = self.enc((self.proj(X.unsqueeze(-1)),self.proj(Y.unsqueeze(-1))))
-        ZX = ZX.sum(dim=2)
-        ZY = ZY.sum(dim=2)
-        ZX = self.pool_x(ZX)
-        ZY = self.pool_y(ZY)
-        return self.dec(torch.cat([ZX, ZY], dim=-1)).squeeze(-1)
+    return losses
 
 if __name__ == '__main__':
     args = parse_args()
@@ -78,15 +75,10 @@ if __name__ == '__main__':
     if torch.cuda.device_count() > 1:
         print("Let's use", torch.cuda.device_count(), "GPUs!")
         model = nn.DataParallel(model)
-    losses=train(model, generate_gaussian_variable_dim_multi, wasserstein, criterion=nn.MSELoss(), steps=30000, lr=5e-4, set_size=(25,150), dims=(32,40), batch_size=64)
-        
-    torch.save(model._modules['module'], os.path.join(run_dir,"model.pt"))  
-    torch.save({'losses':losses}, os.path.join(run_dir,"logs.pt"))    
+    losses = train(model, generate_gaussian_variable_dim_multi, wasserstein, checkpoint_dir=os.path.join(args.checkpoint_dir, args.run_name), output_dir=run_dir, \
+        criterion=nn.MSELoss(), steps=30000, lr=5e-4, set_size=(25,150), dims=(32,40), batch_size=64)
 
-    print(sum(losses[-50:])/50)
-    show_examples(model, generate_multi(generate_gaussian_nd), wasserstein, samples=4, n=32)
-    show_examples(model, generate_multi(generate_gaussian_nd), wasserstein, samples=4, n=16)
-    show_examples(model, generate_multi(generate_gaussian_nd), wasserstein, samples=4, n=40)
+
 '''
 d=2
 hs=32
