@@ -3,6 +3,13 @@ from utils import *
 import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
+import argparse
+import os
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('run_name', type=str)
+    return parser.parse_args()
 
 
 def nn_dist(X):
@@ -52,16 +59,26 @@ class EquiMultiSetTransformer1(nn.Module):
         ZY = self.pool_y(ZY)
         return self.dec(torch.cat([ZX, ZY], dim=-1)).squeeze(-1)
 
-device = torch.device("cuda:0")
+if __name__ == '__main__':
+    args = parse_args()
+    run_name = args.run_name
+    os.makedirs(os.path.join("runs", run_name))
 
-model=EquiMultiSetTransformer1(1,1, dim_hidden=32, ln=True, remove_diag=True, num_blocks=2).to(device)
-if torch.cuda.device_count() > 1:
-    print("Let's use", torch.cuda.device_count(), "GPUs!")
-    model = nn.DataParallel(model)
-losses=train(model, generate_gaussian_variable_dim_multi, wasserstein, criterion=nn.MSELoss(), steps=30000, lr=5e-4, set_size=(25,150), dims=(64,96), batch_size=64)
-      
+    device = torch.device("cuda:0")
 
-torch.save(model, "wasserstein_model.pt")      
+    model=EquiMultiSetTransformer1(1,1, dim_hidden=16, ln=True, remove_diag=True, num_blocks=2).to(device)
+    if torch.cuda.device_count() > 1:
+        print("Let's use", torch.cuda.device_count(), "GPUs!")
+        model = nn.DataParallel(model)
+    losses=train(model, generate_gaussian_variable_dim_multi, wasserstein, criterion=nn.MSELoss(), steps=30000, lr=5e-4, set_size=(25,150), dims=(32,40), batch_size=64)
+        
+    torch.save(model._modules['module'], "model.pt")  
+    torch.save({'losses':losses}, "logs.pt")      
+
+    print(sum(losses[-50:])/50)
+    show_examples(model, generate_multi(generate_gaussian_nd), wasserstein, samples=4, n=32)
+    show_examples(model, generate_multi(generate_gaussian_nd), wasserstein, samples=4, n=16)
+    show_examples(model, generate_multi(generate_gaussian_nd), wasserstein, samples=4, n=40)
 '''
 d=2
 hs=32
@@ -72,7 +89,4 @@ model= EquiEncoder(hs, n_blocks, nh, ln).cuda()
 losses=train(model, generate_gaussian_nd, wasserstein, criterion=nn.MSELoss(), steps=20000, lr=1e-3, n=2, set_size=(50,75))
 '''
 
-print(sum(losses[-50:])/50)
-show_examples(model, generate_gaussian_nd, wasserstein, samples=4, n=2, set_size=(5,6))
-show_examples(model, generate_gaussian_nd, wasserstein, samples=4, n=3, set_size=(5,6))
-show_examples(model, generate_gaussian_nd, wasserstein, samples=4, n=4, set_size=(5,6))
+
