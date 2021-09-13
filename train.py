@@ -10,7 +10,7 @@ import shutil
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('run_name', type=str)
-    parser.add_argument('--overwrite', action='set_true')
+    parser.add_argument('--overwrite', action='store_true')
     return parser.parse_args()
 
 
