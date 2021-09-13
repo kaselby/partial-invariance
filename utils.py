@@ -33,8 +33,6 @@ def generate_gaussian_nd(batch_size, n, return_params=False, set_size=(100,150))
     A = torch.rand(size=(batch_size, n, n))
     sigmas = torch.bmm(A.transpose(1,2), A) + 1*torch.diag_embed(torch.rand(batch_size, n))
     n_samples = torch.randint(*set_size,(1,))
-    if use_cuda:
-        mus, sigmas = mus.cuda(), sigmas.cuda()
     dist = MultivariateNormal(mus, sigmas)
     samples=dist.sample(n_samples).transpose(0,1)
     if return_params:
