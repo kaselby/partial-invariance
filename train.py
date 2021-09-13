@@ -5,10 +5,12 @@ import torch
 import torch.nn as nn
 import argparse
 import os
+import shutil
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('run_name', type=str)
+    parser.add_argument('--overwrite', action='set_true')
     return parser.parse_args()
 
 
@@ -61,8 +63,14 @@ class EquiMultiSetTransformer1(nn.Module):
 
 if __name__ == '__main__':
     args = parse_args()
-    run_name = args.run_name
-    os.makedirs(os.path.join("runs", run_name))
+    run_dir = os.path.join("runs", args.run_name)
+    if os.path.exists(run_dir):
+        if args.overwrite:
+            shutil.rmtree(run_dir)
+        else:
+            raise Exception("Folder exists and overwrite is set to false.")
+
+    os.makedirs(run_dir)
 
     device = torch.device("cuda:0")
 
