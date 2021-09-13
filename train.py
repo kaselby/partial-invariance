@@ -80,8 +80,8 @@ if __name__ == '__main__':
         model = nn.DataParallel(model)
     losses=train(model, generate_gaussian_variable_dim_multi, wasserstein, criterion=nn.MSELoss(), steps=30000, lr=5e-4, set_size=(25,150), dims=(32,40), batch_size=64)
         
-    torch.save(model._modules['module'], "model.pt")  
-    torch.save({'losses':losses}, "logs.pt")      
+    torch.save(model._modules['module'], os.path.join(run_dir,"model.pt"))  
+    torch.save({'losses':losses}, os.path.join(run_dir,"logs.pt"))    
 
     print(sum(losses[-50:])/50)
     show_examples(model, generate_multi(generate_gaussian_nd), wasserstein, samples=4, n=32)
