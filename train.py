@@ -70,8 +70,8 @@ if __name__ == '__main__':
             shutil.rmtree(run_dir)
         else:
             raise Exception("Folder exists and overwrite is set to false.")'''
-
-    os.makedirs(run_dir)
+    if not os.path.exists(run_dir):
+        os.makedirs(run_dir)
 
     device = torch.device("cuda:0")
 
