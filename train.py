@@ -29,7 +29,7 @@ def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(),
             checkpoint_path = os.path.join(checkpoint_dir, "checkpoint.pt")
             if os.path.exists(checkpoint_path):
                 load_dict = torch.load(checkpoint_path)
-                model, optimizer, initial_step, losses = load_dict['model'], load_dict['optimizer'], load_dict['initial_step'], load_dict['losses']
+                model, optimizer, initial_step, losses = load_dict['model'], load_dict['optimizer'], load_dict['step'], load_dict['losses']
 
     for i in tqdm.tqdm(range(initial_step,steps+1)):
         optimizer.zero_grad()
@@ -65,11 +65,11 @@ def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(),
 if __name__ == '__main__':
     args = parse_args()
     run_dir = os.path.join("runs", args.run_name)
-    if os.path.exists(run_dir):
+    '''if os.path.exists(run_dir):
         if args.overwrite:
             shutil.rmtree(run_dir)
         else:
-            raise Exception("Folder exists and overwrite is set to false.")
+            raise Exception("Folder exists and overwrite is set to false.")'''
 
     os.makedirs(run_dir)
 
