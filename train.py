@@ -23,10 +23,13 @@ def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(),
     losses = []
     initial_step=1
     if checkpoint_dir is not None:
-        checkpoint_path = os.path.join(checkpoint_dir, "checkpoint.pt")
-        if os.path.exists(checkpoint_path):
-            load_dict = torch.load(checkpoint_path)
-            model, optimizer, initial_step, losses = load_dict['model'], load_dict['optimizer'], load_dict['initial_step'], load_dict['losses']
+        if not os.path.exists(checkpoint_dir):
+            os.makedirs(checkpoint_dir)
+        else:
+            checkpoint_path = os.path.join(checkpoint_dir, "checkpoint.pt")
+            if os.path.exists(checkpoint_path):
+                load_dict = torch.load(checkpoint_path)
+                model, optimizer, initial_step, losses = load_dict['model'], load_dict['optimizer'], load_dict['initial_step'], load_dict['losses']
 
     for i in tqdm.tqdm(range(initial_step,steps+1)):
         optimizer.zero_grad()
