@@ -994,52 +994,22 @@ class MultiSetTransformer2(nn.Module):
 
 class MultiSetTransformer3(nn.Module):
     def __init__(self, dim_input, num_outputs, dim_output,
-            num_inds=32, dim_hidden=128, num_heads=4, ln=False):
-        super(MultiSetTransformer3, self).__init__()
-        self.enc = nn.Sequential(
-                SAB(dim_input+1, dim_hidden, num_heads, ln=ln),
-                SAB(dim_hidden, dim_hidden, num_heads, ln=ln))
+            num_inds=32, dim_hidden=128, num_heads=4, num_blocks=2, ln=False):
+        super(MultiSetTransformer2, self).__init__()
+        self.proj = nn.Linear(dim_input, dim_hidden)
+        self.enc = nn.Sequential(*[CSAB3(dim_hidden, dim_hidden, dim_hidden, num_heads, ln=ln) for i in range(num_blocks)])
+        self.pool_x = PMA(dim_hidden, num_heads, num_outputs, ln=ln)
+        self.pool_y = PMA(dim_hidden, num_heads, num_outputs, ln=ln)
         self.dec = nn.Sequential(
-                PMA(dim_hidden, num_heads, num_outputs, ln=ln),
                 #SAB(dim_hidden, dim_hidden, num_heads, ln=ln),
                 #SAB(dim_hidden, dim_hidden, num_heads, ln=ln),
-                nn.Linear(dim_hidden, dim_output))
-
-    def prepare_inputs(self, X, Y):
-        # each should be size batch_size x n_elements x dim
-        zeros = torch.zeros(*X.size()[:-1], 1)
-        ones = torch.ones(*Y.size()[:-1], 1)
-        if use_cuda:
-            zeros = zeros.cuda()
-            ones = ones.cuda()
-        X = torch.cat([X, zeros], dim=-1)
-        Y = torch.cat([Y, ones], dim=-1)
-        return torch.cat([X,Y], dim=1)
+                nn.Linear(dim_hidden*2, dim_output))
 
     def forward(self, X, Y):
-        return self.dec(self.enc(self.prepare_inputs(X,Y))).squeeze(-1)
-
-class MultiSetTransformer4(nn.Module):
-    def __init__(self, dim_input, num_outputs, dim_output,
-            num_inds=32, dim_hidden=128, num_heads=4, ln=False):
-        super(MultiSetTransformer4, self).__init__()
-        self.X_encoding = nn.Parameter(torch.empty(dim_input))
-        self.Y_encoding = nn.Parameter(torch.empty(dim_input))
-        self.enc = nn.Sequential(
-                SAB(dim_input, dim_hidden, num_heads, ln=ln),
-                SAB(dim_hidden, dim_hidden, num_heads, ln=ln))
-        self.dec = nn.Sequential(
-                PMA(dim_hidden, num_heads, num_outputs, ln=ln),
-                #SAB(dim_hidden, dim_hidden, num_heads, ln=ln),
-                #SAB(dim_hidden, dim_hidden, num_heads, ln=ln),
-                nn.Linear(dim_hidden, dim_output))
-
-        nn.init.uniform_(self.X_encoding, 0, math.sqrt(5))
-        nn.init.uniform_(self.Y_encoding, 0, math.sqrt(5))
-
-    def forward(self, X, Y):
-        inputs = torch.cat([X+self.X_encoding, Y+self.Y_encoding], dim=1)
-        return self.dec(self.enc(inputs)).squeeze(-1)
+        ZX, ZY = self.enc((self.proj(X),self.proj(Y)))
+        ZX = self.pool_x(ZX)
+        ZY = self.pool_y(ZY)
+        return self.dec(torch.cat([ZX, ZY], dim=-1)).squeeze(-1)
 
 
 class EquiSetTransformer1(nn.Module):
