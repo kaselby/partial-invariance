@@ -840,7 +840,7 @@ class CSAB3(nn.Module):
 
     def forward(self, inputs):
         X, Y = inputs
-        Q_xx = self.fc_q_x(X)
+        Q_xx = self.fc_q_xx(X)
         K_xx, V_xx = self.fc_k_xx(X), self.fc_v_xx(X)
         Q_xy = self.fc_q_xy(X)
         K_xy, V_xy = self.fc_k_xy(Y), self.fc_v_xy(Y)
