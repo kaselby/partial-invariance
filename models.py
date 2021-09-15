@@ -778,8 +778,8 @@ class CSAB2(nn.Module):
         X, Y = inputs
         Q_x = self.fc_q_x(X)
         K_x, V_x = self.fc_k_x(X), self.fc_v_x(X)
-        Q_y = self.fc_q_x(Y)
-        K_y, V_y = self.fc_k_x(Y), self.fc_v_y(Y)
+        Q_y = self.fc_q_y(Y)
+        K_y, V_y = self.fc_k_y(Y), self.fc_v_y(Y)
 
         dim_split = self.dim_V // self.num_heads
         Q_x_ = torch.cat(Q_x.split(dim_split, 2), 0)
@@ -807,6 +807,81 @@ class CSAB2(nn.Module):
 
         O_x = F.relu(self.fc_X(torch.cat([O_xx,O_xy], dim=-1)))
         O_y = F.relu(self.fc_Y(torch.cat([O_yx,O_yy], dim=-1)))
+
+        if getattr(self, 'ln1', None) is not None:
+            O_x = self.ln1(O_x)
+            O_y = self.ln1(O_y)
+
+        return O_x, O_y
+
+
+class CSAB3(nn.Module):
+    def __init__(self, dim_Q, dim_K, dim_V, num_heads, ln=False):
+        super(CSAB3, self).__init__()
+        self.dim_V = dim_V
+        self.num_heads = num_heads
+        self.fc_q_xx = nn.Linear(dim_Q, dim_V)
+        self.fc_k_xx = nn.Linear(dim_K, dim_V)
+        self.fc_v_xx = nn.Linear(dim_K, dim_V)
+        self.fc_q_xy = nn.Linear(dim_Q, dim_V)
+        self.fc_k_xy = nn.Linear(dim_K, dim_V)
+        self.fc_v_xy = nn.Linear(dim_K, dim_V)
+        self.fc_q_yx = nn.Linear(dim_Q, dim_V)
+        self.fc_k_yx = nn.Linear(dim_K, dim_V)
+        self.fc_v_yx = nn.Linear(dim_K, dim_V)
+        self.fc_q_yy = nn.Linear(dim_Q, dim_V)
+        self.fc_k_yy = nn.Linear(dim_K, dim_V)
+        self.fc_v_yy = nn.Linear(dim_K, dim_V)
+        self.fc_X = nn.Linear(dim_V*2, dim_V)
+        self.fc_Y = nn.Linear(dim_V*2, dim_V)
+        if ln:
+            self.ln0 = nn.LayerNorm(dim_V)
+            self.ln1 = nn.LayerNorm(dim_V)
+
+    def forward(self, inputs):
+        X, Y = inputs
+        Q_xx = self.fc_q_x(X)
+        K_xx, V_xx = self.fc_k_xx(X), self.fc_v_xx(X)
+        Q_xy = self.fc_q_xy(X)
+        K_xy, V_xy = self.fc_k_xy(Y), self.fc_v_xy(Y)
+        Q_yx = self.fc_q_yx(Y)
+        K_yx, V_yx = self.fc_k_yx(X), self.fc_v_yx(X)
+        Q_yy = self.fc_q_yy(Y)
+        K_yy, V_yy = self.fc_k_yy(Y), self.fc_v_yy(Y)
+
+        dim_split = self.dim_V // self.num_heads
+        Q_xx_ = torch.cat(Q_xx.split(dim_split, 2), 0)
+        K_xx_ = torch.cat(K_xx.split(dim_split, 2), 0)
+        V_xx_ = torch.cat(V_xx.split(dim_split, 2), 0)
+        Q_xy_ = torch.cat(Q_xy.split(dim_split, 2), 0)
+        K_xy_ = torch.cat(K_xy.split(dim_split, 2), 0)
+        V_xy_ = torch.cat(V_xy.split(dim_split, 2), 0)
+        Q_yx_ = torch.cat(Q_yx.split(dim_split, 2), 0)
+        K_yx_ = torch.cat(K_yx.split(dim_split, 2), 0)
+        V_yx_ = torch.cat(V_yx.split(dim_split, 2), 0)
+        Q_yy_ = torch.cat(Q_yy.split(dim_split, 2), 0)
+        K_yy_ = torch.cat(K_yy.split(dim_split, 2), 0)
+        V_yy_ = torch.cat(V_yy.split(dim_split, 2), 0)
+
+        E_xx = Q_xx_.bmm(K_xx_.transpose(1,2))
+        E_xy = Q_xy_.bmm(K_xy_.transpose(1,2))
+        E_yx = Q_yx_.bmm(K_yx_.transpose(1,2))
+        E_yy = Q_yy_.bmm(K_yy_.transpose(1,2))
+        E_x = torch.cat([E_xx, E_xy], dim=1)
+        E_y = torch.cat([E_yx, E_yy], dim=1)
+
+        A_x = torch.softmax(E_x/math.sqrt(self.dim_V), 2)
+        A_y = torch.softmax(E_y/math.sqrt(self.dim_V), 2)
+
+        O_x = torch.cat((torch.cat([Q_xx_, Q_xy_], dim=1) + A_x.bmm(torch.cat([V_xx_,V_xy_],1))).split(Q_xx.size(0), 0), 2)
+        O_y = torch.cat((torch.cat([Q_yx_, Q_yy_], dim=1) + A_y.bmm(torch.cat([V_yx_,V_yy_],1))).split(Q_yx.size(0), 0), 2)
+
+        if getattr(self, 'ln0', None) is not None:
+            O_x = self.ln0(O_x)
+            O_y = self.ln0(O_y)
+
+        O_x = O_x + F.relu(self.fc_X(O_x))
+        O_y = O_y + F.relu(self.fc_Y(O_y))
 
         if getattr(self, 'ln1', None) is not None:
             O_x = self.ln1(O_x)
