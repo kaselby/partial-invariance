@@ -867,14 +867,14 @@ class CSAB3(nn.Module):
         E_xy = Q_xy_.bmm(K_xy_.transpose(1,2))
         E_yx = Q_yx_.bmm(K_yx_.transpose(1,2))
         E_yy = Q_yy_.bmm(K_yy_.transpose(1,2))
-        E_x = torch.cat([E_xx, E_xy], dim=1)
-        E_y = torch.cat([E_yx, E_yy], dim=1)
+        E_x = torch.cat([E_xx, E_xy], dim=2)
+        E_y = torch.cat([E_yx, E_yy], dim=2)
 
         A_x = torch.softmax(E_x/math.sqrt(self.dim_V), 2)
         A_y = torch.softmax(E_y/math.sqrt(self.dim_V), 2)
 
-        O_x = torch.cat((torch.cat([Q_xx_, Q_xy_], dim=1) + A_x.bmm(torch.cat([V_xx_,V_xy_],1))).split(Q_xx.size(0), 0), 2)
-        O_y = torch.cat((torch.cat([Q_yx_, Q_yy_], dim=1) + A_y.bmm(torch.cat([V_yx_,V_yy_],1))).split(Q_yx.size(0), 0), 2)
+        O_x = torch.cat((A_x.bmm(torch.cat([V_xx_,V_xy_],1))).split(Q_xx.size(0), 0), 2)
+        O_y = torch.cat((A_y.bmm(torch.cat([V_yx_,V_yy_],1))).split(Q_yx.size(0), 0), 2)
 
         if getattr(self, 'ln0', None) is not None:
             O_x = self.ln0(O_x)
