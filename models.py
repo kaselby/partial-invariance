@@ -832,8 +832,8 @@ class CSAB3(nn.Module):
         self.fc_q_yy = nn.Linear(dim_Q, dim_V)
         self.fc_k_yy = nn.Linear(dim_K, dim_V)
         self.fc_v_yy = nn.Linear(dim_K, dim_V)
-        self.fc_X = nn.Linear(dim_V*2, dim_V)
-        self.fc_Y = nn.Linear(dim_V*2, dim_V)
+        self.fc_X = nn.Linear(dim_V, dim_V)
+        self.fc_Y = nn.Linear(dim_V, dim_V)
         if ln:
             self.ln0 = nn.LayerNorm(dim_V)
             self.ln1 = nn.LayerNorm(dim_V)
