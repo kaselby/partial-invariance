@@ -995,7 +995,7 @@ class MultiSetTransformer2(nn.Module):
 class MultiSetTransformer3(nn.Module):
     def __init__(self, dim_input, num_outputs, dim_output,
             num_inds=32, dim_hidden=128, num_heads=4, num_blocks=2, ln=False):
-        super(MultiSetTransformer2, self).__init__()
+        super(MultiSetTransformer3, self).__init__()
         self.proj = nn.Linear(dim_input, dim_hidden)
         self.enc = nn.Sequential(*[CSAB3(dim_hidden, dim_hidden, dim_hidden, num_heads, ln=ln) for i in range(num_blocks)])
         self.pool_x = PMA(dim_hidden, num_heads, num_outputs, ln=ln)
