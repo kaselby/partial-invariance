@@ -17,5 +17,9 @@ if __name__ == '__main__':
     logs = torch.load(filename)
     losses = logs['losses']
 
-    plt.plot(np.arange(len(losses)), np.array(losses))
+    plt.plot(losses)
+    plt.legend()
+    plt.xlabel("Steps")
+    plt.ylabel("Mean Squared Error")
+    plt.yscale("log")
     plt.show()
