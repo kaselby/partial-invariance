@@ -51,6 +51,12 @@ def generate_gaussian_variable_dim_multi(batch_size, dims=(2,6), **kwargs):
     Y = generate_gaussian_nd(batch_size, n, **kwargs)
     return X[0],Y[0]
 
+def generate_gaussian_mixture_variable_dim_multi(batch_size, dims=(2,6), **kwargs):
+    n = torch.randint(*dims,(1,)).item()
+    X = generate_gaussian_mixture(batch_size, n, **kwargs)
+    Y = generate_gaussian_mixture(batch_size, n, **kwargs)
+    return X[0],Y[0]
+
 def generate_uniform(batch_size, eps=1e-4):
     n_samples = torch.randint(100,150,(1,))
     samples = torch.rand(size=(batch_size, n_samples)) * (1-2*eps) + eps
