@@ -74,8 +74,6 @@ def generate_gaussian_mixture(batch_size, n, return_params=False, set_size=(100,
     A = torch.rand(size=(batch_size, n_components, n, n))
     sigmas = A.transpose(2,3).matmul(A) + 1*torch.diag_embed(torch.rand(batch_size, n_components, n))
     logits = torch.randint(5, size=(batch_size, n_components)).float()
-    if use_cuda:
-      mus, sigmas, logits = mus.cuda(), sigmas.cuda(), logits.cuda()
     base_dist = MultivariateNormal(mus, sigmas)
     mixing_dist = Categorical(logits=logits)
     dist = MixtureSameFamily(mixing_dist, base_dist)

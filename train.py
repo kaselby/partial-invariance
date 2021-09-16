@@ -1,5 +1,5 @@
 from models import *
-from utils import wasserstein, generate_gaussian_variable_dim_multi
+from utils import wasserstein, generate_gaussian_variable_dim_multi, generate_gaussian_mixture_variable_dim_multi
 import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
@@ -79,8 +79,8 @@ if __name__ == '__main__':
     if torch.cuda.device_count() > 1:
         print("Let's use", torch.cuda.device_count(), "GPUs!")
         model = nn.DataParallel(model)
-    losses = train(model, generate_gaussian_variable_dim_multi, wasserstein, checkpoint_dir=os.path.join(args.checkpoint_dir, args.run_name), output_dir=run_dir, \
-        criterion=nn.MSELoss(), steps=30000, lr=5e-4, set_size=(25,150), dims=(32,40), batch_size=64)
+    losses = train(model, generate_gaussian_mixture_variable_dim_multi, wasserstein, checkpoint_dir=os.path.join(args.checkpoint_dir, args.run_name), output_dir=run_dir, \
+        criterion=nn.MSELoss(), steps=30000, lr=5e-4, set_size=(25,150), dims=(24,40), batch_size=128)
 
 
 '''
