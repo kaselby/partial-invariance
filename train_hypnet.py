@@ -157,7 +157,7 @@ def parse_args():
     parser.add_argument('--n_heads', type=int, default=8)
     parser.add_argument('--n_blocks', type=int, default=2)
     parser.add_argument('--max_vecs', type=int, default=250)
-    parser.add_argument('--epochs', type=int, default=5)
+    parser.add_argument('--steps', type=int, default=50000)
     parser.add_argument('--batch_size', type=int, default=64)
     parser.add_argument('--lr', type=int, default=5e-4)
     parser.add_argument('--checkpoint_dir', type=str, default="/checkpoint/kaselby")
@@ -177,7 +177,7 @@ if __name__ == '__main__':
     if not os.path.exists(checkpoint_dir):
         os.makedirs(checkpoint_dir)
 
-    train(model, dataset, args.epochs, batch_size=args.batch_size, lr=args.lr, checkpoint_dir=checkpoint_dir, output_dir=output_dir)
+    train(model, dataset, args.steps, batch_size=args.batch_size, lr=args.lr, checkpoint_dir=checkpoint_dir, output_dir=output_dir)
 
 
 
