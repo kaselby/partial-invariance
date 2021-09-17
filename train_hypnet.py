@@ -128,13 +128,13 @@ def train(model, dataset, steps, batch_size=64, lr=1e-3, save_every=5000, log_ev
             loss.backward()
             optimizer.step()
 
-            if (steps + batch_size) // save_every > steps // save_every:
+            if (current_step + batch_size) // save_every > current_step // save_every:
                 if checkpoint_dir is not None:
                     if os.path.exists(checkpoint_path):
                         os.remove(checkpoint_path)
                     torch.save({'model':model.state_dict(), 'optimizer':optimizer.state_dict(), 'step':current_step, 'losses': losses}, checkpoint_path)
 
-            if (steps + batch_size) // log_every > steps // log_every:
+            if (current_step + batch_size) // log_every > current_step // log_every:
                 losses.append(loss.item())
 
             current_step += batch_size
