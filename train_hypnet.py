@@ -166,7 +166,7 @@ def parse_args():
 
 if __name__ == '__main__':
     args = parse_args()
-    dataset = HyponomyDataset(args.data_dir, 'HypNet_train', args.vec_dir, args.voc_dir, pca_dim=args.pca_dim, max_vecs=args.max_vecs)
+    dataset = HyponomyDataset('HypNet_train', args.data_dir, args.vec_dir, args.voc_dir, pca_dim=args.pca_dim, max_vecs=args.max_vecs)
     model = MultiSetTransformer1(args.pca_dim, 1, 1, args.hidden_size, num_heads=args.n_heads, num_blocks=args.n_blocks, ln=True)
 
     checkpoint_dir = os.path.join(args.checkpoint_dir, args.run_name)
