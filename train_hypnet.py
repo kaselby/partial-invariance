@@ -102,8 +102,8 @@ def compare(w1, w2, vec_dicts, distance):
 
 
 def train(model, dataset, steps, batch_size=64, lr=1e-3, save_every=5000, log_every=500, checkpoint_dir=None, output_dir=None):
-    optimizer = optim.Adam(model, lr=lr)
-    loss_fct = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(model.parameters(), lr=lr)
+    loss_fct = nn.BCELoss()
     out = nn.Sigmoid()
 
     current_step=0
