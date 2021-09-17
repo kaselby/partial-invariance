@@ -35,7 +35,7 @@ def load_dataset_vecs(dataset, vec_dir, vocab_dir):
 
 class HyponomyDataset(Dataset):
     def __init__(self, dataset_name, data_dir, vec_dir, voc_dir, inverted_pairs=False, pca_dim=-1, max_vecs=-1):
-        dataset_path = os.path.join(data_dir, dataset_name)
+        dataset_path = os.path.join(data_dir, dataset_name + ".all")
         self.relations, self.pairs, self.labels = self.read_dataset(dataset_path, inverted_pairs=inverted_pairs)
         load_dict = load_dataset_vecs(dataset_name, vec_dir, voc_dir)
         self.vecs = ICRDict.from_dict(load_dict)
@@ -166,7 +166,7 @@ def parse_args():
 
 if __name__ == '__main__':
     args = parse_args()
-    dataset = HyponomyDataset('HypNet_train.all', args.data_dir, args.vec_dir, args.voc_dir, pca_dim=args.pca_dim, max_vecs=args.max_vecs)
+    dataset = HyponomyDataset('HypNet_train', args.data_dir, args.vec_dir, args.voc_dir, pca_dim=args.pca_dim, max_vecs=args.max_vecs)
     model = MultiSetTransformer1(args.pca_dim, 1, 1, args.hidden_size, num_heads=args.n_heads, num_blocks=args.n_blocks, ln=True)
 
     checkpoint_dir = os.path.join(args.checkpoint_dir, args.run_name)
