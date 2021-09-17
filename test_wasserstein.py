@@ -4,6 +4,9 @@ import argparse
 import random
 
 import torch
+import fasttext
+
+from utils import show_examples, wasserstein, generate_gaussian_mixture_variable_dim_multi
 
 def load_vectors(fname):
     fin = io.open(fname, 'r', encoding='utf-8', newline='\n', errors='ignore')
@@ -38,6 +41,12 @@ if __name__ == '__main__':
     args = parse_args()
 
     model = torch.load(os.path.join("runs", args.run_name, "model.pt"))
+
+    ft = fasttext.load_model("cc.en.32.bin")
+
+    show_examples(model, generate_gaussian_mixture_variable_dim_multi, wasserstein, n=32)
+    show_examples(model, sample_vecs(ft), wasserstein)
+    
 
 
 
