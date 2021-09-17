@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import Dataset,DataLoader
+from torch.utils.data import Dataset,DataLoader, RandomSampler, BatchSampler
 
 import numpy as np
 import os
@@ -101,15 +101,26 @@ def compare(w1, w2, vec_dicts, distance):
     return distance(vecs1, vecs2)
 
 
-def train(model, dataset, epochs, batch_size=64, lr=1e-3):
+def train(model, dataset, steps, batch_size=64, lr=1e-3, save_every=5000, log_every=500, checkpoint_dir=None, output_dir=None):
     optimizer = optim.Adam(model, lr=lr)
     loss_fct = nn.CrossEntropyLoss()
     out = nn.Sigmoid()
 
+    current_step=0
     losses = []
-    for i in tqdm.tqdm(range(epochs)):
-        data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
-        for j, (data, label) in enumerate(data_loader):
+
+    if checkpoint_dir is not None:
+        checkpoint_path = os.path.join(checkpoint_dir, "checkpoint.pt")
+        if os.path.exists(checkpoint_path):
+            load_dict = torch.load(checkpoint_path)
+            model.load_state_dict(load_dict['model'])
+            optimizer.load_state_dict(load_dict['optimizer'])
+            current_step = load_dict['step']
+            losses = load_dict['losses']
+
+    while current_step < steps:
+        data_loader = DataLoader(dataset, batch_size=batch_size, sampler=RandomSampler(dataset, replacement=True), drop_last=True)
+        for data, label in data_loader:
             optimizer.zero_grad()
 
             score = model(data)
@@ -117,9 +128,21 @@ def train(model, dataset, epochs, batch_size=64, lr=1e-3):
             loss.backward()
             optimizer.step()
 
-            if j % 10 == 0:
-                losses.append(j)
-    
+            if (steps + batch_size) // save_every > steps // save_every:
+                if checkpoint_dir is not None:
+                    if os.path.exists(checkpoint_path):
+                        os.remove(checkpoint_path)
+                    torch.save({'model':model.state_dict(), 'optimizer':optimizer.state_dict(), 'step':current_step, 'losses': losses}, checkpoint_path)
+
+            if (steps + batch_size) // log_every > steps // log_every:
+                losses.append(loss.item())
+
+            current_step += batch_size
+
+    if output_dir is not None:
+        torch.save(model, os.path.join(output_dir, "model.pt"))
+        torch.save({'loss':losses}, os.path.join(output_dir, "logs.pt"))
+
     return losses
 
 
@@ -134,15 +157,27 @@ def parse_args():
     parser.add_argument('--n_heads', type=int, default=8)
     parser.add_argument('--n_blocks', type=int, default=2)
     parser.add_argument('--max_vecs', type=int, default=250)
+    parser.add_argument('--epochs', type=int, default=5)
+    parser.add_argument('--batch_size', type=int, default=64)
+    parser.add_argument('--lr', type=int, default=5e-4)
     parser.add_argument('--checkpoint_dir', type=str, default="/checkpoint/kaselby")
-
+    parser.add_argument('--output_dir', type=str, default="runs/hypeval")
     return parser.parse_args()
 
 if __name__ == '__main__':
     args = parse_args()
     dataset = HyponomyDataset(args.data_dir, 'HypNet_train', args.vec_dir, args.voc_dir, pca_dim=args.pca_dim, max_vecs=args.max_vecs)
-
     model = MultiSetTransformer1(args.pca_dim, 1, 1, args.hidden_size, num_heads=args.n_heads, num_blocks=args.n_blocks, ln=True)
+
+    checkpoint_dir = os.path.join(args.checkpoint_dir, args.run_name)
+    output_dir = os.path.join(args.output_dir, args.run_name)
+
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    if not os.path.exists(checkpoint_dir):
+        os.makedirs(checkpoint_dir)
+
+    train(model, dataset, args.epochs, batch_size=args.batch_size, lr=args.lr, checkpoint_dir=checkpoint_dir, output_dir=output_dir)
 
 
 
