@@ -5,6 +5,7 @@ import random
 
 import torch
 import fasttext
+import numpy as np
 
 from utils import show_examples, wasserstein, generate_gaussian_mixture, generate_multi
 
@@ -49,7 +50,7 @@ if __name__ == '__main__':
 
     ft = fasttext.load_model("cc.en.32.bin")
     if args.normalize:
-        scale = ft.get_input_matrix().norm(axis=1).mean()
+        scale = np.linalg.norm(ft.get_input_matrix(), axis=1).mean()
     else:
         scale=-1
 
