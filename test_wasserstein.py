@@ -22,10 +22,11 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('run_name', type=str)
     parser.add_argument('--vec_path', type=str, default='cc.en.32.bin')
+    parser.add_argument('--normalize', action='store_true')
 
     return parser.parse_args()
 
-def sample_vecs(ft):
+def sample_vecs(ft, scale=-1):
     def get_samples(bs, set_size=(100,150)):
         n_samples=random.randint(*set_size)
         vecs = []
@@ -33,7 +34,10 @@ def sample_vecs(ft):
             words = random.sample(ft.get_words(), n_samples)
             vecs_i = [ft[x].tolist() for x in words]
             vecs.append(vecs_i)
-        return torch.Tensor(vecs)
+        out = torch.Tensor(vecs)
+        if scale > 0:
+            out /= scale
+        return out
     return lambda n: (get_samples(n), get_samples(n))
 
 
@@ -44,9 +48,13 @@ if __name__ == '__main__':
     model = torch.load(os.path.join("runs", args.run_name, "model.pt"))
 
     ft = fasttext.load_model("cc.en.32.bin")
+    if args.normalize:
+        scale = ft.get_input_matrix().norm(axis=1).mean()
+    else:
+        scale=-1
 
     show_examples(model, generate_multi(generate_gaussian_mixture), wasserstein, n=32)
-    show_examples(model, sample_vecs(ft), wasserstein)
+    show_examples(model, sample_vecs(ft, scale=scale), wasserstein)
     
 
 
