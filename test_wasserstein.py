@@ -39,6 +39,7 @@ def sample_vecs(ft):
 
 if __name__ == '__main__':
     args = parse_args()
+    print("test")
 
     model = torch.load(os.path.join("runs", args.run_name, "model.pt"))
 
