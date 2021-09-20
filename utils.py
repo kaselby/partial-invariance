@@ -28,10 +28,10 @@ def generate_gaussian_1d(batch_size, return_params=False, set_size=(100,150)):
     else:
         return [samples.float().contiguous()], (mus, sigmas)
 
-def generate_gaussian_nd(batch_size, n, return_params=False, set_size=(100,150), scale=-1):
+def generate_gaussian_nd(batch_size, n, return_params=False, set_size=(100,150), scale=None):
     mus= torch.rand(size=(batch_size, n))
     A = torch.rand(size=(batch_size, n, n)) 
-    if scale > 0:
+    if scale is not None:
         mus = mus * scale.unsqueeze(-1).unsqueeze(-1)
         A = A * torch.sqrt(scale.unsqueeze(-1).unsqueeze(-1).unsqueeze(-1)) 
     else:
@@ -84,12 +84,12 @@ def generate_uniform_nd(batch_size, n):
     samples = torch.rand(size=(batch_size, n_samples, n))
     return [samples.float().contiguous()]
 
-def generate_gaussian_mixture(batch_size, n, return_params=False, set_size=(100,150), component_range=(3,10), scale=-1):
+def generate_gaussian_mixture(batch_size, n, return_params=False, set_size=(100,150), component_range=(3,10), scale=None):
     n_samples = torch.randint(*set_size,(1,))
     n_components = torch.randint(*component_range,(1,))
     mus= torch.rand(size=(batch_size, n_components, n))
     A = torch.rand(size=(batch_size, n_components, n, n)) 
-    if scale > 0:
+    if scale is not None:
         mus = mus * scale.unsqueeze(-1).unsqueeze(-1)
         A = A * torch.sqrt(scale.unsqueeze(-1).unsqueeze(-1).unsqueeze(-1)) 
     else:
@@ -128,7 +128,7 @@ def generate_gaussian_mixture(batch_size, n, return_params=False):
 
 
 
-def generate_multi(fct, normalize=False, scaleinv=False, ):
+def generate_multi(fct, normalize=False, scaleinv=False):
     def generate(*args, **kwargs):
         scale = torch.exp(torch.rand(1)*9 - 6) if scaleinv else -1
         X,Y = fct(*args, scale=scale, **kwargs)[0], fct(*args, scale=scale, **kwargs)[0]

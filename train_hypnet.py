@@ -38,7 +38,7 @@ class HyponomyDataset(Dataset):
         load_dict = load_dataset_vecs(dataset_name, vec_dir, voc_dir)
         self.vecs = ICRDict.from_dict(load_dict)
         dataset_path = os.path.join(data_dir, dataset_name + ".all")
-        self.relations, self.pairs, self.labels = self.read_dataset(dataset_path, min_threshold, inverted_pairs=inverted_pairs)
+        self.relations, self.pairs, self.labels = self._read_dataset(dataset_path, min_threshold, inverted_pairs=inverted_pairs)
         self.pca_dim=pca_dim
         self.max_vecs=max_vecs
 
