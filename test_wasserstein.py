@@ -22,13 +22,14 @@ def load_vectors(fname):
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('run_name', type=str)
-    parser.add_argument('--vec_path', type=str, default='cc.en.32.bin')
+    parser.add_argument('--vec_path1', type=str, default='cc.en.32.bin')
+    parser.add_argument('--vec_path2', type=str, default='cc.fr.32.bin')
     parser.add_argument('--normalize', action='store_true')
 
     return parser.parse_args()
 
-def sample_vecs(ft, scale=-1):
-    def get_samples(bs, set_size=(100,150)):
+def sample_vecs(ft1, ft2, scale=-1):
+    def get_samples(ft, bs, set_size=(100,150)):
         n_samples=random.randint(*set_size)
         vecs = []
         for i in range(bs):
@@ -39,7 +40,7 @@ def sample_vecs(ft, scale=-1):
         if scale > 0:
             out /= scale
         return out
-    return lambda n: (get_samples(n), get_samples(n))
+    return lambda n: (get_samples(ft1, n), get_samples(ft2, n))
 
 
 if __name__ == '__main__':
