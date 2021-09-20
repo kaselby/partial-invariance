@@ -1084,7 +1084,7 @@ class EquiMultiSetTransformer1(nn.Module):
 
 class EquiMultiSetTransformer1(nn.Module):
     def __init__(self, num_outputs, dim_output,
-            num_inds=32, dim_hidden=128, num_heads=4, num_blocks=2, ln=False, remove_diag=False):
+            num_inds=32, dim_hidden=128, num_heads=4, num_blocks=2, ln=False, remove_diag=False, normalize=False):
         super().__init__()
         self.proj = nn.Linear(1, dim_hidden)
         self.enc = nn.Sequential(*[EquiCSAB(dim_hidden, dim_hidden, num_heads, ln=ln, remove_diag=remove_diag) for i in range(num_blocks)])
@@ -1094,8 +1094,13 @@ class EquiMultiSetTransformer1(nn.Module):
                 #SAB(dim_hidden, dim_hidden, num_heads, ln=ln),
                 #SAB(dim_hidden, dim_hidden, num_heads, ln=ln),
                 nn.Linear(2*dim_hidden, dim_output),)
+        self.normalize=normalize
 
     def forward(self, X, Y):
+        if self.normalize:
+            scale = torch.cat([X, Y], dim=1).norm(dim=2).mean(dim=1)
+            X /= scale
+            Y /= scale
         ZX, ZY = self.enc((self.proj(X.unsqueeze(-1)),self.proj(Y.unsqueeze(-1))))
         ZX = ZX.max(dim=2)[0]
         ZY = ZY.max(dim=2)[0]
