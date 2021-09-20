@@ -13,6 +13,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('run_name', type=str)
     parser.add_argument('--normalize', action='store_true')
+    parser.add_argument('--scaleinv', action='store_true')
     parser.add_argument('--checkpoint_dir', type=str, default="/checkpoint/kaselby")
 
     return parser.parse_args()
@@ -80,7 +81,7 @@ if __name__ == '__main__':
         print("Let's use", torch.cuda.device_count(), "GPUs!")
         model = nn.DataParallel(model)
     losses = train(model, generate_gaussian_mixture_variable_dim_multi, wasserstein, checkpoint_dir=os.path.join(args.checkpoint_dir, args.run_name), output_dir=run_dir, \
-        criterion=nn.MSELoss(), steps=40000, lr=5e-4, set_size=(10,150), dims=(24,40), batch_size=128)
+        criterion=nn.MSELoss(), steps=40000, lr=5e-4, set_size=(10,150), dims=(24,40), scaleinv=args.scaleinv, batch_size=128)
 
 
 '''

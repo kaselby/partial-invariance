@@ -28,9 +28,13 @@ def generate_gaussian_1d(batch_size, return_params=False, set_size=(100,150)):
     else:
         return [samples.float().contiguous()], (mus, sigmas)
 
-def generate_gaussian_nd(batch_size, n, return_params=False, set_size=(100,150)):
-    mus= (1+5*torch.rand(size=(batch_size, n)))
-    A = torch.rand(size=(batch_size, n, n))
+def generate_gaussian_nd(batch_size, n, return_params=False, set_size=(100,150), scale=-1):
+    if scale > 0:
+        mus= (scale*torch.rand(size=(batch_size, n)))
+        A = torch.sqrt(scale) * torch.rand(size=(batch_size, n, n)) 
+    else:
+        mus= (1+5*torch.rand(size=(batch_size, n)))
+        A = torch.rand(size=(batch_size, n, n)) 
     sigmas = torch.bmm(A.transpose(1,2), A) + 1*torch.diag_embed(torch.rand(batch_size, n))
     n_samples = torch.randint(*set_size,(1,))
     dist = MultivariateNormal(mus, sigmas)
@@ -51,11 +55,16 @@ def generate_gaussian_variable_dim_multi(batch_size, dims=(2,6), **kwargs):
     Y = generate_gaussian_nd(batch_size, n, **kwargs)
     return X[0],Y[0]
 
-def generate_gaussian_mixture_variable_dim_multi(batch_size, dims=(2,6), **kwargs):
+def generate_gaussian_mixture_variable_dim_multi(batch_size, dims=(2,6), normalize=False, scaleinv=False, **kwargs):
     n = torch.randint(*dims,(1,)).item()
-    X = generate_gaussian_mixture(batch_size, n, **kwargs)
-    Y = generate_gaussian_mixture(batch_size, n, **kwargs)
-    return X[0],Y[0]
+    scale = torch.exp(torch.rand(1)*9 - 6) if scaleinv else -1
+    X = generate_gaussian_mixture(batch_size, n, scale=scale, **kwargs)[0]
+    Y = generate_gaussian_mixture(batch_size, n, scale=scale, **kwargs)[0]
+    if normalize:
+        avg_norm = torch.cat([X,Y], dim=-1).norm(dim=-1,keepdim=True).mean(dim=1,keepdim=True)
+        X /= avg_norm
+        Y /= avg_norm
+    return X, Y
 
 def generate_uniform(batch_size, eps=1e-4):
     n_samples = torch.randint(100,150,(1,))
@@ -73,12 +82,15 @@ def generate_uniform_nd(batch_size, n):
     samples = torch.rand(size=(batch_size, n_samples, n))
     return [samples.float().contiguous()]
 
-def generate_gaussian_mixture(batch_size, n, return_params=False, set_size=(100,150), component_range=(3,10)):
+def generate_gaussian_mixture(batch_size, n, return_params=False, set_size=(100,150), component_range=(3,10), scale=-1):
     n_samples = torch.randint(*set_size,(1,))
     n_components = torch.randint(*component_range,(1,))
-    #scale = torch.exp(torch.rand(1)*15 - 9)
-    mus= (1+5*torch.rand(size=(batch_size, n_components, n)))
-    A = torch.rand(size=(batch_size, n_components, n, n)) 
+    if scale > 0:
+        mus= (scale*torch.rand(size=(batch_size, n_components, n)))
+        A = torch.sqrt(scale) * torch.rand(size=(batch_size, n_components, n, n)) 
+    else:
+        mus= (1+5*torch.rand(size=(batch_size, n_components, n)))
+        A = torch.rand(size=(batch_size, n_components, n, n)) 
     sigmas = A.transpose(2,3).matmul(A) + torch.diag_embed(torch.rand(batch_size, n_components, n))
     logits = torch.randint(5, size=(batch_size, n_components)).float()
     base_dist = MultivariateNormal(mus, sigmas)
@@ -89,6 +101,7 @@ def generate_gaussian_mixture(batch_size, n, return_params=False, set_size=(100,
         return [samples.float().contiguous()], [dist]
     else:
         return [samples.float().contiguous()]
+
 
 '''
 def generate_gaussian_mixture(batch_size, n, return_params=False):
@@ -111,9 +124,15 @@ def generate_gaussian_mixture(batch_size, n, return_params=False):
 
 
 
-def generate_multi(fct):
+def generate_multi(fct, normalize=False, scaleinv=False, ):
     def generate(*args, **kwargs):
-        return fct(*args, **kwargs)[0], fct(*args, **kwargs)[0]
+        scale = torch.exp(torch.rand(1)*9 - 6) if scaleinv else -1
+        X,Y = fct(*args, scale=scale, **kwargs)[0], fct(*args, scale=scale, **kwargs)[0]
+        if normalize:
+            avg_norm = torch.cat([X,Y], dim=-1).norm(dim=-1,keepdim=True).mean(dim=1,keepdim=True)
+            X /= avg_norm
+            Y /= avg_norm
+        return X,Y
     return generate
 
 def generate_multi_params(fct):
@@ -363,6 +382,13 @@ def show_examples(model, sample_fct, label_fct, exact_loss=False, samples=8, **s
     yhat = model(*X).cpu().detach().squeeze(-1)
     print(tabulate.tabulate([['y', *y.tolist()], ['yhat', *yhat.tolist()]]))
     #print("Y:", y, "\nYhat:", yhat)
+
+def show_samples(sample_fct,label_fct,samples=8,normalize=False,**kwargs):
+    X = sample_fct(samples,**kwargs)
+    if normalize:
+        X = [X_i / X_i.norm(dim=-1,keepdim=True).mean(dim=1,keepdim=True) for X_i in X]
+    y = label_fct(*X)
+    print(tabulate.tabulate([['y', *y.tolist()]]))
 
 
 def masked_softmax(x, mask, **kwargs):
