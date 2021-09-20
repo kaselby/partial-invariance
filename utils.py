@@ -29,12 +29,14 @@ def generate_gaussian_1d(batch_size, return_params=False, set_size=(100,150)):
         return [samples.float().contiguous()], (mus, sigmas)
 
 def generate_gaussian_nd(batch_size, n, return_params=False, set_size=(100,150), scale=-1):
+    mus= torch.rand(size=(batch_size, n))
+    A = torch.rand(size=(batch_size, n, n)) 
     if scale > 0:
-        mus= (scale*torch.rand(size=(batch_size, n)))
-        A = torch.sqrt(scale) * torch.rand(size=(batch_size, n, n)) 
+        mus = mus * scale.unsqueeze(-1).unsqueeze(-1)
+        A = A * torch.sqrt(scale.unsqueeze(-1).unsqueeze(-1).unsqueeze(-1)) 
     else:
-        mus= (1+5*torch.rand(size=(batch_size, n)))
-        A = torch.rand(size=(batch_size, n, n)) 
+        mus= 1+5*mus
+        A = A
     sigmas = torch.bmm(A.transpose(1,2), A) + 1*torch.diag_embed(torch.rand(batch_size, n))
     n_samples = torch.randint(*set_size,(1,))
     dist = MultivariateNormal(mus, sigmas)
@@ -57,7 +59,7 @@ def generate_gaussian_variable_dim_multi(batch_size, dims=(2,6), **kwargs):
 
 def generate_gaussian_mixture_variable_dim_multi(batch_size, dims=(2,6), normalize=False, scaleinv=False, **kwargs):
     n = torch.randint(*dims,(1,)).item()
-    scale = torch.exp(torch.rand(1)*9 - 6) if scaleinv else -1
+    scale = torch.exp(torch.rand(batch_size)*9 - 6) if scaleinv else -1
     X = generate_gaussian_mixture(batch_size, n, scale=scale, **kwargs)[0]
     Y = generate_gaussian_mixture(batch_size, n, scale=scale, **kwargs)[0]
     if normalize:
@@ -85,12 +87,14 @@ def generate_uniform_nd(batch_size, n):
 def generate_gaussian_mixture(batch_size, n, return_params=False, set_size=(100,150), component_range=(3,10), scale=-1):
     n_samples = torch.randint(*set_size,(1,))
     n_components = torch.randint(*component_range,(1,))
+    mus= torch.rand(size=(batch_size, n_components, n))
+    A = torch.rand(size=(batch_size, n_components, n, n)) 
     if scale > 0:
-        mus= (scale*torch.rand(size=(batch_size, n_components, n)))
-        A = torch.sqrt(scale) * torch.rand(size=(batch_size, n_components, n, n)) 
+        mus = mus * scale.unsqueeze(-1).unsqueeze(-1)
+        A = A * torch.sqrt(scale.unsqueeze(-1).unsqueeze(-1).unsqueeze(-1)) 
     else:
-        mus= (1+5*torch.rand(size=(batch_size, n_components, n)))
-        A = torch.rand(size=(batch_size, n_components, n, n)) 
+        mus= 1+5*mus
+        A = A
     sigmas = A.transpose(2,3).matmul(A) + torch.diag_embed(torch.rand(batch_size, n_components, n))
     logits = torch.randint(5, size=(batch_size, n_components)).float()
     base_dist = MultivariateNormal(mus, sigmas)
