@@ -82,7 +82,9 @@ class HyponomyDataset(Dataset):
                 labels = np.array([True] * len(pos_pairs) + [False] * len(neg_pairs))
                 relations = ['hyper'] * len(pos_pairs) + ['inverted'] * len(neg_pairs)
         
+        n0 = len(pairs)
         relations, pairs, labels = self._trim_dataset(relations, pairs, labels, min_threshold)
+        print("Dataset contains %d pairs. %d pairs removed after filtering." % (n0, n0-len(pairs)))
 
         return np.array(relations), pairs, labels
 
