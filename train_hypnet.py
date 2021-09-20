@@ -34,15 +34,15 @@ def load_dataset_vecs(dataset, vec_dir, vocab_dir):
     return dataset_vecs
 
 class HyponomyDataset(Dataset):
-    def __init__(self, dataset_name, data_dir, vec_dir, voc_dir, inverted_pairs=False, pca_dim=-1, max_vecs=-1):
-        dataset_path = os.path.join(data_dir, dataset_name + ".all")
-        self.relations, self.pairs, self.labels = self.read_dataset(dataset_path, inverted_pairs=inverted_pairs)
+    def __init__(self, dataset_name, data_dir, vec_dir, voc_dir, inverted_pairs=False, pca_dim=-1, max_vecs=-1, min_threshold=10):
         load_dict = load_dataset_vecs(dataset_name, vec_dir, voc_dir)
         self.vecs = ICRDict.from_dict(load_dict)
+        dataset_path = os.path.join(data_dir, dataset_name + ".all")
+        self.relations, self.pairs, self.labels = self.read_dataset(dataset_path, min_threshold, inverted_pairs=inverted_pairs)
         self.pca_dim=pca_dim
         self.max_vecs=max_vecs
 
-    def read_dataset(self, dataset_path, inverted_pairs=False):
+    def _read_dataset(self, dataset_path, min_threshold, inverted_pairs=False):
         """Reads the hypernymy pairs, relation type and the true label from the given file and returns these
             four properties a separate lists.
 
@@ -81,8 +81,22 @@ class HyponomyDataset(Dataset):
                 pairs = pos_pairs + neg_pairs
                 labels = np.array([True] * len(pos_pairs) + [False] * len(neg_pairs))
                 relations = ['hyper'] * len(pos_pairs) + ['inverted'] * len(neg_pairs)
+        
+        relations, pairs, labels = self._trim_dataset(relations, pairs, labels, min_threshold)
 
         return np.array(relations), pairs, labels
+
+    def _trim_dataset(self, relations, pairs, labels, min_threshold):
+        rnew, pnew, lnew = [], [], []
+        for i, (w1,w2) in enumerate(pairs):
+            n1 = -1 if w1 not in self.vecs else self.vecs[w1].n
+            n2 = -1 if w2 not in self.vecs else self.vecs[w2].n
+            if n1 >= min_threshold and n2 >= min_threshold:
+                rnew.append(relations[i])
+                pnew.append(pairs[i])
+                lnew.append(labels[i])
+        return rnew, pnew, lnew
+                
 
     def __getitem__(self, index):
         w1,w2 = self.pairs[index]
