@@ -50,12 +50,12 @@ def generate_masks(X_lengths, Y_lengths):
 
 
 def pad_batch(batch):
-    d = batch[0].size(-1)
-    lens = [x.size(0) for x in batch]
+    d = batch[0].shape[-1]
+    lens = [x.shape[0] for x in batch]
     maxlen = max(lens)
     batch = torch.zeros(len(batch), maxlen, d)
     for i, elem in enumerate(batch):
-        batch[i, :lens[i], :] = elem
+        batch[i, :lens[i], :] = torch.as_tensor(elem)
     return batch, lens
 
 def collate_batch_with_padding(inputs):
