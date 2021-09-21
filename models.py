@@ -934,7 +934,7 @@ class MultiSetTransformer1(nn.Module):
                 nn.Linear(2*dim_hidden, dim_output),)
 
     def forward(self, X, Y, masks=None):
-        inputs = {'X':self.proj(X.unsqueeze(-1)), 'Y': self.proj(Y.unsqueeze(-1)), 'masks':masks}
+        inputs = {'X':self.proj(X), 'Y': self.proj(Y), 'masks':masks}
         ZX, ZY = self.enc(masks)
         ZX = self.pool_x(ZX)
         ZY = self.pool_y(ZY)
