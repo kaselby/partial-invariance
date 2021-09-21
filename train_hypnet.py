@@ -38,8 +38,8 @@ def load_dataset_vecs(dataset, vec_dir, vocab_dir):
 def generate_masks(X_lengths, Y_lengths):
     X_max, Y_max = max(X_lengths), max(Y_lengths)
 
-    X_mask = torch.arange(X_max)[None, :] < X_lengths[:, None]
-    Y_mask = torch.arange(Y_max)[None, :] < Y_lengths[:, None]
+    X_mask = torch.arange(X_max)[None, :] < torch.Tensor(X_lengths)[:, None]
+    Y_mask = torch.arange(Y_max)[None, :] < torch.Tensor(Y_lengths)[:, None]
 
     mask_xx = X_mask.long()[:,:,None].matmul(X_mask.long()[:,:,None].transpose(1,2))
     mask_yy = Y_mask.long()[:,:,None].matmul(Y_mask.long()[:,:,None].transpose(1,2))
