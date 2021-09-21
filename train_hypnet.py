@@ -59,7 +59,7 @@ def pad_batch(batch):
     return batch, lens
 
 def collate_batch_with_padding(inputs):
-    (inputs_x, inputs_y), labels = inputs
+    inputs_x, inputs_y, labels = zip(*inputs)
     batch_x, lens_x = pad_batch(inputs_x)
     batch_y, lens_y = pad_batch(inputs_y)
     labels = torch.cat([torch.as_tensor(x) for x in labels], dim=0)
@@ -140,10 +140,9 @@ class HyponomyDataset(Dataset):
     def __getitem__(self, index):
         w1,w2 = self.pairs[index]
         transform = self.vecs.pca(w1,w2, n_components=self.pca_dim).transform
-        return (
-            self.vecs[w1].get_vecs(transform=transform, max_vecs=self.max_vecs), 
-            self.vecs[w2].get_vecs(transform=transform, max_vecs=self.max_vecs)
-        ), self.labels[index]
+        return self.vecs[w1].get_vecs(transform=transform, max_vecs=self.max_vecs), \
+            self.vecs[w2].get_vecs(transform=transform, max_vecs=self.max_vecs), \
+            self.labels[index]
 
     def __len__(self):
         return len(self.pairs)
