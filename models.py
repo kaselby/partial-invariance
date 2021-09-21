@@ -646,8 +646,8 @@ class EquiSAB(nn.Module):
         super().__init__()
         self.mab = EquiMAB(input_size, latent_size, num_heads, ln=ln)
 
-    def forward(self, X):
-        return self.mab(X, X)
+    def forward(self, X, mask=None):
+        return self.mab(X, X, mask=mask)
 
 class CSAB(nn.Module):
     def __init__(self, dim_in, dim_out, num_heads, ln=False, remove_diag=False, equi=False):
