@@ -58,8 +58,8 @@ def pad_batch(batch):
         batch[i, :lens[i], :] = elem
     return batch, lens
 
-def collate_batch_with_padding(inputs, labels):
-    inputs_x, inputs_y = inputs
+def collate_batch_with_padding(inputs):
+    (inputs_x, inputs_y), labels = inputs
     batch_x, lens_x = pad_batch(inputs_x)
     batch_y, lens_y = pad_batch(inputs_y)
     labels = torch.cat([torch.as_tensor(x) for x in labels], dim=0)
