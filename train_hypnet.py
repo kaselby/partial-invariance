@@ -172,7 +172,7 @@ def train(model, dataset, steps, batch_size=64, lr=1e-3, save_every=5000, log_ev
             losses = load_dict['losses']
 
     while current_step < steps:
-        data_loader = DataLoader(dataset, batch_size=batch_size, sampler=RandomSampler(dataset, replacement=True), drop_last=True)
+        data_loader = DataLoader(dataset, batch_size=batch_size, sampler=RandomSampler(dataset, replacement=True), collate_fn=collate_batch_with_padding, drop_last=True)
         for data, masks, labels in data_loader:
             optimizer.zero_grad()
 
