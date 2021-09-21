@@ -586,8 +586,8 @@ class MAB(nn.Module):
         if mask is not None:
             A = masked_softmax(E, mask.unsqueeze(0).expand_as(E), dim=3)
         else:
-            A = torch.softmax(E, 2)
-        O = torch.cat((Q_ + A.bmm(V_)).split(Q.size(0), 0), 3).squeeze(0)
+            A = torch.softmax(E, 3)
+        O = torch.cat((Q_ + A.matmul(V_)).split(Q.size(0), 0), 3).squeeze(0)
         O = O if getattr(self, 'ln0', None) is None else self.ln0(O)
         O = O + F.relu(self.fc_o(O))
         O = O if getattr(self, 'ln1', None) is None else self.ln1(O)
