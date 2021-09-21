@@ -226,6 +226,9 @@ if __name__ == '__main__':
     dataset = HyponomyDataset('HypNet_train', args.data_dir, args.vec_dir, args.voc_dir, pca_dim=args.pca_dim, max_vecs=args.max_vecs)
     model = MultiSetTransformer1(args.pca_dim, 1, 1, args.hidden_size, num_heads=args.n_heads, num_blocks=args.n_blocks, ln=True)
 
+    if use_cuda:
+        model = model.cuda()
+
     checkpoint_dir = os.path.join(args.checkpoint_dir, args.run_name)
     output_dir = os.path.join(args.output_dir, args.run_name)
 
