@@ -54,7 +54,7 @@ def pad_batch(inputs):
     lens = [x.shape[0] for x in inputs]
     maxlen = max(lens)
     batch = torch.zeros(len(inputs), maxlen, d)
-    for i, elem in enumerate(batch):
+    for i, elem in enumerate(inputs):
         batch[i, :lens[i], :] = torch.as_tensor(elem)
     return batch, lens
 
