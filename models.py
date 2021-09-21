@@ -679,7 +679,10 @@ class CSAB(nn.Module):
                 mask_xx, mask_yy = diag_xx, diag_yy
                 mask_xy, mask_yx = None, None
         else:
-            mask_xx, mask_xy, mask_yx, mask_yy = masks if masks is not None else None,None,None,None
+            if masks is not None:
+                mask_xx, mask_xy, mask_yx, mask_yy = masks 
+            else: 
+                mask_xx, mask_xy, mask_yx, mask_yy = None,None,None,None
         XX = self.SAB_X(X, X, mask=mask_xx)
         YY = self.SAB_Y(Y, Y, mask=mask_yy)
         XY = self.SAB_XY(X, Y, mask=mask_xy)
