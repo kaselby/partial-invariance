@@ -935,7 +935,7 @@ class MultiSetTransformer1(nn.Module):
 
     def forward(self, X, Y, masks=None):
         inputs = {'X':self.proj(X), 'Y': self.proj(Y), 'masks':masks}
-        ZX, ZY = self.enc(masks)
+        ZX, ZY = self.enc(inputs)
         ZX = self.pool_x(ZX)
         ZY = self.pool_y(ZY)
         return self.dec(torch.cat([ZX, ZY], dim=-1)).squeeze(-1)
