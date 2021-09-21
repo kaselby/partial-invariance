@@ -582,7 +582,7 @@ class MAB(nn.Module):
         K_ = torch.stack(K.split(dim_split, 2), 0)
         V_ = torch.stack(V.split(dim_split, 2), 0)
 
-        E = Q_.bmm(K_.transpose(2,3))/math.sqrt(self.dim_V)
+        E = Q_.matmul(K_.transpose(2,3))/math.sqrt(self.dim_V)
         if mask is not None:
             A = masked_softmax(E, mask.unsqueeze(0).expand_as(E), dim=3)
         else:
