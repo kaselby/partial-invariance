@@ -540,6 +540,26 @@ def masked_softmax(x, mask, **kwargs):
 
     return torch.softmax(x_masked, **kwargs)
 
+def generate_masks(X_lengths, Y_lengths):
+    X_max, Y_max = max(X_lengths), max(Y_lengths)
+
+    X_mask = torch.arange(X_max)[None, :] < X_lengths[:, None]
+    Y_mask = torch.arange(Y_max)[None, :] < Y_lengths[:, None]
+
+    if use_cuda:
+        X_mask = X_mask.cuda()
+        Y_mask = Y_mask.cuda()
+
+    mask_xx = X_mask.long()[:,:,None].matmul(X_mask.long()[:,:,None].transpose(1,2))
+    mask_yy = Y_mask.long()[:,:,None].matmul(Y_mask.long()[:,:,None].transpose(1,2))
+    mask_xy = X_mask.long()[:,:,None].matmul(Y_mask.long()[:,:,None].transpose(1,2))
+    mask_yx = Y_mask.long()[:,:,None].matmul(X_mask.long()[:,:,None].transpose(1,2))
+
+    return mask_xx, mask_xy, mask_yx, mask_yy
+    
+
+
+
 class MAB(nn.Module):
     def __init__(self, dim_Q, dim_K, dim_V, num_heads, ln=False):
         super(MAB, self).__init__()
@@ -574,73 +594,7 @@ class MAB(nn.Module):
         return O
 
 
-class EquiMAB1(nn.Module):
-    def __init__(self, num_heads, ln=False):
-        super().__init__()
-        self.num_heads = num_heads
-        self.fc_q = nn.Linear(1, num_heads)
-        self.fc_k = nn.Linear(1, num_heads)
-        self.fc_v = nn.Linear(1, num_heads)
-        self.fc_o = nn.Linear(num_heads, 1)
-    
-    def forward(self, Q, K):
-        inp_size = Q.size(-1)
-        Q = self.fc_q(Q.unsqueeze(-1))
-        K, V = self.fc_k(K.unsqueeze(-1)), self.fc_v(K.unsqueeze(-1))
-
-        Q_ = Q.permute(3,0,1,2)#torch.cat(Q.split(self.num_heads, 3), 0)
-        K_ = K.permute(3,0,1,2)#torch.cat(K.split(self.num_heads, 3), 0)
-        V_ = V.permute(3,0,1,2)#torch.cat(V.split(self.num_heads, 3), 0)
-
-        E = Q_.matmul(K_.transpose(2,3))
-        A = torch.softmax(E, 2)
-        O = (Q_ + A.matmul(V_)).permute(1,2,3,0)
-        #O = O if getattr(self, 'ln0', None) is None else self.ln0(O)
-        O = F.relu(self.fc_o(O)).squeeze(-1)
-        #O = O if getattr(self, 'ln1', None) is None else self.ln1(O)
-        return O
-
-class EquiMAB2(nn.Module):
-    def __init__(self, latent_size, num_heads, ln=False):
-        super().__init__()
-        self.latent_size=latent_size
-        self.num_heads = num_heads
-        self.fc_q = nn.Sequential(nn.Linear(1, latent_size), nn.ReLU(), nn.Linear(latent_size, latent_size))
-        self.fc_k = nn.Sequential(nn.Linear(1, latent_size), nn.ReLU(), nn.Linear(latent_size, latent_size))
-        self.fc_v = nn.Sequential(nn.Linear(1, latent_size), nn.ReLU(), nn.Linear(latent_size, latent_size))
-        self.fc_o = nn.Linear(latent_size, latent_size)
-    
-    def forward(self, Q, K, mask=None):
-        inp_size = Q.size(-1)
-        Q = self.fc_q(Q.unsqueeze(-1))
-        K, V = self.fc_k(K.unsqueeze(-1)), self.fc_v(K.unsqueeze(-1))
-
-        dim_split = self.latent_size // self.num_heads
-        Q_ = torch.cat(Q.split(dim_split, 3), 0)
-        K_ = torch.cat(K.split(dim_split, 3), 0)
-        V_ = torch.cat(V.split(dim_split, 3), 0)
-
-        Q_ = torch.max(Q_, dim=2)[0]
-        K_ = torch.max(K_, dim=2)[0]
-        V_ = torch.max(V_, dim=2)[0]
-
-        E = Q_.matmul(K_.transpose(1,2)/math.sqrt(self.latent_size))
-        if mask is not None:
-            A = masked_softmax(E, mask.unsqueeze(0).expand_as(E), dim=2)
-        else:
-            A = torch.softmax(E, 2)
-        O = torch.cat((Q_ + A.matmul(V_)).split(Q.size(0), 0), 2)
-        
-        #O = torch.max(O, dim=2)[0]
-
-        #O = O if getattr(self, 'ln0', None) is None else self.ln0(O)
-        O = O + F.relu(self.fc_o(O))
-        #O = O if getattr(self, 'ln1', None) is None else self.ln1(O)
-        return O
-
-
-
-class EquiMAB3(nn.Module):
+class EquiMAB(nn.Module):
     def __init__(self, input_size, latent_size, num_heads, ln=False):
         super().__init__()
         self.latent_size=latent_size
@@ -687,75 +641,87 @@ class SAB(nn.Module):
     def forward(self, X, mask=None):
         return self.mab(X, X, mask=mask)
 
-class EquiSAB1(nn.Module):
-    def __init__(self, num_heads, ln=False):
-        super().__init__()
-        self.mab = EquiMAB1(num_heads, ln=ln)
-
-    def forward(self, X):
-        return self.mab(X, X)
-
-class EquiSAB2(nn.Module):
-    def __init__(self, latent_size, num_heads, ln=False):
-        super().__init__()
-        self.mab = EquiMAB2(latent_size, num_heads, ln=ln)
-
-    def forward(self, X):
-        return self.mab(X, X)
-
-class EquiSAB3(nn.Module):
+class EquiSAB(nn.Module):
     def __init__(self, input_size, latent_size, num_heads, ln=False):
         super().__init__()
-        self.mab = EquiMAB3(input_size, latent_size, num_heads, ln=ln)
+        self.mab = EquiMAB(input_size, latent_size, num_heads, ln=ln)
 
     def forward(self, X):
         return self.mab(X, X)
 
 class CSAB(nn.Module):
-    def __init__(self, dim_in, dim_out, num_heads, ln=False):
+    def __init__(self, dim_in, dim_out, num_heads, ln=False, remove_diag=False, equi=False):
         super(CSAB, self).__init__()
-        self.SAB_X = MAB(dim_in, dim_in, dim_out, num_heads, ln=ln)
-        self.SAB_Y = MAB(dim_in, dim_in, dim_out, num_heads, ln=ln)
-        self.SAB_XY = MAB(dim_in, dim_in, dim_out, num_heads, ln=ln)
-        self.SAB_YX = MAB(dim_in, dim_in, dim_out, num_heads, ln=ln)
+        if equi:
+            encoder_cls = EquiMAB
+            encoder_args = (dim_in, dim_out, num_heads, ln)
+        else:
+            encoder_cls = MAB
+            encoder_args = (dim_in, dim_in, dim_out, num_heads, ln)
+        self.SAB_X = encoder_cls(*encoder_args)
+        self.SAB_Y = encoder_cls(*encoder_args)
+        self.SAB_XY = encoder_cls(*encoder_args)
+        self.SAB_YX = encoder_cls(*encoder_args)
         self.fc_X = nn.Linear(dim_out*2, dim_out)
         self.fc_Y = nn.Linear(dim_out*2, dim_out)
+        self.remove_diag = remove_diag
 
     def forward(self, inputs):
-        X, Y = inputs
-        XX = self.SAB_X(X, X)
-        YY = self.SAB_Y(Y, Y)
-        XY = self.SAB_XY(X, Y)
-        YX = self.SAB_YX(Y, X)
+        X, Y, masks = inputs['X'], inputs['Y'], inputs['masks']
+        if self.remove_diag:
+            diag_xx = (1 - torch.eye(X.size(1))).cuda()
+            diag_yy = (1 - torch.eye(Y.size(1))).cuda()
+            if masks is not None:
+                mask_xx, mask_xy, mask_yx, mask_yy = masks
+                mask_xx = mask_xx * diag_xx
+                mask_yy = mask_yy * diag_yy
+            else:
+                mask_xx, mask_yy = diag_xx, diag_yy
+                mask_xy, mask_yx = None, None
+        else:
+            mask_xx, mask_xy, mask_yx, mask_yy = masks if masks is not None else None,None,None,None
+        XX = self.SAB_X(X, X, mask=mask_xx)
+        YY = self.SAB_Y(Y, Y, mask=mask_yy)
+        XY = self.SAB_XY(X, Y, mask=mask_xy)
+        YX = self.SAB_YX(Y, X, mask=mask_yx)
         X_out = X + F.relu(self.fc_X(torch.cat([XX, XY], dim=-1)))
         Y_out = Y + F.relu(self.fc_Y(torch.cat([YY, YX], dim=-1)))
         return (X_out, Y_out)
 
+'''
 class EquiCSAB(nn.Module):
     def __init__(self, input_size, latent_size, num_heads, ln=False, remove_diag=False):
         super().__init__()
-        self.SAB_X = EquiMAB3(input_size, latent_size, num_heads, ln=ln)
-        self.SAB_Y = EquiMAB3(input_size, latent_size, num_heads, ln=ln)
-        self.SAB_XY = EquiMAB3(input_size, latent_size, num_heads, ln=ln)
-        self.SAB_YX = EquiMAB3(input_size, latent_size, num_heads, ln=ln)
+        self.SAB_X = EquiMAB(input_size, latent_size, num_heads, ln=ln)
+        self.SAB_Y = EquiMAB(input_size, latent_size, num_heads, ln=ln)
+        self.SAB_XY = EquiMAB(input_size, latent_size, num_heads, ln=ln)
+        self.SAB_YX = EquiMAB(input_size, latent_size, num_heads, ln=ln)
         self.fc_X = nn.Linear(2*latent_size, latent_size)
         self.fc_Y = nn.Linear(2*latent_size, latent_size)
         self.remove_diag=remove_diag
 
-    def forward(self, inputs):
+    def forward(self, inputs, masks=None):
         X, Y = inputs
         if self.remove_diag:
-            mask_x = (1 - torch.eye(X.size(1))).cuda()
-            mask_y = (1 - torch.eye(Y.size(1))).cuda()
+            diag_xx = (1 - torch.eye(X.size(1))).cuda()
+            diag_yy = (1 - torch.eye(Y.size(1))).cuda()
+            if masks is not None:
+                mask_xx, mask_xy, mask_yx, mask_yy = masks
+                mask_xx = mask_xx * diag_xx
+                mask_yy = mask_yy * diag_yy
+            else:
+                mask_xx, mask_yy = diag_xx, diag_yy
+                mask_xy, mask_yx = None, None
         else:
-            mask_x, mask_y=None,None
-        XX = self.SAB_X(X, X, mask=mask_x)
-        YY = self.SAB_Y(Y, Y, mask=mask_y)
-        XY = self.SAB_XY(X, Y)
-        YX = self.SAB_YX(Y, X)
+            mask_xx, mask_xy, mask_yx, mask_yy = masks if masks is not None else None,None,None,None
+        XX = self.SAB_X(X, X, mask=mask_xx)
+        YY = self.SAB_Y(Y, Y, mask=mask_yy)
+        XY = self.SAB_XY(X, Y, mask=mask_xy)
+        YX = self.SAB_YX(Y, X, mask=mask_yx)
         X_out = X + F.relu(self.fc_X(torch.cat([XX, XY], dim=-1)))
         Y_out = Y + F.relu(self.fc_Y(torch.cat([YY, YX], dim=-1)))
         return (X_out, Y_out)
+'''
 
 class CSAB2(nn.Module):
     def __init__(self, dim_Q, dim_K, dim_V, num_heads, ln=False):
@@ -967,8 +933,9 @@ class MultiSetTransformer1(nn.Module):
                 #SAB(dim_hidden, dim_hidden, num_heads, ln=ln),
                 nn.Linear(2*dim_hidden, dim_output),)
 
-    def forward(self, X, Y):
-        ZX, ZY = self.enc((self.proj(X),self.proj(Y)))
+    def forward(self, X, Y, masks=None):
+        inputs = {'X':self.proj(X.unsqueeze(-1)), 'Y': self.proj(Y.unsqueeze(-1)), 'masks':masks}
+        ZX, ZY = self.enc(masks)
         ZX = self.pool_x(ZX)
         ZY = self.pool_y(ZY)
         return self.dec(torch.cat([ZX, ZY], dim=-1)).squeeze(-1)
@@ -1082,7 +1049,7 @@ class EquiMultiSetTransformer1(nn.Module):
             num_inds=32, dim_hidden=128, num_heads=4, num_blocks=2, ln=False, remove_diag=False):
         super().__init__()
         self.proj = nn.Linear(1, dim_hidden)
-        self.enc = nn.Sequential(*[EquiCSAB(dim_hidden, dim_hidden, num_heads, ln=ln, remove_diag=remove_diag) for i in range(num_blocks)])
+        self.enc = nn.Sequential(*[CSAB(dim_hidden, dim_hidden, num_heads, ln=ln, remove_diag=remove_diag, equi=True) for i in range(num_blocks)])
         self.pool_x = PMA(dim_hidden, num_heads, num_outputs, ln=ln)
         self.pool_y = PMA(dim_hidden, num_heads, num_outputs, ln=ln)
         self.dec = nn.Sequential(
@@ -1090,8 +1057,9 @@ class EquiMultiSetTransformer1(nn.Module):
                 #SAB(dim_hidden, dim_hidden, num_heads, ln=ln),
                 nn.Linear(2*dim_hidden, dim_output),)
 
-    def forward(self, X, Y):
-        ZX, ZY = self.enc((self.proj(X.unsqueeze(-1)),self.proj(Y.unsqueeze(-1))))
+    def forward(self, X, Y, masks=None):
+        inputs = {'X':self.proj(X.unsqueeze(-1)), 'Y': self.proj(Y.unsqueeze(-1)), 'masks':masks}
+        ZX, ZY = self.enc(inputs)
         ZX = ZX.max(dim=2)[0]
         ZY = ZY.max(dim=2)[0]
         ZX = self.pool_x(ZX)

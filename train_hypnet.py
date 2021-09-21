@@ -12,6 +12,8 @@ import argparse
 from icr import ICRDict
 from models import MultiSetTransformer1
 
+use_cuda = torch.cuda.is_available()
+
 def load_vocab(filename):
     with open(filename, 'r') as reader:
         lines = reader.readlines()
@@ -32,6 +34,41 @@ def load_dataset_vecs(dataset, vec_dir, vocab_dir):
     words_left = len(voc) - len(words_found)
     print("Loaded %s. %d words missing." % (dataset, words_left))
     return dataset_vecs
+
+def generate_masks(X_lengths, Y_lengths):
+    X_max, Y_max = max(X_lengths), max(Y_lengths)
+
+    X_mask = torch.arange(X_max)[None, :] < X_lengths[:, None]
+    Y_mask = torch.arange(Y_max)[None, :] < Y_lengths[:, None]
+
+    mask_xx = X_mask.long()[:,:,None].matmul(X_mask.long()[:,:,None].transpose(1,2))
+    mask_yy = Y_mask.long()[:,:,None].matmul(Y_mask.long()[:,:,None].transpose(1,2))
+    mask_xy = X_mask.long()[:,:,None].matmul(Y_mask.long()[:,:,None].transpose(1,2))
+    mask_yx = Y_mask.long()[:,:,None].matmul(X_mask.long()[:,:,None].transpose(1,2))
+
+    return mask_xx, mask_xy, mask_yx, mask_yy
+
+
+def pad_batch(batch):
+    d = batch[0].size(-1)
+    lens = [x.size(0) for x in batch]
+    maxlen = max(lens)
+    batch = torch.zeros(len(batch), maxlen, d)
+    for i, elem in enumerate(batch):
+        batch[i, :lens[i], :] = elem
+    return batch, lens
+
+def collate_batch_with_padding(inputs, labels):
+    inputs_x, inputs_y = inputs
+    batch_x, lens_x = pad_batch(inputs_x)
+    batch_y, lens_y = pad_batch(inputs_y)
+    labels = torch.cat([torch.as_tensor(x) for x in labels], dim=0)
+    masks = generate_masks(lens_x, lens_y)
+
+    return (batch_x, batch_y), masks, labels
+
+
+
 
 class HyponomyDataset(Dataset):
     def __init__(self, dataset_name, data_dir, vec_dir, voc_dir, inverted_pairs=False, pca_dim=-1, max_vecs=-1, min_threshold=10):
@@ -136,11 +173,16 @@ def train(model, dataset, steps, batch_size=64, lr=1e-3, save_every=5000, log_ev
 
     while current_step < steps:
         data_loader = DataLoader(dataset, batch_size=batch_size, sampler=RandomSampler(dataset, replacement=True), drop_last=True)
-        for data, label in data_loader:
+        for data, masks, labels in data_loader:
             optimizer.zero_grad()
 
+            if use_cuda:
+                data = [X.cuda() for X in data]
+                masks = [mask.cuda() for mask in masks]
+                labels = labels.cuda()
+
             score = model(data)
-            loss = loss_fct(out(score), label)
+            loss = loss_fct(out(score), labels)
             loss.backward()
             optimizer.step()
 
