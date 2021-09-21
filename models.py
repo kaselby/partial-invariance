@@ -666,8 +666,8 @@ class CSAB(nn.Module):
         self.fc_Y = nn.Linear(dim_out*2, dim_out)
         self.remove_diag = remove_diag
 
-    def forward(self, inputs):
-        X, Y, masks = inputs['X'], inputs['Y'], inputs['masks']
+    def forward(self, inputs, masks=None):
+        X, Y = inputs
         if self.remove_diag:
             diag_xx = (1 - torch.eye(X.size(1))).cuda()
             diag_yy = (1 - torch.eye(Y.size(1))).cuda()
@@ -907,6 +907,14 @@ class DeepSet(nn.Module):
         X = self.dec(X).reshape(-1, self.num_outputs, self.dim_output)
         return X
 
+class EncoderStack(nn.Sequential):
+    def __init__(self,*args, **kwargs):
+        super().__init__(*args, **kwargs)
+    def forward(self, input, **kwargs):
+        for module in self:
+            input = module(input, **kwargs)
+        return input
+
 class SetTransformer(nn.Module):
     def __init__(self, dim_input, num_outputs, dim_output,
             num_inds=32, dim_hidden=128, num_heads=4, ln=False):
@@ -928,7 +936,7 @@ class MultiSetTransformer1(nn.Module):
             num_inds=32, dim_hidden=128, num_heads=4, num_blocks=2, ln=False):
         super(MultiSetTransformer1, self).__init__()
         self.proj = nn.Linear(dim_input, dim_hidden)
-        self.enc = nn.Sequential(*[CSAB(dim_hidden, dim_hidden, num_heads, ln=ln) for i in range(num_blocks)])
+        self.enc = EncoderStack(*[CSAB(dim_hidden, dim_hidden, num_heads, ln=ln) for i in range(num_blocks)])
         self.pool_x = PMA(dim_hidden, num_heads, num_outputs, ln=ln)
         self.pool_y = PMA(dim_hidden, num_heads, num_outputs, ln=ln)
         self.dec = nn.Sequential(
@@ -937,8 +945,7 @@ class MultiSetTransformer1(nn.Module):
                 nn.Linear(2*dim_hidden, dim_output),)
 
     def forward(self, X, Y, masks=None):
-        inputs = {'X':self.proj(X), 'Y': self.proj(Y), 'masks':masks}
-        ZX, ZY = self.enc(inputs)
+        ZX, ZY = self.enc((self.proj(X),self.proj(Y)), masks=masks)
         ZX = self.pool_x(ZX)
         ZY = self.pool_y(ZY)
         return self.dec(torch.cat([ZX, ZY], dim=-1)).squeeze(-1)
@@ -948,7 +955,7 @@ class MultiSetTransformer2(nn.Module):
             num_inds=32, dim_hidden=128, num_heads=4, num_blocks=2, ln=False):
         super(MultiSetTransformer2, self).__init__()
         self.proj = nn.Linear(dim_input, dim_hidden)
-        self.enc = nn.Sequential(*[CSAB2(dim_hidden, dim_hidden, dim_hidden, num_heads, ln=ln) for i in range(num_blocks)])
+        self.enc = EncoderStack(*[CSAB2(dim_hidden, dim_hidden, dim_hidden, num_heads, ln=ln) for i in range(num_blocks)])
         self.pool_x = PMA(dim_hidden, num_heads, num_outputs, ln=ln)
         self.pool_y = PMA(dim_hidden, num_heads, num_outputs, ln=ln)
         self.dec = nn.Sequential(
@@ -967,7 +974,7 @@ class MultiSetTransformer3(nn.Module):
             num_inds=32, dim_hidden=128, num_heads=4, num_blocks=2, ln=False):
         super(MultiSetTransformer3, self).__init__()
         self.proj = nn.Linear(dim_input, dim_hidden)
-        self.enc = nn.Sequential(*[CSAB3(dim_hidden, dim_hidden, dim_hidden, num_heads, ln=ln) for i in range(num_blocks)])
+        self.enc = EncoderStack(*[CSAB3(dim_hidden, dim_hidden, dim_hidden, num_heads, ln=ln) for i in range(num_blocks)])
         self.pool_x = PMA(dim_hidden, num_heads, num_outputs, ln=ln)
         self.pool_y = PMA(dim_hidden, num_heads, num_outputs, ln=ln)
         self.dec = nn.Sequential(
@@ -1052,7 +1059,7 @@ class EquiMultiSetTransformer1(nn.Module):
             num_inds=32, dim_hidden=128, num_heads=4, num_blocks=2, ln=False, remove_diag=False):
         super().__init__()
         self.proj = nn.Linear(1, dim_hidden)
-        self.enc = nn.Sequential(*[CSAB(dim_hidden, dim_hidden, num_heads, ln=ln, remove_diag=remove_diag, equi=True) for i in range(num_blocks)])
+        self.enc = EncoderStack(*[CSAB(dim_hidden, dim_hidden, num_heads, ln=ln, remove_diag=remove_diag, equi=True) for i in range(num_blocks)])
         self.pool_x = PMA(dim_hidden, num_heads, num_outputs, ln=ln)
         self.pool_y = PMA(dim_hidden, num_heads, num_outputs, ln=ln)
         self.dec = nn.Sequential(
@@ -1061,8 +1068,7 @@ class EquiMultiSetTransformer1(nn.Module):
                 nn.Linear(2*dim_hidden, dim_output),)
 
     def forward(self, X, Y, masks=None):
-        inputs = {'X':self.proj(X.unsqueeze(-1)), 'Y': self.proj(Y.unsqueeze(-1)), 'masks':masks}
-        ZX, ZY = self.enc(inputs)
+        ZX, ZY = self.enc((self.proj(X.unsqueeze(-1)),self.proj(Y.unsqueeze(-1))), masks=masks)
         ZX = ZX.max(dim=2)[0]
         ZY = ZY.max(dim=2)[0]
         ZX = self.pool_x(ZX)
