@@ -578,16 +578,16 @@ class MAB(nn.Module):
         K, V = self.fc_k(K), self.fc_v(K)
 
         dim_split = self.dim_V // self.num_heads
-        Q_ = torch.cat(Q.split(dim_split, 2), 0)
-        K_ = torch.cat(K.split(dim_split, 2), 0)
-        V_ = torch.cat(V.split(dim_split, 2), 0)
+        Q_ = torch.stack(Q.split(dim_split, 2), 0)
+        K_ = torch.stack(K.split(dim_split, 2), 0)
+        V_ = torch.stack(V.split(dim_split, 2), 0)
 
-        E = Q_.bmm(K_.transpose(1,2))/math.sqrt(self.dim_V)
+        E = Q_.bmm(K_.transpose(2,3))/math.sqrt(self.dim_V)
         if mask is not None:
-            A = masked_softmax(E, mask.unsqueeze(0).expand_as(E), dim=2)
+            A = masked_softmax(E, mask.unsqueeze(0).expand_as(E), dim=3)
         else:
             A = torch.softmax(E, 2)
-        O = torch.cat((Q_ + A.bmm(V_)).split(Q.size(0), 0), 2)
+        O = torch.cat((Q_ + A.bmm(V_)).split(Q.size(0), 0), 3).squeeze(0)
         O = O if getattr(self, 'ln0', None) is None else self.ln0(O)
         O = O + F.relu(self.fc_o(O))
         O = O if getattr(self, 'ln1', None) is None else self.ln1(O)
