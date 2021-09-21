@@ -49,11 +49,11 @@ def generate_masks(X_lengths, Y_lengths):
     return mask_xx, mask_xy, mask_yx, mask_yy
 
 
-def pad_batch(batch):
-    d = batch[0].shape[-1]
-    lens = [x.shape[0] for x in batch]
+def pad_batch(inputs):
+    d = inputs[0].shape[-1]
+    lens = [x.shape[0] for x in inputs]
     maxlen = max(lens)
-    batch = torch.zeros(len(batch), maxlen, d)
+    batch = torch.zeros(len(inputs), maxlen, d)
     for i, elem in enumerate(batch):
         batch[i, :lens[i], :] = torch.as_tensor(elem)
     return batch, lens
