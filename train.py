@@ -15,10 +15,12 @@ def parse_args():
     parser.add_argument('--normalize', action='store_true')
     parser.add_argument('--scaleinv', action='store_true')
     parser.add_argument('--checkpoint_dir', type=str, default="/checkpoint/kaselby")
+    parser.add_argument('--scaling', default=0.5)
+    parser.add_argument('--blur', default=0.05)
 
     return parser.parse_args()
 
-def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(), batch_size=64, steps=3000, lr=1e-5, checkpoint_dir=None, output_dir=None, save_every=1000, *sample_args, **sample_kwargs):
+def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(), batch_size=64, steps=3000, lr=1e-5, checkpoint_dir=None, output_dir=None, save_every=1000, sample_kwargs={}, label_kwargs={}):
     #model.train(True)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     losses = []
@@ -35,16 +37,16 @@ def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(),
     for i in tqdm.tqdm(range(initial_step,steps+1)):
         optimizer.zero_grad()
         if exact_loss:
-            X, theta = sample_fct(batch_size, *sample_args, **sample_kwargs)
+            X, theta = sample_fct(batch_size, **sample_kwargs)
             if use_cuda:
                 X = [x.cuda() for x in X]
                 #theta = [t.cuda() for t in theta]
-            labels = label_fct(*theta).squeeze(-1)
+            labels = label_fct(*theta, **label_kwargs).squeeze(-1)
         else:
-            X = sample_fct(batch_size, *sample_args, **sample_kwargs)
+            X = sample_fct(batch_size, **sample_kwargs)
             if use_cuda:
                 X = [x.cuda() for x in X]
-            labels = label_fct(*X)
+            labels = label_fct(*X, **label_kwargs)
         loss = criterion(model(*X).squeeze(-1), labels)
         loss.backward()
         optimizer.step()
@@ -80,8 +82,11 @@ if __name__ == '__main__':
     if torch.cuda.device_count() > 1:
         print("Let's use", torch.cuda.device_count(), "GPUs!")
         model = nn.DataParallel(model)
-    losses = train(model, generate_gaussian_mixture_variable_dim_multi, wasserstein, checkpoint_dir=os.path.join(args.checkpoint_dir, args.run_name), output_dir=run_dir, \
-        criterion=nn.MSELoss(), steps=40000, lr=5e-4, set_size=(10,150), dims=(24,40), scaleinv=args.scaleinv, batch_size=128)
+    sample_kwargs={}
+    label_kwargs={'scaling':args.scaling, 'blur':args.blur}
+    losses = train(model, generate_gaussian_mixture_variable_dim_multi, wasserstein, checkpoint_dir=os.path.join(args.checkpoint_dir, args.run_name), \
+        output_dir=run_dir, criterion=nn.MSELoss(), steps=40000, lr=5e-4, set_size=(10,150), dims=(24,40), scaleinv=args.scaleinv, batch_size=128, \
+        sample_kwargs=sample_kwargs, label_kwargs=label_kwargs)
 
 
 '''

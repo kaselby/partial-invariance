@@ -299,8 +299,8 @@ def avg_log_cross_nn_dist(X, Y, xi=1e-5):
 #    costs = ot.dist(X, Y)
 #    return ot.emd2([],[],costs)
 
-def wasserstein(X, Y):
-    loss = SamplesLoss(p=1)
+def wasserstein(X, Y, **kwargs):
+    loss = SamplesLoss(p=1, **kwargs)
     return loss(X, Y)
 
 def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(), batch_size=64, steps=3000, lr=1e-5, lr_decay=False, epoch_size=250, milestones=[], *sample_args, **sample_kwargs):

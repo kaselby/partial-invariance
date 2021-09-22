@@ -155,8 +155,7 @@ def compare(w1, w2, vec_dicts, distance):
 
 def train(model, dataset, steps, batch_size=64, lr=1e-3, save_every=5000, log_every=500, checkpoint_dir=None, output_dir=None):
     optimizer = optim.Adam(model.parameters(), lr=lr)
-    loss_fct = nn.BCELoss()
-    out = nn.Sigmoid()
+    loss_fct = nn.BCEWithLogitsLoss()
 
     current_step=0
     losses = []
@@ -181,7 +180,7 @@ def train(model, dataset, steps, batch_size=64, lr=1e-3, save_every=5000, log_ev
                 labels = labels.cuda()
 
             score = model(*data, masks=masks)
-            loss = loss_fct(out(score).squeeze(-1), labels.float())
+            loss = loss_fct(score.squeeze(-1), labels.float())
             loss.backward()
             optimizer.step()
 
