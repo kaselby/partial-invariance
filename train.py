@@ -1,5 +1,5 @@
 from models import *
-from utils import wasserstein, generate_gaussian_variable_dim_multi, generate_gaussian_mixture_variable_dim_multi
+from utils import generate_gaussian_mixture, wasserstein, generate_gaussian_variable_dim_multi, generate_gaussian_mixture_variable_dim_multi, generate_multi
 import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
@@ -17,6 +17,7 @@ def parse_args():
     parser.add_argument('--checkpoint_dir', type=str, default="/checkpoint/kaselby")
     parser.add_argument('--scaling', default=0.5)
     parser.add_argument('--blur', default=0.05)
+    parser.add_argument('--equi', action='store_true')
 
     return parser.parse_args()
 
@@ -78,14 +79,25 @@ if __name__ == '__main__':
 
     device = torch.device("cuda:0")
 
-    model=EquiMultiSetTransformer1(1,1, dim_hidden=16, ln=True, remove_diag=True, num_blocks=2).to(device)
+    if args.equi:
+        model=EquiMultiSetTransformer1(1,1, dim_hidden=16, ln=True, remove_diag=True, num_blocks=2).to(device)
+    else:
+        DIM=32
+        model=MultiSetTransformer1(DIM, 1,1, dim_hidden=256, ln=True, remove_diag=True, num_blocks=2).to(device)
+
     if torch.cuda.device_count() > 1:
         print("Let's use", torch.cuda.device_count(), "GPUs!")
         model = nn.DataParallel(model)
-    sample_kwargs={}
+    sample_kwargs={'set_size':(10,150)}
     label_kwargs={'scaling':args.scaling, 'blur':args.blur}
-    losses = train(model, generate_gaussian_mixture_variable_dim_multi, wasserstein, checkpoint_dir=os.path.join(args.checkpoint_dir, args.run_name), \
-        output_dir=run_dir, criterion=nn.MSELoss(), steps=40000, lr=5e-4, set_size=(10,150), dims=(24,40), scaleinv=args.scaleinv, batch_size=128, \
+    if args.equi:
+        sample_kwargs['dims'] = (24,40)
+        sample_fct = generate_gaussian_mixture_variable_dim_multi
+    else:
+        sample_kwargs['n'] = DIM
+        sample_fct = generate_multi(generate_gaussian_mixture)
+    losses = train(model, sample_fct, wasserstein, checkpoint_dir=os.path.join(args.checkpoint_dir, args.run_name), \
+        output_dir=run_dir, criterion=nn.MSELoss(), steps=40000, lr=5e-4, scaleinv=args.scaleinv, batch_size=128, \
         sample_kwargs=sample_kwargs, label_kwargs=label_kwargs)
 
 
