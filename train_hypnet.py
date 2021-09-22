@@ -181,7 +181,7 @@ def train(model, dataset, steps, batch_size=64, lr=1e-3, save_every=5000, log_ev
                 labels = labels.cuda()
 
             score = model(*data, masks=masks)
-            loss = loss_fct(out(score), labels)
+            loss = loss_fct(out(score).squeeze(-1), labels)
             loss.backward()
             optimizer.step()
 
