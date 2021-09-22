@@ -88,7 +88,7 @@ if __name__ == '__main__':
     if torch.cuda.device_count() > 1:
         print("Let's use", torch.cuda.device_count(), "GPUs!")
         model = nn.DataParallel(model)
-    sample_kwargs={'set_size':(10,150)}
+    sample_kwargs={'set_size':(10,150), 'scaleinv':args.scaleinv}
     label_kwargs={'scaling':args.scaling, 'blur':args.blur}
     if args.equi:
         sample_kwargs['dims'] = (24,40)
@@ -97,7 +97,7 @@ if __name__ == '__main__':
         sample_kwargs['n'] = DIM
         sample_fct = generate_multi(generate_gaussian_mixture)
     losses = train(model, sample_fct, wasserstein, checkpoint_dir=os.path.join(args.checkpoint_dir, args.run_name), \
-        output_dir=run_dir, criterion=nn.MSELoss(), steps=40000, lr=5e-4, scaleinv=args.scaleinv, batch_size=128, \
+        output_dir=run_dir, criterion=nn.MSELoss(), steps=40000, lr=5e-4, batch_size=128, \
         sample_kwargs=sample_kwargs, label_kwargs=label_kwargs)
 
 
