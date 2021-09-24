@@ -211,10 +211,14 @@ def evaluate(model, dataset, batch_size=64):
         j_min = i * batch_size
         j_max = min(len(dataset), (i + 1) * batch_size)
 
+        if use_cuda:
+            data = [X.cuda() for X in data]
+            masks = [mask.cuda() for mask in masks]
+
         out = model(*data, masks=masks)
 
         all_logits[j_min:j_max] = out.cpu().detach()
-        all_labels[j_min:j_max] = labels.cpu().detach()
+        all_labels[j_min:j_max] = labels.detach()
     
     def get_accuracy(labels, logits):
         return ((labels*2 - 1) * logits > 0).float().sum() / logits.size(0)
