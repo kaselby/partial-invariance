@@ -220,6 +220,9 @@ def evaluate(model, dataset, batch_size=64):
         all_logits[j_min:j_max] = out.squeeze(-1).cpu().detach()
         all_labels[j_min:j_max] = labels.detach()
     
+    return all_logits, all_labels
+    
+    '''
     def get_accuracy(labels, logits):
         return ((labels*2 - 1) * logits > 0).float().sum() / logits.size(0)
 
@@ -227,6 +230,7 @@ def evaluate(model, dataset, batch_size=64):
     precision = average_precision_score(all_labels.numpy(), all_logits.numpy())
 
     return accuracy, precision
+    '''
 
 
 
