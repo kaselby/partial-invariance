@@ -217,7 +217,7 @@ def evaluate(model, dataset, batch_size=64):
 
         out = model(*data, masks=masks)
 
-        all_logits[j_min:j_max] = out.cpu().detach()
+        all_logits[j_min:j_max] = out.squeeze(-1).cpu().detach()
         all_labels[j_min:j_max] = labels.detach()
     
     def get_accuracy(labels, logits):
