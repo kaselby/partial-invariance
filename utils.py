@@ -59,7 +59,7 @@ def generate_gaussian_variable_dim_multi(batch_size, dims=(2,6), **kwargs):
 
 def generate_gaussian_mixture_variable_dim_multi(batch_size, dims=(2,6), normalize=False, scaleinv=False, **kwargs):
     n = torch.randint(*dims,(1,)).item()
-    scale = torch.exp(torch.rand(batch_size)*9 - 6) if scaleinv else -1
+    scale = torch.exp(torch.rand(batch_size)*9 - 6) if scaleinv else None
     X = generate_gaussian_mixture(batch_size, n, scale=scale, **kwargs)[0]
     Y = generate_gaussian_mixture(batch_size, n, scale=scale, **kwargs)[0]
     if normalize:
@@ -130,7 +130,7 @@ def generate_gaussian_mixture(batch_size, n, return_params=False):
 
 def generate_multi(fct, normalize=False, scaleinv=False):
     def generate(*args, **kwargs):
-        scale = torch.exp(torch.rand(1)*9 - 6) if scaleinv else -1
+        scale = torch.exp(torch.rand(1)*9 - 6) if scaleinv else None
         X,Y = fct(*args, scale=scale, **kwargs)[0], fct(*args, scale=scale, **kwargs)[0]
         if normalize:
             avg_norm = torch.cat([X,Y], dim=-1).norm(dim=-1,keepdim=True).mean(dim=1,keepdim=True)
