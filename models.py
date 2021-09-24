@@ -933,10 +933,10 @@ class SetTransformer(nn.Module):
 
 class MultiSetTransformer1(nn.Module):
     def __init__(self, dim_input, num_outputs, dim_output,
-            num_inds=32, dim_hidden=128, num_heads=4, num_blocks=2, ln=False):
+            num_inds=32, dim_hidden=128, num_heads=4, num_blocks=2, ln=False, remove_diag=False):
         super(MultiSetTransformer1, self).__init__()
         self.proj = nn.Linear(dim_input, dim_hidden)
-        self.enc = EncoderStack(*[CSAB(dim_hidden, dim_hidden, num_heads, ln=ln) for i in range(num_blocks)])
+        self.enc = EncoderStack(*[CSAB(dim_hidden, dim_hidden, num_heads, ln=ln, remove_diag=remove_diag) for i in range(num_blocks)])
         self.pool_x = PMA(dim_hidden, num_heads, num_outputs, ln=ln)
         self.pool_y = PMA(dim_hidden, num_heads, num_outputs, ln=ln)
         self.dec = nn.Sequential(
