@@ -15,8 +15,8 @@ def parse_args():
     parser.add_argument('--normalize', action='store_true')
     parser.add_argument('--scaleinv', action='store_true')
     parser.add_argument('--checkpoint_dir', type=str, default="/checkpoint/kaselby")
-    parser.add_argument('--scaling', default=0.5)
-    parser.add_argument('--blur', default=0.05)
+    parser.add_argument('--scaling', type=float, default=0.5)
+    parser.add_argument('--blur', type=float, default=0.05)
     parser.add_argument('--equi', action='store_true')
 
     return parser.parse_args()
