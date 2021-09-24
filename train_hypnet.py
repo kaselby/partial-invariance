@@ -8,6 +8,7 @@ import os
 import glob
 import tqdm
 import argparse
+from sklearn.metrics import average_precision_score
 
 from icr import ICRDict
 from models import MultiSetTransformer1
@@ -200,6 +201,29 @@ def train(model, dataset, steps, batch_size=64, lr=1e-3, save_every=5000, log_ev
         torch.save({'loss':losses}, os.path.join(output_dir, "logs.pt"))
 
     return losses
+
+def evaluate(model, dataset, batch_size=64):
+    all_logits = torch.zeros(len(dataset))
+    all_labels = torch.zeros(len(dataset))
+
+    data_loader=DataLoader(dataset, batch_size=batch_size, collate_fn=collate_batch_with_padding)
+    for i, (data, masks, labels) in enumerate(data_loader):
+        j_min = i * batch_size
+        j_max = min(len(dataset), (i + 1) * batch_size)
+
+        out = model(*data, masks=masks)
+
+        all_logits[j_min:j_max] = out.cpu()
+        all_labels[j_min:j_max] = labels.cpu()
+    
+    def get_accuracy(labels, logits):
+        return ((labels*2 - 1) * logits > 0).float().sum() / logits.size(0)
+
+    accuracy = get_accuracy(all_labels, all_logits)
+    precision = average_precision_score(all_labels, all_logits)
+
+    return accuracy, precision
+
 
 
 def parse_args():
