@@ -99,7 +99,7 @@ if __name__ == '__main__':
         sample_kwargs['n'] = DIM
         sample_fct = generate_multi(generate_gaussian_mixture, scaleinv=args.scaleinv, normalize=args.normalize)
     losses = train(model, sample_fct, wasserstein, checkpoint_dir=os.path.join(args.checkpoint_dir, args.run_name), \
-        output_dir=run_dir, criterion=nn.MSELoss(), steps=40000, lr=5e-4, batch_size=128, \
+        output_dir=run_dir, criterion=nn.MSELoss(), steps=40000, lr=1e-3, batch_size=128, \
         sample_kwargs=sample_kwargs, label_kwargs=label_kwargs)
 
 

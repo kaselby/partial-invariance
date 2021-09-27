@@ -198,7 +198,7 @@ def train(model, dataset, steps, batch_size=64, lr=1e-3, save_every=5000, log_ev
 
     if output_dir is not None:
         torch.save(model, os.path.join(output_dir, "model.pt"))
-        torch.save({'loss':losses}, os.path.join(output_dir, "logs.pt"))
+        torch.save({'losses':losses}, os.path.join(output_dir, "logs.pt"))
 
     return losses
 
