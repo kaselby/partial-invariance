@@ -79,7 +79,8 @@ if __name__ == '__main__':
     model = torch.load(os.path.join("runs", args.run_name, "model.pt"))
 
     sample_kwargs={'n':32, 'set_size':(10,150)}
-    model_loss, baseline_loss = evaluate(model, wasserstein, generate_multi(generate_gaussian_mixture, normalize=True), wasserstein_exact, sample_kwargs=sample_kwargs)
+    model_loss, baseline_loss = evaluate(model, wasserstein, generate_multi(generate_gaussian_mixture, normalize=True), wasserstein_exact, 
+        sample_kwargs=sample_kwargs, steps=2500)
 
     print("Model Loss:", model_loss)
     print("Baseline Loss:", baseline_loss)
