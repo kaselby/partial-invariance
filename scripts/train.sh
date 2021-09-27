@@ -6,7 +6,9 @@
 #SBATCH --gres=gpu:4
 #SBATCH --partition=t4v1,t4v2,p100,rtx6000
 #SBATCH --cpus-per-gpu=1
+#SBATCH --qos=deadline
+#SBATCH --account=deadline
 #SBATCH --mem=25GB
 #SBATCH --exclude=gpu109
 
-python3 train.py $1
+python3 train.py $1 --normalize --blur 0.001 --scaling 0.98 --equi
