@@ -9,7 +9,7 @@ import fasttext
 import numpy as np
 import tqdm
 
-from utils import show_examples, wasserstein, generate_gaussian_mixture, generate_multi
+from utils import show_examples, wasserstein, generate_gaussian_mixture, generate_multi, wasserstein_exact
 
 use_cuda=torch.cuda.is_available()
 
@@ -47,7 +47,7 @@ def sample_vecs(ft1, ft2, scale=-1):
     return lambda n: (get_samples(ft1, n), get_samples(ft2, n))
 
 
-def evaluate(model, baseline, sample_fct, label_fct, exact_loss=False, batch_size=64, sample_kwargs={}, label_kwargs={}, criterion=nn.L1Loss(), steps=10000):
+def evaluate(model, baseline, sample_fct, label_fct, exact_loss=False, batch_size=64, sample_kwargs={}, label_kwargs={}, criterion=nn.L1Loss(), steps=5000):
     model_losses = []
     baseline_losses = []
     with torch.no_grad():
@@ -67,7 +67,7 @@ def evaluate(model, baseline, sample_fct, label_fct, exact_loss=False, batch_siz
             baseline_loss = criterion(baseline(*X), labels)
 
             model_losses.append(model_loss.item())
-            baseline_losses.append(model_loss.item())
+            baseline_losses.append(baseline_loss.item())
     
     return sum(model_losses)/len(model_losses), sum(baseline_losses)/len(baseline_losses)
 
@@ -78,6 +78,11 @@ if __name__ == '__main__':
 
     model = torch.load(os.path.join("runs", args.run_name, "model.pt"))
 
+    sample_kwargs={'n':32, 'set_size':(10,150), 'normalize':True}
+    model_loss, baseline_loss = evaluate(model, wasserstein, generate_multi(generate_gaussian_mixture), wasserstein_exact, sample_kwargs=sample_kwargs)
+
+    print("Model Loss:", model_loss)
+    print("Baseline Loss:", baseline_loss)
     '''
     ft = fasttext.load_model("cc.en.32.bin")
     if args.normalize:

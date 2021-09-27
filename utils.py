@@ -5,7 +5,7 @@ import torch.nn as nn
 import math
 from torch.distributions import OneHotCategorical, Normal, MultivariateNormal, Categorical, MixtureSameFamily, Distribution
 import tqdm
-#import ot
+import ot
 from geomloss import SamplesLoss
 
 use_cuda=torch.cuda.is_available()
@@ -295,9 +295,15 @@ def avg_log_cross_nn_dist(X, Y, xi=1e-5):
     dists = knn(X=Y, Y=X, k=1)
     return torch.log(dists+xi).sum(dim=-1)/dists.size(-1)
 
-#def wasserstein(X, Y):
-#    costs = ot.dist(X, Y)
-#    return ot.emd2([],[],costs)
+def wasserstein_exact(X, Y):
+    bs = X.size(0)
+    dists = torch.zeros(bs)
+    for i in range(bs):
+        costs = ot.dist(X.numpy(), Y.numpy())
+        dists[i] = ot.emd2([],[],costs)
+    if use_cuda:
+        dists = dists.cuda()
+    return dists
 
 def wasserstein(X, Y, **kwargs):
     loss = SamplesLoss(p=1, **kwargs)
