@@ -1,5 +1,5 @@
 from models import *
-from utils import generate_gaussian_mixture, wasserstein, generate_gaussian_variable_dim_multi, generate_gaussian_mixture_variable_dim_multi, generate_multi
+from utils import *
 import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
@@ -21,7 +21,8 @@ def parse_args():
 
     return parser.parse_args()
 
-def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(), batch_size=64, steps=3000, lr=1e-5, checkpoint_dir=None, output_dir=None, save_every=1000, sample_kwargs={}, label_kwargs={}):
+def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(), batch_size=64, steps=3000, lr=1e-5, 
+    checkpoint_dir=None, output_dir=None, save_every=1000, sample_kwargs={}, label_kwargs={}):
     #model.train(True)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     losses = []
@@ -59,12 +60,32 @@ def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(),
             if os.path.exists(checkpoint_path):
                 os.remove(checkpoint_path)
             torch.save({'model':model,'optimizer':optimizer, 'step': i, 'losses':losses}, checkpoint_path)
-    
-    if output_dir is not None:
-        torch.save(model._modules['module'], os.path.join(output_dir,"model.pt"))  
-        torch.save({'losses':losses}, os.path.join(output_dir,"logs.pt"))   
 
     return losses
+
+def evaluate(model, baseline, sample_fct, label_fct, exact_loss=False, batch_size=64, sample_kwargs={}, label_kwargs={}, criterion=nn.L1Loss(), steps=5000):
+    model_losses = []
+    baseline_losses = []
+    with torch.no_grad():
+        for i in tqdm.tqdm(range(steps)):
+            if exact_loss:
+                X, theta = sample_fct(batch_size, **sample_kwargs)
+                if use_cuda:
+                    X = [x.cuda() for x in X]
+                    #theta = [t.cuda() for t in theta]
+                labels = label_fct(*theta, **label_kwargs).squeeze(-1)
+            else:
+                X = sample_fct(batch_size, **sample_kwargs)
+                if use_cuda:
+                    X = [x.cuda() for x in X]
+                labels = label_fct(*X, **label_kwargs)
+            model_loss = criterion(model(*X).squeeze(-1), labels)
+            baseline_loss = criterion(baseline(*X), labels)
+
+            model_losses.append(model_loss.item())
+            baseline_losses.append(baseline_loss.item())
+    
+    return sum(model_losses)/len(model_losses), sum(baseline_losses)/len(baseline_losses)
 
 if __name__ == '__main__':
     args = parse_args()
@@ -101,6 +122,11 @@ if __name__ == '__main__':
     losses = train(model, sample_fct, wasserstein, checkpoint_dir=os.path.join(args.checkpoint_dir, args.run_name), \
         output_dir=run_dir, criterion=nn.MSELoss(), steps=30000, lr=1e-3, batch_size=128, \
         sample_kwargs=sample_kwargs, label_kwargs=label_kwargs)
+
+    model_loss, baseline_loss = evaluate(model, wasserstein, sample_fct, wasserstein_exact, sample_kwargs=sample_kwargs, criterion=nn.MSELoss(), steps=3000)
+
+    torch.save(model._modules['module'], os.path.join(run_dir,"model.pt"))  
+    torch.save({'losses':losses, 'eval_losses':{'model':model_loss, 'baseline':baseline_loss}}, os.path.join(run_dir,"logs.pt"))   
 
 
 '''

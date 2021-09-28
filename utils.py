@@ -309,6 +309,7 @@ def wasserstein(X, Y, **kwargs):
     loss = SamplesLoss(p=1, **kwargs)
     return loss(X, Y)
 
+'''
 def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(), batch_size=64, steps=3000, lr=1e-5, lr_decay=False, epoch_size=250, milestones=[], *sample_args, **sample_kwargs):
     #model.train(True)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
@@ -367,6 +368,7 @@ def evaluate(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss
         l1_losses.append(l1loss.item())
         l2_losses.append(l2loss.item())
     return sum(l1_losses)/len(l1_losses), sum(l2_losses)/len(l2_losses)
+'''
 
 def eval_all(*models, sample_fct, label_fct, train_kwargs={}, eval_kwargs={}):
     for model in models:
