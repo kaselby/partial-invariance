@@ -619,12 +619,45 @@ class EquiMAB(nn.Module):
 
         E = Q_.transpose(2,3).matmul(K_.transpose(2,3).transpose(3,4)).sum(dim=2) / math.sqrt(self.latent_size)
         if mask is not None:
+            A = masked_softmax(E, mask.unsqueeze(0).expand_as(E), dim=3)
+        else:
+            A = torch.softmax(E, 3)
+        O = Q_ + A.matmul(V_.view(*V_.size()[:-2], -1)).view(*Q_.size())
+        O = torch.cat(O.split(1, 0), 4).squeeze(0)
+        O = O if getattr(self, 'ln0', None) is None else self.ln0(O)
+        O = O + F.relu(self.fc_o(O))
+        O = O if getattr(self, 'ln1', None) is None else self.ln1(O)
+        return O
+
+class EquiMAB2(nn.Module):
+    def __init__(self, input_size, latent_size, num_heads, ln=False):
+        super().__init__()
+        self.latent_size=latent_size
+        self.num_heads = num_heads
+        self.fc_q = nn.Linear(input_size, latent_size)
+        self.fc_k = nn.Linear(input_size, latent_size)
+        self.fc_v = nn.Linear(input_size, latent_size)
+        if ln:
+            self.ln0 = nn.LayerNorm(latent_size)
+            self.ln1 = nn.LayerNorm(latent_size)
+        self.fc_o = nn.Linear(latent_size, latent_size)
+    
+    def forward(self, Q, K, mask=None):
+        Q = self.fc_q(Q)
+        K, V = self.fc_k(K), self.fc_v(K)
+
+        dim_split = self.latent_size // self.num_heads
+        Q_ = torch.stack(Q.split(dim_split, 3), 0)
+        K_ = torch.stack(K.split(dim_split, 3), 0)
+        V_ = torch.stack(V.split(dim_split, 3), 0)
+
+        E = Q_.matmul(K_.transpose(3,4)) / math.sqrt(self.latent_size)
+        if mask is not None:
             A = masked_softmax(E, mask.unsqueeze(0).expand_as(E), dim=4)
         else:
             A = torch.softmax(E, 4)
-        O = Q_ + A.matmul(V_.view(*V_.size()[:-2], -1)).view(*Q_.size())
+        O = Q_ + A.matmul().view(*Q_.size())
         O = torch.cat(O.split(1, 0), 4).squeeze(0)
-
         O = O if getattr(self, 'ln0', None) is None else self.ln0(O)
         O = O + F.relu(self.fc_o(O))
         O = O if getattr(self, 'ln1', None) is None else self.ln1(O)
