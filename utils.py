@@ -299,7 +299,7 @@ def wasserstein_exact(X, Y):
     bs = X.size(0)
     dists = torch.zeros(bs)
     for i in range(bs):
-        costs = ot.dist(X[i].cpu().numpy(), Y[i].cpu().numpy())
+        costs = ot.dist(X[i].cpu().numpy(), Y[i].cpu().numpy(), metric='euclidean')
         dists[i] = ot.emd2([],[],costs)
     if use_cuda:
         dists = dists.cuda()
