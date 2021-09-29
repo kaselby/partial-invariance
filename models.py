@@ -538,7 +538,7 @@ def divergence_model(input_size, output_size, latent_size=4, hidden_size=16):
 def masked_softmax(x, mask, dim=-1, eps=1e-8):
     x_masked = x.clone()
     x_masked[mask == 0] = -float("inf")
-    
+    x_masked = x_masked - x_masked.max(dim=dim, keepdim=True)[0]
     return torch.exp(x_masked) / (torch.exp(x_masked).sum(dim=dim, keepdim=True) + eps)
 
 def generate_masks(X_lengths, Y_lengths):
@@ -613,17 +613,17 @@ class EquiMAB(nn.Module):
         K, V = self.fc_k(K), self.fc_v(K)
 
         dim_split = self.latent_size // self.num_heads
-        Q_ = torch.cat(Q.split(dim_split, 3), 0)
-        K_ = torch.cat(K.split(dim_split, 3), 0)
-        V_ = torch.cat(V.split(dim_split, 3), 0)
+        Q_ = torch.stack(Q.split(dim_split, 3), 0)
+        K_ = torch.stack(K.split(dim_split, 3), 0)
+        V_ = torch.stack(V.split(dim_split, 3), 0)
 
-        E = Q_.transpose(1,2).matmul(K_.transpose(1,2).transpose(2,3)).sum(dim=1) / math.sqrt(self.latent_size)
+        E = Q_.transpose(2,3).matmul(K_.transpose(2,3).transpose(3,4)).sum(dim=2) / math.sqrt(self.latent_size)
         if mask is not None:
-            A = masked_softmax(E, mask.unsqueeze(0).expand_as(E), dim=2)
+            A = masked_softmax(E, mask.unsqueeze(0).expand_as(E), dim=4)
         else:
-            A = torch.softmax(E, 2)
+            A = torch.softmax(E, 4)
         O = Q_ + A.matmul(V_.view(*V_.size()[:-2], -1)).view(*Q_.size())
-        O = torch.cat(O.split(Q.size(0), 0), 3)
+        O = torch.cat(O.split(1, 0), 4).squeeze(0)
 
         O = O if getattr(self, 'ln0', None) is None else self.ln0(O)
         O = O + F.relu(self.fc_o(O))
@@ -670,8 +670,8 @@ class CSAB(nn.Module):
     def forward(self, inputs, masks=None):
         X, Y = inputs
         if self.remove_diag:
-            diag_xx = (1 - torch.eye(X.size(1))).cuda()
-            diag_yy = (1 - torch.eye(Y.size(1))).cuda()
+            diag_xx = (1 - torch.eye(X.size(1))).cuda().unsqueeze(0)
+            diag_yy = (1 - torch.eye(Y.size(1))).cuda().unsqueeze(0)
             if masks is not None:
                 mask_xx, mask_xy, mask_yx, mask_yy = masks
                 mask_xx = mask_xx * diag_xx
