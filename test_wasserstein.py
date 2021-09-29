@@ -47,9 +47,9 @@ def sample_vecs(ft1, ft2, scale=-1):
     return lambda n: (get_samples(ft1, n), get_samples(ft2, n))
 
 
-def evaluate(model, baseline, sample_fct, label_fct, exact_loss=False, batch_size=64, sample_kwargs={}, label_kwargs={}, criterion=nn.L1Loss(), steps=5000):
+def evaluate(model, baselines, sample_fct, label_fct, exact_loss=False, batch_size=64, sample_kwargs={}, label_kwargs={}, criterion=nn.L1Loss(), steps=5000):
     model_losses = []
-    baseline_losses = []
+    baseline_losses = {k:[] for k in baselines.keys()}
     with torch.no_grad():
         for i in tqdm.tqdm(range(steps)):
             if exact_loss:
@@ -64,10 +64,10 @@ def evaluate(model, baseline, sample_fct, label_fct, exact_loss=False, batch_siz
                     X = [x.cuda() for x in X]
                 labels = label_fct(*X, **label_kwargs)
             model_loss = criterion(model(*X).squeeze(-1), labels)
-            baseline_loss = criterion(baseline(*X), labels)
-
             model_losses.append(model_loss.item())
-            baseline_losses.append(baseline_loss.item())
+            for baseline_name, baseline_fct in baselines.items():
+                baseline_loss = criterion(baseline_fct(*X), labels)
+                baseline_losses[baseline_name].append(baseline_loss.item())
     
     return sum(model_losses)/len(model_losses), sum(baseline_losses)/len(baseline_losses)
 
@@ -79,11 +79,13 @@ if __name__ == '__main__':
     model = torch.load(os.path.join("runs", args.run_name, "model.pt"))
 
     sample_kwargs={'n':32, 'set_size':(10,150)}
-    model_loss, baseline_loss = evaluate(model, wasserstein, generate_multi(generate_gaussian_mixture, normalize=True), wasserstein_exact, 
+    baselines = {'sinkhorn_default':wasserstein, 'sinkhorn_exact': lambda X,Y: wasserstein(X,Y, blur=0.001,scaling=0.98)}
+    model_loss, baseline_losses = evaluate(model, baselines, generate_multi(generate_gaussian_mixture, normalize=True), wasserstein_exact, 
         sample_kwargs=sample_kwargs, steps=2500, criterion=nn.MSELoss())
 
     print("Model Loss:", model_loss)
-    print("Baseline Loss:", baseline_loss)
+    for baseline_name, baseline_loss in baseline_losses.items():
+        print("%s Losses:" % baseline_name, baseline_loss)
     '''
     ft = fasttext.load_model("cc.en.32.bin")
     if args.normalize:
