@@ -68,8 +68,7 @@ def evaluate(model, baselines, sample_fct, label_fct, exact_loss=False, batch_si
             for baseline_name, baseline_fct in baselines.items():
                 baseline_loss = criterion(baseline_fct(*X), labels)
                 baseline_losses[baseline_name].append(baseline_loss.item())
-    
-    return sum(model_losses)/len(model_losses), sum(baseline_losses)/len(baseline_losses)
+    return sum(model_losses)/len(model_losses), {k:sum(v)/len(v) for k,v in baseline_losses.items()}
 
 
 if __name__ == '__main__':
