@@ -537,8 +537,8 @@ def divergence_model(input_size, output_size, latent_size=4, hidden_size=16):
 
 def masked_softmax(x, mask, dim=-1, eps=1e-8):
     x_masked = x.clone()
-    x_masked[mask == 0] = -float("inf")
     x_masked = x_masked - x_masked.max(dim=dim, keepdim=True)[0]
+    x_masked[mask == 0] = -float("inf")
     return torch.exp(x_masked) / (torch.exp(x_masked).sum(dim=dim, keepdim=True) + eps)
 
 def generate_masks(X_lengths, Y_lengths):
