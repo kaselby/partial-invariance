@@ -473,6 +473,7 @@ def build_maf(num_inputs, num_hidden, num_blocks):
             Reverse(num_inputs)
         ]
     model = FlowSequential(*modules)
+    model.num_inputs = num_inputs
     for module in model.modules():
         if isinstance(module, nn.Linear):
             nn.init.orthogonal_(module.weight)
