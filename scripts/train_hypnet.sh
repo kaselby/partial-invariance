@@ -11,4 +11,4 @@
 #SBATCH --qos=deadline
 #SBATCH --exclude=gpu109
 
-python3 train_hypnet.py $1
+python3 train_hypnet.py $1 --checkpoint_name $SLURM_JOB_ID

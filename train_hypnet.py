@@ -258,6 +258,7 @@ def parse_args():
     parser.add_argument('--batch_size', type=int, default=64)
     parser.add_argument('--lr', type=int, default=5e-4)
     parser.add_argument('--checkpoint_dir', type=str, default="/checkpoint/kaselby")
+    parser.add_argument('--checkpoint_name', type=str, default=None)
     parser.add_argument('--output_dir', type=str, default="runs/hypeval")
     return parser.parse_args()
 
@@ -269,7 +270,7 @@ if __name__ == '__main__':
     if use_cuda:
         model = model.cuda()
 
-    checkpoint_dir = os.path.join(args.checkpoint_dir, args.run_name)
+    checkpoint_dir = os.path.join(args.checkpoint_dir, args.checkpoint_name)
     output_dir = os.path.join(args.output_dir, args.run_name)
 
     if not os.path.exists(output_dir):
