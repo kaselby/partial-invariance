@@ -413,11 +413,12 @@ def show_samples(sample_fct,label_fct,samples=8,normalize=False,**kwargs):
 
 
 class GaussianGenerator():
-    def __init__(self, num_outputs=1, normalize=False, scaleinv=False, return_params=False):
+    def __init__(self, num_outputs=1, normalize=False, scaleinv=False, return_params=False, variable_dim=False):
         self.num_outputs = num_outputs
         self.normalize = normalize
         self.scaleinv = scaleinv
         self.return_params = return_params
+        self.variable_dim = variable_dim
 
     def _generate_mixture(self, batch_size, n, return_params=False, set_size=(100,150), component_range=(3,10), scale=None):
         n_samples = torch.randint(*set_size,(1,))
@@ -441,12 +442,15 @@ class GaussianGenerator():
         else:
             return samples.float().contiguous()
     
-    def generate(self, batch_size, n, **kwargs):
+    def generate(self, batch_size, dims=(2,6), **kwargs):
+        if self.variable_dim:
+            n = torch.randint(*dims,(1,)).item()
+            kwargs['n'] = n
         scale = torch.exp(torch.rand(batch_size)*9 - 6) if self.scaleinv else None
         if self.return_params:
-            outputs, dists = zip(*[self._generate_mixture(batch_size, n, scale=scale, return_params=True, **kwargs) for _ in range(self.num_outputs)])
+            outputs, dists = zip(*[self._generate_mixture(batch_size, scale=scale, return_params=True, **kwargs) for _ in range(self.num_outputs)])
         else:
-            outputs = [self._generate_mixture(batch_size, n, scale=scale, **kwargs) for _ in range(self.num_outputs)]
+            outputs = [self._generate_mixture(batch_size, scale=scale, **kwargs) for _ in range(self.num_outputs)]
         if self.normalize:
             avg_norm = torch.cat(outputs, dim=1).norm(dim=-1,keepdim=True).mean(dim=1,keepdim=True)
             for i in range(len(outputs)):
@@ -458,3 +462,43 @@ class GaussianGenerator():
             return outputs, dists
         else:
             return outputs
+
+from flows import MADE, BatchNormFlow, Reverse, FlowSequential
+def build_maf(num_inputs, num_hidden, num_blocks):
+    modules=[]
+    for _ in range(num_blocks):
+        modules += [
+            MADE(num_inputs, num_hidden, None, act='relu'),
+            BatchNormFlow(num_inputs),
+            Reverse(num_inputs)
+        ]
+    model = FlowSequential(*modules)
+    for module in model.modules():
+        if isinstance(module, nn.Linear):
+            nn.init.orthogonal_(module.weight)
+            if hasattr(module, 'bias') and module.bias is not None:
+                module.bias.data.fill_(0)
+    if use_cuda:
+        model = model.cuda()
+    return model
+
+
+class NFGenerator():
+    def __init__(self, num_hidden, num_blocks, num_outputs=1, normalize=False):
+        self.num_hidden=num_hidden
+        self.num_blocks=num_blocks
+
+        self.num_outputs=num_outputs
+        self.normalize=normalize
+
+    def _generate(self, batch_size, n, return_params=False, set_size=(100,150)):
+        n_samples = torch.randint(*set_size,(1,))
+        mafs = [build_maf(n, self.num_hidden, self.num_blocks) for i in range(batch_size)]
+        samples = torch.stack([x.sample(num_samples=n_samples) for x in mafs], dim=0)
+        if return_params:
+            return samples, mafs
+        else: 
+            return samples
+
+    def generate():
+        pass
