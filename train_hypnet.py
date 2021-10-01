@@ -182,8 +182,15 @@ def train(model, dataset, steps, batch_size=64, lr=1e-3, save_every=5000, log_ev
 
             score = model(*data, masks=masks)
             loss = loss_fct(score.squeeze(-1), labels.float())
+
+            if score.isnan().any() or loss.isnan().any():
+                import pdb;pdb.set_trace()
+
             loss.backward()
             optimizer.step()
+
+            if any([x.isnan().any().item() for x in model.parameters()]):
+                import pdb;pdb.set_trace()
 
             if (current_step + batch_size) // save_every > current_step // save_every:
                 if checkpoint_dir is not None:
