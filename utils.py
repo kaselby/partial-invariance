@@ -469,7 +469,7 @@ def build_maf(num_inputs, num_hidden, num_blocks):
     for _ in range(num_blocks):
         modules += [
             MADE(num_inputs, num_hidden, None, act='relu'),
-            BatchNormFlow(num_inputs),
+            #BatchNormFlow(num_inputs),
             Reverse(num_inputs)
         ]
     model = FlowSequential(*modules)
