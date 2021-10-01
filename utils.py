@@ -501,11 +501,11 @@ class NFGenerator():
         else: 
             return samples
 
-    def __call__(self, batch_size, **kwargs):
+    def __call__(self, batch_size, n, **kwargs):
         if self.return_params:
             outputs, dists = zip(*[self._generate(batch_size, return_params=True, **kwargs) for _ in range(self.num_outputs)])
         else:
-            outputs = [self._generate_mixture(batch_size, **kwargs) for _ in range(self.num_outputs)]
+            outputs = [self._generate(batch_size, n, **kwargs) for _ in range(self.num_outputs)]
 
         if self.return_params:
             return outputs, dists
