@@ -442,7 +442,7 @@ class GaussianGenerator():
         else:
             return samples.float().contiguous()
     
-    def generate(self, batch_size, dims=(2,6), **kwargs):
+    def __call__(self, batch_size, dims=(2,6), **kwargs):
         if self.variable_dim:
             n = torch.randint(*dims,(1,)).item()
             kwargs['n'] = n
@@ -484,12 +484,13 @@ def build_maf(num_inputs, num_hidden, num_blocks):
 
 
 class NFGenerator():
-    def __init__(self, num_hidden, num_blocks, num_outputs=1, normalize=False):
+    def __init__(self, num_hidden, num_blocks, num_outputs=1, normalize=False, return_params=False):
         self.num_hidden=num_hidden
         self.num_blocks=num_blocks
 
         self.num_outputs=num_outputs
         self.normalize=normalize
+        self.return_params=return_params
 
     def _generate(self, batch_size, n, return_params=False, set_size=(100,150)):
         n_samples = torch.randint(*set_size,(1,))
@@ -500,5 +501,13 @@ class NFGenerator():
         else: 
             return samples
 
-    def generate():
-        pass
+    def __call__(self, batch_size, **kwargs):
+        if self.return_params:
+            outputs, dists = zip(*[self._generate(batch_size, return_params=True, **kwargs) for _ in range(self.num_outputs)])
+        else:
+            outputs = [self._generate_mixture(batch_size, **kwargs) for _ in range(self.num_outputs)]
+
+        if self.return_params:
+            return outputs, dists
+        else:
+            return outputs

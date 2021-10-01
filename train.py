@@ -109,10 +109,10 @@ if __name__ == '__main__':
     device = torch.device("cuda:0")
 
     if args.equi:
-        model=EquiMultiSetTransformer1(1,1, dim_hidden=16, ln=True, remove_diag=True, num_blocks=2).to(device)
+        model=EquiMultiSetTransformer1(1,1, dim_hidden=16, ln=True, remove_diag=True, num_blocks=2, normalize=args.normalize).to(device)
     else:
         DIM=32
-        model=MultiSetTransformer1(DIM, 1,1, dim_hidden=256, ln=True, remove_diag=True, num_blocks=2).to(device)
+        model=MultiSetTransformer1(DIM, 1,1, dim_hidden=256, ln=True, remove_diag=True, num_blocks=2, normalize=args.normalize).to(device)
 
     if torch.cuda.device_count() > 1:
         print("Let's use", torch.cuda.device_count(), "GPUs!")
@@ -121,12 +121,11 @@ if __name__ == '__main__':
     label_kwargs={'scaling':args.scaling, 'blur':args.blur}
     if args.equi:
         sample_kwargs['dims'] = (24,40)
-        sample_kwargs['normalize'] = args.normalize
         sample_kwargs['scaleinv'] = args.scaleinv
         sample_fct = generate_gaussian_mixture_variable_dim_multi
     else:
         sample_kwargs['n'] = DIM
-        sample_fct = generate_multi(generate_gaussian_mixture, scaleinv=args.scaleinv, normalize=args.normalize)
+        sample_fct = generate_multi(generate_gaussian_mixture, scaleinv=args.scaleinv)
     losses = train(model, sample_fct, wasserstein, checkpoint_dir=os.path.join(args.checkpoint_dir, args.checkpoint_name), \
         output_dir=run_dir, criterion=nn.MSELoss(), steps=30000, lr=1e-3, batch_size=128, \
         sample_kwargs=sample_kwargs, label_kwargs=label_kwargs)

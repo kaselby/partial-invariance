@@ -967,7 +967,7 @@ class SetTransformer(nn.Module):
 
 class MultiSetTransformer1(nn.Module):
     def __init__(self, dim_input, num_outputs, dim_output,
-            num_inds=32, dim_hidden=128, num_heads=4, num_blocks=2, ln=False, remove_diag=False):
+            num_inds=32, dim_hidden=128, num_heads=4, num_blocks=2, ln=False, remove_diag=False, normalize=False):
         super(MultiSetTransformer1, self).__init__()
         self.proj = nn.Linear(dim_input, dim_hidden)
         self.enc = EncoderStack(*[CSAB(dim_hidden, dim_hidden, num_heads, ln=ln, remove_diag=remove_diag) for i in range(num_blocks)])
@@ -977,8 +977,13 @@ class MultiSetTransformer1(nn.Module):
                 #SAB(dim_hidden, dim_hidden, num_heads, ln=ln),
                 #SAB(dim_hidden, dim_hidden, num_heads, ln=ln),
                 nn.Linear(2*dim_hidden, dim_output),)
+        self.normalize = normalize
 
     def forward(self, X, Y, masks=None):
+        if self.normalize:
+            avg_norm = torch.cat([X,Y], dim=1).norm(dim=-1,keepdim=True).mean(dim=1,keepdim=True)
+            X /= avg_norm
+            Y /= avg_norm
         ZX, ZY = self.enc((self.proj(X),self.proj(Y)), masks=masks)
         ZX = self.pool_x(ZX)
         ZY = self.pool_y(ZY)
@@ -1090,7 +1095,7 @@ class EquiMultiSetTransformer1(nn.Module):
 
 class EquiMultiSetTransformer1(nn.Module):
     def __init__(self, num_outputs, dim_output,
-            num_inds=32, dim_hidden=128, num_heads=4, num_blocks=2, ln=False, remove_diag=False):
+            num_inds=32, dim_hidden=128, num_heads=4, num_blocks=2, ln=False, remove_diag=False, normalize=False):
         super().__init__()
         self.proj = nn.Linear(1, dim_hidden)
         self.enc = EncoderStack(*[CSAB(dim_hidden, dim_hidden, num_heads, ln=ln, remove_diag=remove_diag, equi=True) for i in range(num_blocks)])
@@ -1100,8 +1105,13 @@ class EquiMultiSetTransformer1(nn.Module):
                 #SAB(dim_hidden, dim_hidden, num_heads, ln=ln),
                 #SAB(dim_hidden, dim_hidden, num_heads, ln=ln),
                 nn.Linear(2*dim_hidden, dim_output),)
+        self.normalize=normalize
 
     def forward(self, X, Y, masks=None):
+        if self.normalize:
+            avg_norm = torch.cat([X,Y], dim=1).norm(dim=-1,keepdim=True).mean(dim=1,keepdim=True)
+            X /= avg_norm
+            Y /= avg_norm
         ZX, ZY = self.enc((self.proj(X.unsqueeze(-1)),self.proj(Y.unsqueeze(-1))), masks=masks)
         ZX = ZX.max(dim=2)[0]
         ZY = ZY.max(dim=2)[0]
