@@ -107,6 +107,15 @@ def generate_gaussian_mixture(batch_size, n, return_params=False, set_size=(100,
         return [samples.float().contiguous()]
 
 
+def generate():
+    scale = torch.exp(torch.rand(8)*9 - 6)
+    X,Y = generate_gaussian_mixture(8, scale=scale, n=32)[0], generate_gaussian_mixture(8, scale=scale, n=32)[0]
+    avg_norm = torch.cat([X,Y], dim=1).norm(dim=-1,keepdim=True).mean(dim=1,keepdim=True)
+    X /= avg_norm
+    Y /= avg_norm
+    print(scale)
+    print(wasserstein_exact(X,Y))
+
 '''
 def generate_gaussian_mixture(batch_size, n, return_params=False):
     n_samples = torch.randint(100,150,(1,))
@@ -403,8 +412,49 @@ def show_samples(sample_fct,label_fct,samples=8,normalize=False,**kwargs):
     print(tabulate.tabulate([['y', *y.tolist()]]))
 
 
-def masked_softmax(x, mask, **kwargs):
-    x_masked = x.clone()
-    x_masked[mask == 0] = -float("inf")
+class GaussianGenerator():
+    def __init__(self, num_outputs=1, normalize=False, scaleinv=False, return_params=False):
+        self.num_outputs = num_outputs
+        self.normalize = normalize
+        self.scaleinv = scaleinv
+        self.return_params = return_params
 
-    return torch.softmax(x_masked, **kwargs)
+    def _generate_mixture(self, batch_size, n, return_params=False, set_size=(100,150), component_range=(3,10), scale=None):
+        n_samples = torch.randint(*set_size,(1,))
+        n_components = torch.randint(*component_range,(1,))
+        mus= torch.rand(size=(batch_size, n_components, n))
+        A = torch.rand(size=(batch_size, n_components, n, n)) 
+        if scale is not None:
+            mus = mus * scale.unsqueeze(-1).unsqueeze(-1)
+            A = A * scale.unsqueeze(-1).unsqueeze(-1).unsqueeze(-1)
+        else:
+            mus= 1+5*mus
+            A = A
+        sigmas = A.transpose(2,3).matmul(A) + torch.diag_embed(torch.rand(batch_size, n_components, n))
+        logits = torch.randint(5, size=(batch_size, n_components)).float()
+        base_dist = MultivariateNormal(mus, sigmas)
+        mixing_dist = Categorical(logits=logits)
+        dist = MixtureSameFamily(mixing_dist, base_dist)
+        samples = dist.sample(n_samples).transpose(0,1)
+        if return_params:
+            return samples.float().contiguous(), dist
+        else:
+            return samples.float().contiguous()
+    
+    def generate(self, batch_size, n, **kwargs):
+        scale = torch.exp(torch.rand(batch_size)*9 - 6) if self.scaleinv else None
+        if self.return_params:
+            outputs, dists = zip(*[self._generate_mixture(batch_size, n, scale=scale, return_params=True, **kwargs) for _ in range(self.num_outputs)])
+        else:
+            outputs = [self._generate_mixture(batch_size, n, scale=scale, **kwargs) for _ in range(self.num_outputs)]
+        if self.normalize:
+            avg_norm = torch.cat(outputs, dim=1).norm(dim=-1,keepdim=True).mean(dim=1,keepdim=True)
+            for i in range(len(outputs)):
+                outputs[i] /= avg_norm
+            if self.return_params:
+                for dist in dists:
+                    dist.base_dist = MultivariateNormal(dist.loc/avg_norm, dist.covariance_matrix/avg_norm/avg_norm)
+        if self.return_params:
+            return outputs, dists
+        else:
+            return outputs
