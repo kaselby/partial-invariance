@@ -556,19 +556,37 @@ class FlowSequential(nn.Sequential):
 class BatchOfFlows(nn.Module):
     def __init__(self, batch_size, num_inputs, num_hidden, num_blocks, use_maf=False):
         self.num_inputs = num_inputs
+        self.num_blocks = num_blocks
+        self.batch_size=batch_size
         self.weight1 = torch.randn(batch_size, num_blocks, num_hidden, num_inputs)
         self.weight2 = torch.randn(batch_size, num_blocks, num_hidden, num_hidden)
         self.weight3 = torch.randn(batch_size, num_blocks, num_inputs*2, num_hidden)
         self.bias1 = torch.randn(batch_size, num_blocks, num_hidden)
         self.bias2 = torch.randn(batch_size, num_blocks, num_hidden)
         self.bias3 = torch.randn(batch_size, num_blocks, num_inputs*2)
-        self.input_mask = get_mask(num_inputs, num_hidden, num_inputs, mask_type='input')
-        self.hidden_mask = get_mask(num_hidden, num_hidden, num_inputs)
-        self.output_mask = get_mask(num_hidden, num_inputs * 2, num_inputs, mask_type='output')
+        self.input_mask = get_mask(num_inputs, num_hidden, num_inputs, mask_type='input').unsqueeze(0)
+        self.hidden_mask = get_mask(num_hidden, num_hidden, num_inputs).unsqueeze(0)
+        self.output_mask = get_mask(num_hidden, num_inputs * 2, num_inputs, mask_type='output').unsqueeze(0)
         self.use_maf=use_maf
 
     def sample(self, n):
-        noise = torch.Tensor(n, self.num_inputs).normal_()
+        noise = torch.Tensor(self.batch_size, n, self.num_inputs).normal_()
         device = next(self.parameters()).device
         noise = noise.to(device)
+
+        x = noise
+        for i in range(self.num_blocks):
+            h = F.linear(x, self.weight1[:,i] * self.input_mask, self.bias1[:,i])
+            z1 = F.linear(h, self.weight2[:,i] * self.hidden_mask, self.bias2[:,i])
+            z2 = F.linear(z1, self.weight3[:,i] * self.output_mask, self.bias3[:,i])
+            m, a = z2.chunk(2, 1)
+            x = x * torch.exp(a) + m
+        
+        return x
+
+    def log_prob(self, x):
+        for i in range(self.num_blocks):
+            pass
+
+
 

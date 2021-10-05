@@ -464,7 +464,7 @@ class GaussianGenerator():
         else:
             return outputs
 
-from flows import MADE, MADE_IAF, BatchNormFlow, Reverse, FlowSequential
+from flows import MADE, MADE_IAF, BatchNormFlow, Reverse, FlowSequential, BatchOfFlows
 def build_maf(num_inputs, num_hidden, num_blocks, nf_cls=MADE_IAF):
     modules=[]
     for _ in range(num_blocks):
@@ -497,6 +497,15 @@ class NFGenerator():
         self.variable_dim=variable_dim
 
     def _generate(self, batch_size, n, return_params=False, set_size=(100,150)):
+        n_samples = torch.randint(*set_size,(1,))
+        flows = BatchOfFlows(batch_size, n, self.num_hidden, self.num_blocks, use_maf=self.use_maf)
+        samples = flows.sample(n_samples)
+        if return_params:
+            return samples, flows
+        else: 
+            return samples
+
+    def _generate2(self, batch_size, n, return_params=False, set_size=(100,150)):
         n_samples = torch.randint(*set_size,(1,))
         nf_cls = MADE if self.use_maf else MADE_IAF
         mafs = [build_maf(n, self.num_hidden, self.num_blocks, nf_cls=nf_cls) for i in range(batch_size)]
