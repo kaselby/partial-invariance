@@ -580,7 +580,7 @@ class BatchOfFlows(nn.Module):
             h = torch.bmm(x, (self.weight1[:,i] * self.input_mask).transpose(1,2)) + self.bias1[:,i].unsqueeze(1)
             z1 = torch.bmm(h, (self.weight2[:,i] * self.hidden_mask).transpose(1,2)) + self.bias2[:,i].unsqueeze(1)
             z2 = torch.bmm(z1, (self.weight3[:,i] * self.output_mask).transpose(1,2)) + self.bias3[:,i].unsqueeze(1)
-            m, a = z2.chunk(2, 1)
+            m, a = z2.chunk(2, 2)
             x = x * torch.exp(a) + m
         
         return x
