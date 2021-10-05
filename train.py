@@ -127,13 +127,17 @@ if __name__ == '__main__':
 
     if args.data == 'gmm':
         generator = GaussianGenerator(num_outputs=2, scaleinv=args.scaleinv, variable_dim=args.equi)
+        batch_size=128
+        steps=30000
     elif args.data == 'nf':
         generator = NFGenerator(32, 2, num_outputs=2, use_maf=False)
+        batch_size=64
+        steps=50000
     else:
         raise NotImplementedError("nf or gmm")
 
     losses = train(model, generator, wasserstein, checkpoint_dir=os.path.join(args.checkpoint_dir, args.checkpoint_name), \
-        output_dir=run_dir, criterion=nn.MSELoss(), steps=50000, lr=1e-3, batch_size=64, \
+        output_dir=run_dir, criterion=nn.MSELoss(), steps=steps, lr=1e-3, batch_size=batch_size, \
         sample_kwargs=sample_kwargs, label_kwargs=label_kwargs)
 
 
