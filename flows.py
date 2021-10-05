@@ -551,4 +551,5 @@ class FlowSequential(nn.Sequential):
         samples = self.forward(noise, cond_inputs, mode='inverse')[0]
         return samples
 
-
+class BatchedFlow(nn.Module):
+    def __init__(self, num_inputs, num_hidden, num_blocks, use_maf=False)

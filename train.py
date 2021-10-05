@@ -131,6 +131,7 @@ if __name__ == '__main__':
         label_kwargs={'scaling':0.98, 'blur':0.001}
     elif args.target == 'kl':
         label_fct = kl_mc
+        label_kwargs={}
 
     batch_size=128
     steps=30000
