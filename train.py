@@ -12,6 +12,7 @@ import tqdm
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('run_name', type=str)
+    parser.add_argument('--data', type=str, default='gmm')
     parser.add_argument('--normalize', action='store_true')
     parser.add_argument('--scaleinv', action='store_true')
     parser.add_argument('--checkpoint_dir', type=str, default="/checkpoint/kaselby")

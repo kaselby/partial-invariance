@@ -80,7 +80,7 @@ if __name__ == '__main__':
 
     sample_kwargs={'n':32, 'set_size':(10,150)}
     baselines = {'sinkhorn_default':wasserstein, 'sinkhorn_exact': lambda X,Y: wasserstein(X,Y, blur=0.001,scaling=0.98)}
-    generators = [GaussianGenerator(num_outputs=2, normalize=True), NFGenerator(128, 4, num_outputs=2, normalize=True)]
+    generators = [GaussianGenerator(num_outputs=2, normalize=True), NFGenerator(32, 3, num_outputs=2, normalize=True)]
     model_loss, baseline_losses = evaluate(model, baselines, generators, wasserstein_exact, 
         sample_kwargs=sample_kwargs, steps=2500, criterion=nn.MSELoss())
 

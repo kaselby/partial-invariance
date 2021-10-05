@@ -177,6 +177,54 @@ class MADE(nn.Module):
             return x, -a.sum(-1, keepdim=True)
 
 
+class MADE_IAF(nn.Module):
+    """ An implementation of MADE
+    (https://arxiv.org/abs/1502.03509).
+    """
+
+    def __init__(self,
+                 num_inputs,
+                 num_hidden,
+                 num_cond_inputs=None,
+                 act='relu',
+                 pre_exp_tanh=False):
+        super(MADE_IAF, self).__init__()
+
+        activations = {'relu': nn.ReLU, 'sigmoid': nn.Sigmoid, 'tanh': nn.Tanh}
+        act_func = activations[act]
+
+        input_mask = get_mask(
+            num_inputs, num_hidden, num_inputs, mask_type='input')
+        hidden_mask = get_mask(num_hidden, num_hidden, num_inputs)
+        output_mask = get_mask(
+            num_hidden, num_inputs * 2, num_inputs, mask_type='output')
+
+        self.joiner = nn.MaskedLinear(num_inputs, num_hidden, input_mask,
+                                      num_cond_inputs)
+
+        self.trunk = nn.Sequential(act_func(),
+                                   nn.MaskedLinear(num_hidden, num_hidden,
+                                                   hidden_mask), act_func(),
+                                   nn.MaskedLinear(num_hidden, num_inputs * 2,
+                                                   output_mask))
+
+    def forward(self, inputs, cond_inputs=None, mode='direct'):
+        if mode == 'direct':
+            u = torch.zeros_like(inputs)
+            for i_col in range(inputs.shape[1]):
+                h = self.joiner(u, cond_inputs)
+                m, a = self.trunk(h).chunk(2, 1)
+                u[:, i_col] = (inputs[:, i_col] - m[:, i_col]) * torch.exp(
+                    -a[:, i_col]) 
+            return u, -a.sum(-1, keepdim=True)
+        else:
+            h = self.joiner(inputs, cond_inputs)
+            m, a = self.trunk(h).chunk(2, 1)
+            x = inputs * torch.exp(a) + m
+            return x, -a.sum(-1, keepdim=True)
+            
+
+
 class Sigmoid(nn.Module):
     def __init__(self):
         super(Sigmoid, self).__init__()

@@ -463,12 +463,12 @@ class GaussianGenerator():
         else:
             return outputs
 
-from flows import MADE, BatchNormFlow, Reverse, FlowSequential
+from flows import MADE, MADE_IAF, BatchNormFlow, Reverse, FlowSequential
 def build_maf(num_inputs, num_hidden, num_blocks):
     modules=[]
     for _ in range(num_blocks):
         modules += [
-            MADE(num_inputs, num_hidden, None, act='relu'),
+            MADE_IAF(num_inputs, num_hidden, None, act='relu'),
             #BatchNormFlow(num_inputs),
             Reverse(num_inputs)
         ]
