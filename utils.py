@@ -464,11 +464,11 @@ class GaussianGenerator():
             return outputs
 
 from flows import MADE, MADE_IAF, BatchNormFlow, Reverse, FlowSequential
-def build_maf(num_inputs, num_hidden, num_blocks):
+def build_maf(num_inputs, num_hidden, num_blocks, nf_cls=MADE_IAF):
     modules=[]
     for _ in range(num_blocks):
         modules += [
-            MADE_IAF(num_inputs, num_hidden, None, act='relu'),
+            nf_cls(num_inputs, num_hidden, None, act='relu'),
             #BatchNormFlow(num_inputs),
             Reverse(num_inputs)
         ]
