@@ -11,4 +11,4 @@
 #SBATCH --mem=25GB
 #SBATCH --exclude=gpu109
 
-python3 train.py $1 --data nf --normalize --blur 0.001 --scaling 0.98 --equi --checkpoint_name $SLURM_JOB_ID
+python3 train.py $1 --data nf --target wasserstein --normalize --blur 0.001 --scaling 0.98 --equi --checkpoint_name $SLURM_JOB_ID
