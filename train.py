@@ -130,7 +130,7 @@ if __name__ == '__main__':
         batch_size=128
         steps=30000
     elif args.data == 'nf':
-        generator = NFGenerator(32, 2, num_outputs=2, use_maf=False)
+        generator = NFGenerator(32, 2, num_outputs=2, use_maf=False, variable_dim=args.equi)
         batch_size=64
         steps=50000
     else:
