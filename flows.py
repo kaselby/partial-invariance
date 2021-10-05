@@ -577,9 +577,9 @@ class BatchOfFlows(nn.Module):
 
         x = noise
         for i in range(self.num_blocks):
-            h = F.linear(x, self.weight1[:,i] * self.input_mask, self.bias1[:,i])
-            z1 = F.linear(h, self.weight2[:,i] * self.hidden_mask, self.bias2[:,i])
-            z2 = F.linear(z1, self.weight3[:,i] * self.output_mask, self.bias3[:,i])
+            h = torch.bmm(x, (self.self.weight1[:,i] * self.input_mask).transpose(1,2)) + self.bias1[:,i]
+            z1 = torch.bmm(h, (self.self.weight2[:,i] * self.hidden_mask).transpose(1,2)) + self.bias2[:,i]
+            z2 = torch.bmm(z1, (self.self.weight3[:,i] * self.output_mask).transpose(1,2)) + self.bias3[:,i]
             m, a = z2.chunk(2, 1)
             x = x * torch.exp(a) + m
         
