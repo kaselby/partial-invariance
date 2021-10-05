@@ -551,5 +551,24 @@ class FlowSequential(nn.Sequential):
         samples = self.forward(noise, cond_inputs, mode='inverse')[0]
         return samples
 
-class BatchedFlow(nn.Module):
-    def __init__(self, num_inputs, num_hidden, num_blocks, use_maf=False)
+
+
+class BatchOfFlows(nn.Module):
+    def __init__(self, batch_size, num_inputs, num_hidden, num_blocks, use_maf=False):
+        self.num_inputs = num_inputs
+        self.weight1 = torch.randn(batch_size, num_blocks, num_hidden, num_inputs)
+        self.weight2 = torch.randn(batch_size, num_blocks, num_hidden, num_hidden)
+        self.weight3 = torch.randn(batch_size, num_blocks, num_inputs*2, num_hidden)
+        self.bias1 = torch.randn(batch_size, num_blocks, num_hidden)
+        self.bias2 = torch.randn(batch_size, num_blocks, num_hidden)
+        self.bias3 = torch.randn(batch_size, num_blocks, num_inputs*2)
+        self.input_mask = get_mask(num_inputs, num_hidden, num_inputs, mask_type='input')
+        self.hidden_mask = get_mask(num_hidden, num_hidden, num_inputs)
+        self.output_mask = get_mask(num_hidden, num_inputs * 2, num_inputs, mask_type='output')
+        self.use_maf=use_maf
+
+    def sample(self, n):
+        noise = torch.Tensor(n, self.num_inputs).normal_()
+        device = next(self.parameters()).device
+        noise = noise.to(device)
+
