@@ -485,17 +485,19 @@ def build_maf(num_inputs, num_hidden, num_blocks, nf_cls=MADE_IAF):
 
 
 class NFGenerator():
-    def __init__(self, num_hidden, num_blocks, num_outputs=1, normalize=False, return_params=False):
+    def __init__(self, num_hidden, num_blocks, num_outputs=1, normalize=False, return_params=False, use_maf=False):
         self.num_hidden=num_hidden
         self.num_blocks=num_blocks
 
         self.num_outputs=num_outputs
         self.normalize=normalize
         self.return_params=return_params
+        self.use_maf=use_maf
 
     def _generate(self, batch_size, n, return_params=False, set_size=(100,150)):
         n_samples = torch.randint(*set_size,(1,))
-        mafs = [build_maf(n, self.num_hidden, self.num_blocks) for i in range(batch_size)]
+        nf_cls = MADE if self.use_maf else MADE_IAF
+        mafs = [build_maf(n, self.num_hidden, self.num_blocks, nf_cls=nf_cls) for i in range(batch_size)]
         samples = torch.stack([x.sample(num_samples=n_samples) for x in mafs], dim=0)
         if return_params:
             return samples, mafs
