@@ -485,7 +485,7 @@ def build_maf(num_inputs, num_hidden, num_blocks, nf_cls=MADE_IAF):
 
 
 class NFGenerator():
-    def __init__(self, num_hidden, num_blocks, num_outputs=1, normalize=False, return_params=False, use_maf=False):
+    def __init__(self, num_hidden, num_blocks, num_outputs=1, normalize=False, return_params=False, use_maf=False, variable_dim=False):
         self.num_hidden=num_hidden
         self.num_blocks=num_blocks
 
@@ -493,6 +493,7 @@ class NFGenerator():
         self.normalize=normalize
         self.return_params=return_params
         self.use_maf=use_maf
+        self.variable_dim=variable_dim
 
     def _generate(self, batch_size, n, return_params=False, set_size=(100,150)):
         n_samples = torch.randint(*set_size,(1,))
@@ -504,12 +505,14 @@ class NFGenerator():
         else: 
             return samples
 
-    def __call__(self, batch_size, n, **kwargs):
+    def __call__(self, batch_size, dims=(2,6), **kwargs):
+        if self.variable_dim:
+            n = torch.randint(*dims,(1,)).item()
+            kwargs['n'] = n
         if self.return_params:
             outputs, dists = zip(*[self._generate(batch_size, return_params=True, **kwargs) for _ in range(self.num_outputs)])
         else:
-            outputs = [self._generate(batch_size, n, **kwargs) for _ in range(self.num_outputs)]
-
+            outputs = [self._generate(batch_size, **kwargs) for _ in range(self.num_outputs)]
         if self.return_params:
             return outputs, dists
         else:

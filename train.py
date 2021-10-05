@@ -122,13 +122,18 @@ if __name__ == '__main__':
     label_kwargs={'scaling':args.scaling, 'blur':args.blur}
     if args.equi:
         sample_kwargs['dims'] = (24,40)
-        sample_kwargs['scaleinv'] = args.scaleinv
-        sample_fct = generate_gaussian_mixture_variable_dim_multi
     else:
         sample_kwargs['n'] = DIM
-        sample_fct = generate_multi(generate_gaussian_mixture, scaleinv=args.scaleinv)
-    losses = train(model, sample_fct, wasserstein, checkpoint_dir=os.path.join(args.checkpoint_dir, args.checkpoint_name), \
-        output_dir=run_dir, criterion=nn.MSELoss(), steps=30000, lr=1e-3, batch_size=128, \
+
+    if args.data == 'gmm':
+        generator = GaussianGenerator(num_outputs=2, scaleinv=args.scaleinv, variable_dim=args.equi)
+    elif args.data == 'nf':
+        generator = NFGenerator(32, 2, num_outputs=2, use_maf=False)
+    else:
+        raise NotImplementedError("nf or gmm")
+
+    losses = train(model, generator, wasserstein, checkpoint_dir=os.path.join(args.checkpoint_dir, args.checkpoint_name), \
+        output_dir=run_dir, criterion=nn.MSELoss(), steps=50000, lr=1e-3, batch_size=64, \
         sample_kwargs=sample_kwargs, label_kwargs=label_kwargs)
 
 
