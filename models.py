@@ -532,6 +532,18 @@ def divergence_model(input_size, output_size, latent_size=4, hidden_size=16):
 
 
 #
+#   PINE
+#
+
+class PINEModel(nn.Module):
+    def __init__(self, input_size, hidden_size, num_sets, num_projections):
+        self.U = nn.Parameter(torch.empty((num_projections, input_size, 1)))
+        self.A = nn.Parameter(torch.empty((num_projections, input_size, 1)))
+        self.V = nn.Parameter(torch.empty((num_projections, input_size, 1)))
+
+
+
+#
 #   From Set Transformers
 #
 
@@ -1110,8 +1122,8 @@ class EquiMultiSetTransformer1(nn.Module):
     def forward(self, X, Y, masks=None):
         if self.normalize:
             avg_norm = torch.cat([X,Y], dim=1).norm(dim=-1,keepdim=True).mean(dim=1,keepdim=True)
-            X /= avg_norm
-            Y /= avg_norm
+            X = X / avg_norm
+            Y = Y / avg_norm
         ZX, ZY = self.enc((self.proj(X.unsqueeze(-1)),self.proj(Y.unsqueeze(-1))), masks=masks)
         ZX = ZX.max(dim=2)[0]
         ZY = ZY.max(dim=2)[0]
