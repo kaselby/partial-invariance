@@ -555,7 +555,7 @@ class FlowSequential(nn.Sequential):
 
 class BatchOfFlows(nn.Module):
     def __init__(self, batch_size, num_inputs, num_hidden, num_blocks, use_maf=False):
-        super().__init__(self)
+        super().__init__()
         self.num_inputs = num_inputs
         self.num_blocks = num_blocks
         self.batch_size=batch_size
