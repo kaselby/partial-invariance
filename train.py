@@ -12,6 +12,7 @@ import tqdm
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('run_name', type=str)
+    parser.add_argument('--target', type=str, default='wasserstein')
     parser.add_argument('--data', type=str, default='gmm')
     parser.add_argument('--normalize', action='store_true')
     parser.add_argument('--scaleinv', action='store_true')
@@ -69,7 +70,7 @@ def train(model, sample_fct, label_fct, eval_fct=None, exact_loss=False, criteri
             if use_cuda:
                 X = [x.cuda() for x in X]
                 #theta = [t.cuda() for t in theta]
-            labels = label_fct(*theta, **label_kwargs).squeeze(-1)
+            labels = label_fct(*theta, X=X[0], **label_kwargs).squeeze(-1)
         else:
             X = sample_fct(batch_size, **sample_kwargs)
             if use_cuda:
@@ -119,20 +120,24 @@ if __name__ == '__main__':
         print("Let's use", torch.cuda.device_count(), "GPUs!")
         model = nn.DataParallel(model)
     sample_kwargs={'set_size':(10,150)}
-    label_kwargs={'scaling':args.scaling, 'blur':args.blur}
+    
     if args.equi:
         sample_kwargs['dims'] = (24,40)
     else:
         sample_kwargs['n'] = DIM
 
+    if args.target == 'wasserstein':
+        label_fct = wasserstein
+        label_kwargs={'scaling':0.98, 'blur':0.001}
+    elif args.target == 'kl':
+        label_fct = kl_mc
+
+    batch_size=128
+    steps=30000
     if args.data == 'gmm':
         generator = GaussianGenerator(num_outputs=2, scaleinv=args.scaleinv, variable_dim=args.equi)
-        batch_size=128
-        steps=30000
     elif args.data == 'nf':
         generator = NFGenerator(32, 2, num_outputs=2, use_maf=False, variable_dim=args.equi)
-        batch_size=64
-        steps=50000
     else:
         raise NotImplementedError("nf or gmm")
 
