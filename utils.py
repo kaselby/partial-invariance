@@ -499,6 +499,8 @@ class NFGenerator():
     def _generate(self, batch_size, n, return_params=False, set_size=(100,150)):
         n_samples = torch.randint(*set_size,(1,))
         flows = BatchOfFlows(batch_size, n, self.num_hidden, self.num_blocks, use_maf=self.use_maf)
+        if use_cuda:
+            flows = flows.cuda()
         samples = flows.sample(n_samples)
         if return_params:
             return samples, flows
