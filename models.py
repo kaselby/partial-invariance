@@ -606,6 +606,40 @@ class MAB(nn.Module):
         O = O if getattr(self, 'ln1', None) is None else self.ln1(O)
         return O
 
+class MAB2(nn.Module):
+    def __init__(self, dim_Q, dim_K, dim_V, dim_FF, num_heads, ln=False):
+        super(MAB2, self).__init__()
+        self.dim_V = dim_V
+        self.num_heads = num_heads
+        self.w_q = nn.Linear(dim_Q, dim_V, bias=False)
+        self.w_k = nn.Linear(dim_K, dim_V, bias=False)
+        self.w_v = nn.Linear(dim_K, dim_V, bias=False)
+        if ln:
+            self.ln0 = nn.LayerNorm(dim_V)
+            self.ln1 = nn.LayerNorm(dim_V)
+        self.w_o = nn.Linear(dim_V, dim_V, bias=False)
+        self.fc = nn.Sequential(nn.Linear(dim_V, dim_FF), nn.ReLU(), nn.Linear(dim_FF, dim_V))
+
+    def forward(self, Q, K, mask=None):
+        Q_ = self.w_q(Q)
+        K_, V_ = self.w_k(K), self.w_v(K)
+
+        dim_split = self.dim_V // self.num_heads
+        Q_ = torch.stack(Q_.split(dim_split, 2), 0)
+        K_ = torch.stack(K_.split(dim_split, 2), 0)
+        V_ = torch.stack(V_.split(dim_split, 2), 0)
+
+        E = Q_.matmul(K_.transpose(2,3))/math.sqrt(self.dim_V)
+        if mask is not None:
+            A = masked_softmax(E, mask.unsqueeze(0).expand_as(E), dim=3)
+        else:
+            A = torch.softmax(E, 3)
+        O = Q + self.w_o(torch.cat((A.matmul(V_)).split(1, 0), 3).squeeze(0))
+        O = O if getattr(self, 'ln0', None) is None else self.ln0(O)
+        O = O + self.fc(O)
+        O = O if getattr(self, 'ln1', None) is None else self.ln1(O)
+        return O
+
 
 class EquiMAB(nn.Module):
     def __init__(self, input_size, latent_size, num_heads, ln=False):
@@ -683,6 +717,14 @@ class SAB(nn.Module):
     def __init__(self, dim_in, dim_out, num_heads, ln=False):
         super(SAB, self).__init__()
         self.mab = MAB(dim_in, dim_in, dim_out, num_heads, ln=ln)
+
+    def forward(self, X, mask=None):
+        return self.mab(X, X, mask=mask)
+
+class SAB2(nn.Module):
+    def __init__(self, dim_in, dim_out, dim_ff, num_heads, ln=False):
+        super(SAB2, self).__init__()
+        self.mab = MAB2(dim_in, dim_in, dim_out, dim_ff, num_heads, ln=ln)
 
     def forward(self, X, mask=None):
         return self.mab(X, X, mask=mask)
@@ -966,12 +1008,24 @@ class SetTransformer(nn.Module):
             num_inds=32, dim_hidden=128, num_heads=4, ln=False):
         super(SetTransformer, self).__init__()
         self.enc = nn.Sequential(
-                ISAB(dim_input, dim_hidden, num_heads, num_inds, ln=ln),
-                ISAB(dim_hidden, dim_hidden, num_heads, num_inds, ln=ln))
+                SAB(dim_input, dim_hidden, num_heads, num_inds, ln=ln),
+                SAB(dim_hidden, dim_hidden, num_heads, num_inds, ln=ln))
         self.dec = nn.Sequential(
                 PMA(dim_hidden, num_heads, num_outputs, ln=ln),
-                SAB(dim_hidden, dim_hidden, num_heads, ln=ln),
-                SAB(dim_hidden, dim_hidden, num_heads, ln=ln),
+                nn.Linear(dim_hidden, dim_output))
+
+    def forward(self, X):
+        return self.dec(self.enc(X)).squeeze(-1)
+
+class SetTransformer2(nn.Module):
+    def __init__(self, dim_input, num_outputs, dim_output,
+            num_inds=32, dim_hidden=128, dim_ff=256, num_heads=4, ln=False):
+        super(SetTransformer2, self).__init__()
+        self.enc = nn.Sequential(
+                SAB2(dim_input, dim_hidden, dim_ff, num_heads, ln=ln),
+                SAB2(dim_hidden, dim_hidden, dim_ff, num_heads, ln=ln))
+        self.dec = nn.Sequential(
+                PMA(dim_hidden, num_heads, num_outputs, ln=ln),
                 nn.Linear(dim_hidden, dim_output))
 
     def forward(self, X):
@@ -1000,6 +1054,7 @@ class MultiSetTransformer1(nn.Module):
         ZX = self.pool_x(ZX)
         ZY = self.pool_y(ZY)
         return self.dec(torch.cat([ZX, ZY], dim=-1)).squeeze(-1)
+        
 
 class MultiSetTransformer2(nn.Module):
     def __init__(self, dim_input, num_outputs, dim_output,
