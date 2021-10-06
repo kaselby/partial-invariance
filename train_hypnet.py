@@ -72,15 +72,8 @@ def collate_batch_with_padding(inputs):
 
 
 class HyponomyDataset(Dataset):
-    def __init__(self, dataset_name, data_dir, vec_dir, voc_dir, inverted_pairs=False, pca_dim=-1, max_vecs=-1, min_threshold=10):
-        load_dict = load_dataset_vecs(dataset_name, vec_dir, voc_dir)
-        self.vecs = ICRDict.from_dict(load_dict)
-        dataset_path = os.path.join(data_dir, dataset_name + ".all")
-        self.relations, self.pairs, self.labels = self._read_dataset(dataset_path, min_threshold, inverted_pairs=inverted_pairs)
-        self.pca_dim=pca_dim
-        self.max_vecs=max_vecs
-
-    def _read_dataset(self, dataset_path, min_threshold, inverted_pairs=False):
+    @staticmethod
+    def _read_dataset(dataset_path, min_threshold, inverted_pairs=False):
         """Reads the hypernymy pairs, relation type and the true label from the given file and returns these
             four properties a separate lists.
 
@@ -119,24 +112,50 @@ class HyponomyDataset(Dataset):
                 pairs = pos_pairs + neg_pairs
                 labels = np.array([True] * len(pos_pairs) + [False] * len(neg_pairs))
                 relations = ['hyper'] * len(pos_pairs) + ['inverted'] * len(neg_pairs)
-        
-        n0 = len(pairs)
-        relations, pairs, labels = self._trim_dataset(relations, pairs, labels, min_threshold)
-        print("Dataset contains %d pairs. %d pairs removed after filtering." % (n0, n0-len(pairs)))
 
         return np.array(relations), pairs, labels
 
-    def _trim_dataset(self, relations, pairs, labels, min_threshold):
+    @staticmethod
+    def _trim_dataset(vecs, relations, pairs, labels, min_threshold):
         rnew, pnew, lnew = [], [], []
         for i, (w1,w2) in enumerate(pairs):
-            n1 = -1 if w1 not in self.vecs else self.vecs[w1].n
-            n2 = -1 if w2 not in self.vecs else self.vecs[w2].n
+            n1 = -1 if w1 not in vecs else vecs[w1].n
+            n2 = -1 if w2 not in vecs else vecs[w2].n
             if n1 >= min_threshold and n2 >= min_threshold:
                 rnew.append(relations[i])
                 pnew.append(pairs[i])
                 lnew.append(labels[i])
         return rnew, pnew, lnew
-                
+
+    @classmethod
+    def from_file(cls, dataset_name, data_dir, vec_dir, voc_dir, inverted_pairs=False, min_threshold=10, pca_dim=-1, max_vecs=-1):
+        load_dict = load_dataset_vecs(dataset_name, vec_dir, voc_dir)
+        vecs = ICRDict.from_dict(load_dict)
+        dataset_path = os.path.join(data_dir, dataset_name + ".all")
+        relations, pairs, labels = cls._read_dataset(dataset_path, min_threshold, inverted_pairs=inverted_pairs)
+        n0 = len(pairs)
+        relations, pairs, labels = cls._trim_dataset(relations, pairs, labels, min_threshold)
+        print("Dataset contains %d pairs. %d pairs removed after filtering." % (n0, n0-len(pairs)))
+        return cls(vecs, relations, pairs, labels, pca_dim=pca_dim, max_vecs=max_vecs)
+
+    def __init__(self, vecs, relations, pairs, labels, pca_dim=-1, max_vecs=-1):
+        assert len(pairs) == len(labels)
+        self.vecs = vecs
+        self.relations=relations
+        self.pairs=pairs
+        self.labels = labels
+        self.pca_dim=pca_dim
+        self.max_vecs=max_vecs
+        self.n = len(self.pairs)
+
+    def split(self, frac):
+        n_split = int(frac * self.n)
+        r1, r2 = self.relations[:n_split], self.relations[n_split:]
+        p1, p2 = self.pairs[:n_split], self.pairs[n_split:]
+        l1, l2 = self.labels[:n_split], self.labels[n_split:]
+        d1 = HyponomyDataset(self.vecs, r1, p1, l1, self.pca_dim, self.max_vecs)
+        d2 = HyponomyDataset(self.vecs, r2, p2, l2, self.pca_dim, self.max_vecs)
+        return d1, d2
 
     def __getitem__(self, index):
         w1,w2 = self.pairs[index]
@@ -154,7 +173,7 @@ def compare(w1, w2, vec_dicts, distance):
     return distance(vecs1, vecs2)
 
 
-def train(model, dataset, steps, batch_size=64, lr=1e-3, save_every=5000, log_every=100, checkpoint_dir=None, output_dir=None):
+def train(model, dataset, steps, eval_dataset=None, batch_size=64, lr=1e-3, save_every=5000, log_every=100, checkpoint_dir=None, output_dir=None):
     optimizer = optim.Adam(model.parameters(), lr=lr)
     loss_fct = nn.BCEWithLogitsLoss()
 
@@ -205,9 +224,15 @@ def train(model, dataset, steps, batch_size=64, lr=1e-3, save_every=5000, log_ev
 
             current_step += batch_size
 
+    logs = {'losses':losses}
+    if eval_dataset is not None:
+        acc, prec = evaluate(model, eval_dataset, batch_size=batch_size)
+        logs['eval_acc'] = acc
+        logs['eval_prec'] = prec
+
     if output_dir is not None:
         torch.save(model, os.path.join(output_dir, "model.pt"))
-        torch.save({'losses':losses}, os.path.join(output_dir, "logs.pt"))
+        torch.save(logs, os.path.join(output_dir, "logs.pt"))
 
     return losses
 
@@ -229,9 +254,9 @@ def evaluate(model, dataset, batch_size=64):
         all_logits[j_min:j_max] = out.squeeze(-1).cpu().detach()
         all_labels[j_min:j_max] = labels.detach()
     
-    return all_logits, all_labels
+    #return all_logits, all_labels
     
-    '''
+    
     def get_accuracy(labels, logits):
         return ((labels*2 - 1) * logits > 0).float().sum() / logits.size(0)
 
@@ -239,7 +264,7 @@ def evaluate(model, dataset, batch_size=64):
     precision = average_precision_score(all_labels.numpy(), all_logits.numpy())
 
     return accuracy, precision
-    '''
+    
 
 
 
@@ -264,7 +289,8 @@ def parse_args():
 
 if __name__ == '__main__':
     args = parse_args()
-    dataset = HyponomyDataset('HypNet_train', args.data_dir, args.vec_dir, args.voc_dir, pca_dim=args.pca_dim, max_vecs=args.max_vecs)
+    dataset = HyponomyDataset.from_file('HypNet_train', args.data_dir, args.vec_dir, args.voc_dir, pca_dim=args.pca_dim, max_vecs=args.max_vecs)
+    train_dataset, eval_dataset = dataset.split(0.85)
     model = MultiSetTransformer1(args.pca_dim, 1, 1, args.hidden_size, num_heads=args.n_heads, num_blocks=args.n_blocks, ln=True)
 
     if use_cuda:
@@ -278,7 +304,7 @@ if __name__ == '__main__':
     if not os.path.exists(checkpoint_dir):
         os.makedirs(checkpoint_dir)
 
-    train(model, dataset, args.steps, batch_size=args.batch_size, lr=args.lr, checkpoint_dir=checkpoint_dir, output_dir=output_dir)
+    train(model, train_dataset, args.steps, eval_dataset=eval_dataset, batch_size=args.batch_size, lr=args.lr, checkpoint_dir=checkpoint_dir, output_dir=output_dir)
 
 
 
