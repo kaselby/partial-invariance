@@ -1022,7 +1022,7 @@ class SetTransformer2(nn.Module):
             num_inds=32, dim_hidden=128, dim_ff=256, num_heads=4, num_blocks=2, ln=False):
         super(SetTransformer2, self).__init__()
         self.proj = nn.Linear(dim_input, dim_hidden)
-        self.enc = nn.Sequential(*[SAB2(dim_input, dim_hidden, dim_ff, num_heads, ln=ln) for _ in range(num_blocks)])
+        self.enc = nn.Sequential(*[SAB2(dim_hidden, dim_hidden, dim_ff, num_heads, ln=ln) for _ in range(num_blocks)])
         self.dec = nn.Sequential(
                 PMA(dim_hidden, num_heads, num_outputs, ln=ln),
                 nn.Linear(dim_hidden, dim_output))
