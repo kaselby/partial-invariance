@@ -560,15 +560,32 @@ class BatchOfFlows(nn.Module):
         self.num_blocks = num_blocks
         self.batch_size=batch_size
         self.use_maf=use_maf
-        self.weight1 = nn.Parameter(torch.randn(batch_size, num_blocks, num_hidden, num_inputs))
-        self.weight2 = nn.Parameter(torch.randn(batch_size, num_blocks, num_hidden, num_hidden))
-        self.weight3 = nn.Parameter(torch.randn(batch_size, num_blocks, num_inputs*2, num_hidden))
-        self.bias1 = nn.Parameter(torch.randn(batch_size, num_blocks, num_hidden))
-        self.bias2 = nn.Parameter(torch.randn(batch_size, num_blocks, num_hidden))
-        self.bias3 = nn.Parameter(torch.randn(batch_size, num_blocks, num_inputs*2))
+        self.weight1 = nn.Parameter(torch.empty(batch_size, num_blocks, num_hidden, num_inputs))
+        self.weight2 = nn.Parameter(torch.empty(batch_size, num_blocks, num_hidden, num_hidden))
+        self.weight3 = nn.Parameter(torch.empty(batch_size, num_blocks, num_inputs*2, num_hidden))
+        self.bias1 = nn.Parameter(torch.empty(batch_size, num_blocks, num_hidden))
+        self.bias2 = nn.Parameter(torch.empty(batch_size, num_blocks, num_hidden))
+        self.bias3 = nn.Parameter(torch.empty(batch_size, num_blocks, num_inputs*2))
         self.register_buffer('input_mask', get_mask(num_inputs, num_hidden, num_inputs, mask_type='input').unsqueeze(0))
         self.register_buffer('hidden_mask', get_mask(num_hidden, num_hidden, num_inputs).unsqueeze(0))
         self.register_buffer('output_mask', get_mask(num_hidden, num_inputs * 2, num_inputs, mask_type='output').unsqueeze(0))
+
+        self.init_params()
+
+    def init_params(self):
+        nn.init.kaiming_uniform_(self.weight1, a=math.sqrt(5))
+        nn.init.kaiming_uniform_(self.weight2, a=math.sqrt(5))
+        nn.init.kaiming_uniform_(self.weight3, a=math.sqrt(5))
+
+        fan_in1, _ = nn.init._calculate_fan_in_and_fan_out(self.weight1)
+        bound1 = 1 / math.sqrt(fan_in1) if fan_in1 > 0 else 0
+        nn.init.uniform_(self.bias1, -bound1, bound1)
+        fan_in2, _ = nn.init._calculate_fan_in_and_fan_out(self.weight2)
+        bound2 = 1 / math.sqrt(fan_in2) if fan_in2 > 0 else 0
+        nn.init.uniform_(self.bias2, -bound2, bound2)
+        fan_in3, _ = nn.init._calculate_fan_in_and_fan_out(self.weight3)
+        bound3 = 1 / math.sqrt(fan_in3) if fan_in3 > 0 else 0
+        nn.init.uniform_(self.bias3, -bound3, bound3)
         
     def sample(self, n):
         noise = torch.Tensor(self.batch_size, n, self.num_inputs).normal_()
@@ -577,8 +594,8 @@ class BatchOfFlows(nn.Module):
 
         x = noise
         for i in range(self.num_blocks):
-            h = torch.bmm(x, (self.weight1[:,i] * self.input_mask).transpose(1,2)) + self.bias1[:,i].unsqueeze(1)
-            z1 = torch.bmm(h, (self.weight2[:,i] * self.hidden_mask).transpose(1,2)) + self.bias2[:,i].unsqueeze(1)
+            h = nn.ReLU(torch.bmm(x, (self.weight1[:,i] * self.input_mask).transpose(1,2)) + self.bias1[:,i].unsqueeze(1))
+            z1 = nn.ReLU(torch.bmm(h, (self.weight2[:,i] * self.hidden_mask).transpose(1,2)) + self.bias2[:,i].unsqueeze(1))
             z2 = torch.bmm(z1, (self.weight3[:,i] * self.output_mask).transpose(1,2)) + self.bias3[:,i].unsqueeze(1)
             m, a = z2.chunk(2, 2)
             x = x * torch.exp(a) + m
