@@ -1019,17 +1019,16 @@ class SetTransformer(nn.Module):
 
 class SetTransformer2(nn.Module):
     def __init__(self, dim_input, num_outputs, dim_output,
-            num_inds=32, dim_hidden=128, dim_ff=256, num_heads=4, ln=False):
+            num_inds=32, dim_hidden=128, dim_ff=256, num_heads=4, num_blocks=2, ln=False):
         super(SetTransformer2, self).__init__()
-        self.enc = nn.Sequential(
-                SAB2(dim_input, dim_hidden, dim_ff, num_heads, ln=ln),
-                SAB2(dim_hidden, dim_hidden, dim_ff, num_heads, ln=ln))
+        self.proj = nn.Linear(dim_input, dim_hidden)
+        self.enc = nn.Sequential(*[SAB2(dim_input, dim_hidden, dim_ff, num_heads, ln=ln) for _ in range(num_blocks)])
         self.dec = nn.Sequential(
                 PMA(dim_hidden, num_heads, num_outputs, ln=ln),
                 nn.Linear(dim_hidden, dim_output))
 
     def forward(self, X):
-        return self.dec(self.enc(X)).squeeze(-1)
+        return self.dec(self.enc(self.proj(X))).squeeze(-1)
 
 class MultiSetTransformer1(nn.Module):
     def __init__(self, dim_input, num_outputs, dim_output,
