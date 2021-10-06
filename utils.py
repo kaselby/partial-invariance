@@ -420,6 +420,7 @@ class GaussianGenerator():
         self.scaleinv = scaleinv
         self.return_params = return_params
         self.variable_dim = variable_dim
+        self.device = torch.device('cpu') if not use_cuda else torch.device('cuda')
 
     def _generate_mixture(self, batch_size, n, return_params=False, set_size=(100,150), component_range=(3,10), scale=None):
         n_samples = torch.randint(*set_size,(1,))
@@ -432,8 +433,9 @@ class GaussianGenerator():
         else:
             mus= 1+5*mus
             A = A
-        sigmas = A.transpose(2,3).matmul(A) + torch.diag_embed(torch.rand(batch_size, n_components, n))
-        logits = torch.randint(5, size=(batch_size, n_components)).float()
+        mus = mus.to(self.device)
+        sigmas = A.transpose(2,3).matmul(A) + torch.diag_embed(torch.rand(batch_size, n_components, n)).to(self.device)
+        logits = torch.randint(5, size=(batch_size, n_components)).float().to(self.device)
         base_dist = MultivariateNormal(mus, sigmas)
         mixing_dist = Categorical(logits=logits)
         dist = MixtureSameFamily(mixing_dist, base_dist)
@@ -495,12 +497,11 @@ class NFGenerator():
         self.return_params=return_params
         self.use_maf=use_maf
         self.variable_dim=variable_dim
+        self.device = torch.device('cpu') if not use_cuda else torch.device('cuda')
 
     def _generate(self, batch_size, n, return_params=False, set_size=(100,150)):
         n_samples = torch.randint(*set_size,(1,))
-        flows = BatchOfFlows(batch_size, n, self.num_hidden, self.num_blocks, use_maf=self.use_maf)
-        if use_cuda:
-            flows = flows.cuda()
+        flows = BatchOfFlows(batch_size, n, self.num_hidden, self.num_blocks, use_maf=self.use_maf).to(self.device)
         samples = flows.sample(n_samples)
         if return_params:
             return samples, flows

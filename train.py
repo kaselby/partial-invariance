@@ -31,14 +31,14 @@ def evaluate(model, baselines, generator, label_fct, exact_loss=False, batch_siz
         for i in tqdm.tqdm(range(steps)):
             if exact_loss:
                 X, theta = generator(batch_size, **sample_kwargs)
-                if use_cuda:
-                    X = [x.cuda() for x in X]
+                #if use_cuda:
+                    #X = [x.cuda() for x in X]
                     #theta = [t.cuda() for t in theta]
                 labels = label_fct(*theta, **label_kwargs).squeeze(-1)
             else:
                 X = generator(batch_size, **sample_kwargs)
-                if use_cuda:
-                    X = [x.cuda() for x in X]
+                #if use_cuda:
+                    #X = [x.cuda() for x in X]
                 labels = label_fct(*X, **label_kwargs)
             model_loss = criterion(model(*X).squeeze(-1), labels)
             model_losses.append(model_loss.item())
@@ -66,14 +66,14 @@ def train(model, sample_fct, label_fct, baselines={}, exact_loss=False, criterio
         optimizer.zero_grad()
         if exact_loss:
             X, theta = sample_fct(batch_size, **sample_kwargs)
-            if use_cuda:
-                X = [x.cuda() for x in X]
+            #if use_cuda:
+                #X = [x.cuda() for x in X]
                 #theta = [t.cuda() for t in theta]
             labels = label_fct(*theta, X=X[0], **label_kwargs).squeeze(-1)
         else:
             X = sample_fct(batch_size, **sample_kwargs)
-            if use_cuda:
-                X = [x.cuda() for x in X]
+            #if use_cuda:
+                #X = [x.cuda() for x in X]
             labels = label_fct(*X, **label_kwargs)
         loss = criterion(model(*X).squeeze(-1), labels)
         loss.backward()
