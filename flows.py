@@ -594,8 +594,8 @@ class BatchOfFlows(nn.Module):
 
         x = noise
         for i in range(self.num_blocks):
-            h = nn.ReLU(torch.bmm(x, (self.weight1[:,i] * self.input_mask).transpose(1,2)) + self.bias1[:,i].unsqueeze(1))
-            z1 = nn.ReLU(torch.bmm(h, (self.weight2[:,i] * self.hidden_mask).transpose(1,2)) + self.bias2[:,i].unsqueeze(1))
+            h = F.relu(torch.bmm(x, (self.weight1[:,i] * self.input_mask).transpose(1,2)) + self.bias1[:,i].unsqueeze(1))
+            z1 = F.relu(torch.bmm(h, (self.weight2[:,i] * self.hidden_mask).transpose(1,2)) + self.bias2[:,i].unsqueeze(1))
             z2 = torch.bmm(z1, (self.weight3[:,i] * self.output_mask).transpose(1,2)) + self.bias3[:,i].unsqueeze(1)
             m, a = z2.chunk(2, 2)
             x = x * torch.exp(a) + m
