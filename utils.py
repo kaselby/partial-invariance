@@ -256,7 +256,7 @@ def kl_nd_gaussian(P, Q):
 
 def kl_mc(p, q, X=None, Y=None, N=500):
     if X is None:
-        X = p.sample((N,))
+        X = p.sample((N,)).transpose(0,1)
     return (p.log_prob(X.transpose(0,1)) - q.log_prob(X.transpose(0,1))).mean(dim=0)    
 
 

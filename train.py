@@ -34,7 +34,7 @@ def evaluate(model, baselines, generator, label_fct, exact_loss=False, batch_siz
                 #if use_cuda:
                     #X = [x.cuda() for x in X]
                     #theta = [t.cuda() for t in theta]
-                labels = label_fct(*theta, **label_kwargs).squeeze(-1)
+                labels = label_fct(*theta, X=X[0], **label_kwargs).squeeze(-1)
             else:
                 X = generator(batch_size, **sample_kwargs)
                 #if use_cuda:

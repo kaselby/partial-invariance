@@ -6,8 +6,6 @@
 #SBATCH --gres=gpu:4
 #SBATCH --partition=t4v1,t4v2,p100
 #SBATCH --cpus-per-gpu=1
-#SBATCH --qos=deadline
-#SBATCH --account=deadline
 #SBATCH --mem=25GB
 #SBATCH --exclude=gpu109
 
