@@ -139,9 +139,9 @@ if __name__ == '__main__':
     batch_size=128
     steps=30000
     if args.data == 'gmm':
-        generator = GaussianGenerator(num_outputs=2, scaleinv=args.scaleinv, variable_dim=args.equi)
+        generator = GaussianGenerator(num_outputs=2, scaleinv=args.scaleinv, variable_dim=args.equi, return_params=exact_loss)
     elif args.data == 'nf':
-        generator = NFGenerator(32, 2, num_outputs=2, use_maf=False, variable_dim=args.equi)
+        generator = NFGenerator(32, 2, num_outputs=2, use_maf=False, variable_dim=args.equi, return_params=exact_loss)
     else:
         raise NotImplementedError("nf or gmm")
 

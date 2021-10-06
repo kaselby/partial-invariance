@@ -7,8 +7,6 @@
 #SBATCH --partition=t4v1,t4v2,p100
 #SBATCH --cpus-per-gpu=1
 #SBATCH --mem=25GB
-#SBATCH --account=deadline
-#SBATCH --qos=deadline
 #SBATCH --exclude=gpu109
 
 python3 train_hypnet.py $1 --checkpoint_name $SLURM_JOB_ID
