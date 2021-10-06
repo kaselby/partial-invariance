@@ -87,10 +87,10 @@ def train(model, sample_fct, label_fct, baselines={}, exact_loss=False, criterio
                 os.remove(checkpoint_path)
             torch.save({'model':model,'optimizer':optimizer, 'step': i, 'losses':losses}, checkpoint_path)
 
-    model_loss, baseline_loss = evaluate(model, baselines, sample_fct, label_fct, exact_loss=exact_loss, batch_size=batch_size, label_kwargs=label_kwargs, sample_kwargs=sample_kwargs, criterion=criterion, steps=500)
+    model_loss, baseline_losses = evaluate(model, baselines, sample_fct, label_fct, exact_loss=exact_loss, batch_size=batch_size, label_kwargs=label_kwargs, sample_kwargs=sample_kwargs, criterion=criterion, steps=500)
 
     torch.save(model._modules['module'], os.path.join(output_dir,"model.pt"))  
-    torch.save({'losses':losses, 'eval_losses':{'model':model_loss, 'baseline':baseline_loss}}, os.path.join(output_dir,"logs.pt"))   
+    torch.save({'losses':losses, 'eval_losses':{'model':model_loss, **baseline_losses}}, os.path.join(output_dir,"logs.pt"))   
 
     return losses
 
