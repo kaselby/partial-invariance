@@ -560,12 +560,12 @@ class BatchOfFlows(nn.Module):
         self.num_blocks = num_blocks
         self.batch_size=batch_size
         self.use_maf=use_maf
-        self.weight1 = nn.Parameter(torch.empty(batch_size, num_blocks, num_hidden, num_inputs))
-        self.weight2 = nn.Parameter(torch.empty(batch_size, num_blocks, num_hidden, num_hidden))
-        self.weight3 = nn.Parameter(torch.empty(batch_size, num_blocks, num_inputs*2, num_hidden))
-        self.bias1 = nn.Parameter(torch.empty(batch_size, num_blocks, num_hidden))
-        self.bias2 = nn.Parameter(torch.empty(batch_size, num_blocks, num_hidden))
-        self.bias3 = nn.Parameter(torch.empty(batch_size, num_blocks, num_inputs*2))
+        self.weight1 = nn.Parameter(torch.empty(batch_size, num_blocks, num_hidden, num_inputs),requires_grad=False)
+        self.weight2 = nn.Parameter(torch.empty(batch_size, num_blocks, num_hidden, num_hidden),requires_grad=False)
+        self.weight3 = nn.Parameter(torch.empty(batch_size, num_blocks, num_inputs*2, num_hidden),requires_grad=False)
+        self.bias1 = nn.Parameter(torch.empty(batch_size, num_blocks, num_hidden),requires_grad=False)
+        self.bias2 = nn.Parameter(torch.empty(batch_size, num_blocks, num_hidden),requires_grad=False)
+        self.bias3 = nn.Parameter(torch.empty(batch_size, num_blocks, num_inputs*2),requires_grad=False)
         self.register_buffer('input_mask', get_mask(num_inputs, num_hidden, num_inputs, mask_type='input').unsqueeze(0))
         self.register_buffer('hidden_mask', get_mask(num_hidden, num_hidden, num_inputs).unsqueeze(0))
         self.register_buffer('output_mask', get_mask(num_hidden, num_inputs * 2, num_inputs, mask_type='output').unsqueeze(0))
@@ -588,17 +588,18 @@ class BatchOfFlows(nn.Module):
         nn.init.uniform_(self.bias3, -bound3, bound3)
         
     def sample(self, n):
-        noise = torch.Tensor(self.batch_size, n, self.num_inputs).normal_()
-        device = next(self.parameters()).device
-        noise = noise.to(device)
+        with torch.no_grad():
+            noise = torch.Tensor(self.batch_size, n, self.num_inputs).normal_()
+            device = next(self.parameters()).device
+            noise = noise.to(device)
 
-        x = noise
-        for i in range(self.num_blocks):
-            h = F.relu(torch.bmm(x, (self.weight1[:,i] * self.input_mask).transpose(1,2)) + self.bias1[:,i].unsqueeze(1))
-            z1 = F.relu(torch.bmm(h, (self.weight2[:,i] * self.hidden_mask).transpose(1,2)) + self.bias2[:,i].unsqueeze(1))
-            z2 = torch.bmm(z1, (self.weight3[:,i] * self.output_mask).transpose(1,2)) + self.bias3[:,i].unsqueeze(1)
-            m, a = z2.chunk(2, 2)
-            x = x * torch.exp(a) + m
+            x = noise
+            for i in range(self.num_blocks):
+                h = F.relu(torch.bmm(x, (self.weight1[:,i] * self.input_mask).transpose(1,2)) + self.bias1[:,i].unsqueeze(1))
+                z1 = F.relu(torch.bmm(h, (self.weight2[:,i] * self.hidden_mask).transpose(1,2)) + self.bias2[:,i].unsqueeze(1))
+                z2 = torch.bmm(z1, (self.weight3[:,i] * self.output_mask).transpose(1,2)) + self.bias3[:,i].unsqueeze(1)
+                m, a = z2.chunk(2, 2)
+                x = x * torch.exp(a) + m
         
         return x
 
