@@ -24,28 +24,27 @@ def parse_args():
 
     return parser.parse_args()
 
-def evaluate(model, baselines, generators, label_fct, exact_loss=False, batch_size=64, sample_kwargs={}, label_kwargs={}, criterion=nn.L1Loss(), steps=5000):
+def evaluate(model, baselines, generator, label_fct, exact_loss=False, batch_size=64, sample_kwargs={}, label_kwargs={}, criterion=nn.L1Loss(), steps=5000):
     model_losses = []
     baseline_losses = {k:[] for k in baselines.keys()}
     with torch.no_grad():
-        for generator in generators:
-            for i in tqdm.tqdm(range(steps)):
-                if exact_loss:
-                    X, theta = generator(batch_size, **sample_kwargs)
-                    if use_cuda:
-                        X = [x.cuda() for x in X]
-                        #theta = [t.cuda() for t in theta]
-                    labels = label_fct(*theta, **label_kwargs).squeeze(-1)
-                else:
-                    X = generator(batch_size, **sample_kwargs)
-                    if use_cuda:
-                        X = [x.cuda() for x in X]
-                    labels = label_fct(*X, **label_kwargs)
-                model_loss = criterion(model(*X).squeeze(-1), labels)
-                model_losses.append(model_loss.item())
-                for baseline_name, baseline_fct in baselines.items():
-                    baseline_loss = criterion(baseline_fct(*X), labels)
-                    baseline_losses[baseline_name].append(baseline_loss.item())
+        for i in tqdm.tqdm(range(steps)):
+            if exact_loss:
+                X, theta = generator(batch_size, **sample_kwargs)
+                if use_cuda:
+                    X = [x.cuda() for x in X]
+                    #theta = [t.cuda() for t in theta]
+                labels = label_fct(*theta, **label_kwargs).squeeze(-1)
+            else:
+                X = generator(batch_size, **sample_kwargs)
+                if use_cuda:
+                    X = [x.cuda() for x in X]
+                labels = label_fct(*X, **label_kwargs)
+            model_loss = criterion(model(*X).squeeze(-1), labels)
+            model_losses.append(model_loss.item())
+            for baseline_name, baseline_fct in baselines.items():
+                baseline_loss = criterion(baseline_fct(*X), labels)
+                baseline_losses[baseline_name].append(baseline_loss.item())
     return sum(model_losses)/len(model_losses), {k:sum(v)/len(v) for k,v in baseline_losses.items()}
 
 def train(model, sample_fct, label_fct, baselines={}, exact_loss=False, criterion=nn.L1Loss(), batch_size=64, steps=3000, lr=1e-5, 
