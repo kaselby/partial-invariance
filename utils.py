@@ -254,7 +254,7 @@ def kl_nd_gaussian(P, Q):
                 (mu2-mu1).unsqueeze(-1).transpose(-1, -2).matmul(Lambda2).matmul((mu2-mu1).unsqueeze(-1)).squeeze(-1).squeeze(-1)
     )
 
-def kl_mc(p, q, X=None, N=500):
+def kl_mc(p, q, X=None, Y=None, N=500):
     if X is None:
         X = p.sample((N,))
     return (p.log_prob(X) - q.log_prob(X)).mean(dim=0)    

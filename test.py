@@ -1,76 +1,65 @@
-from models import *
-from utils import *
+import io
+import os
+import argparse
+import random
+
 import torch
 import torch.nn as nn
-import matplotlib
-matplotlib.use('Agg')
+import fasttext
+import numpy as np
+import tqdm
 
-import matplotlib.pyplot as plt
+from utils import *
+use_cuda=torch.cuda.is_available()
 
+def evaluate(model, baselines, generators, label_fct, exact_loss=False, batch_size=64, sample_kwargs={}, label_kwargs={}, criterion=nn.L1Loss(), steps=5000):
+    model_losses = []
+    baseline_losses = {k:[] for k in baselines.keys()}
+    with torch.no_grad():
+        for generator in generators:
+            for i in tqdm.tqdm(range(steps)):
+                if exact_loss:
+                    X, theta = generator(batch_size, **sample_kwargs)
+                    if use_cuda:
+                        X = [x.cuda() for x in X]
+                        #theta = [t.cuda() for t in theta]
+                    labels = label_fct(*theta, **label_kwargs).squeeze(-1)
+                else:
+                    X = generator(batch_size, **sample_kwargs)
+                    if use_cuda:
+                        X = [x.cuda() for x in X]
+                    labels = label_fct(*X, **label_kwargs)
+                model_loss = criterion(model(*X).squeeze(-1), labels)
+                model_losses.append(model_loss.item())
+                for baseline_name, baseline_fct in baselines.items():
+                    baseline_loss = criterion(baseline_fct(*X), labels)
+                    baseline_losses[baseline_name].append(baseline_loss.item())
+    return sum(model_losses)/len(model_losses), {k:sum(v)/len(v) for k,v in baseline_losses.items()}
 
-class ExactDivergenceModel(nn.Module):
-    def __init__(self, input_size=1, hidden_size=32, latent_size=1):
-        super().__init__()
-        net1 = nn.Sequential(
-                nn.Linear(2*input_size, hidden_size),
-                nn.ReLU(),
-                nn.Linear(hidden_size, hidden_size),
-                nn.ReLU(),
-                nn.Linear(hidden_size, latent_size)
-        )
-        net2 = nn.Sequential(
-                nn.Linear(2*input_size, hidden_size),
-                nn.ReLU(),
-                nn.Linear(hidden_size, hidden_size),
-                nn.ReLU(),
-                nn.Linear(hidden_size, latent_size)
-        )
-        #with torch.no_grad():
-         # net._modules['0'].weight.data = torch.cat([torch.eye(latent_size), torch.eye(latent_size)], dim=1)
-         # net._modules['0'].weight.data.add_(torch.randn(latent_size, 2*latent_size))
-        self.pair_encoder1 = RNBlock(net1, pool='max', remove_diag=True)
-        self.pair_encoder2 = RNBlock(net2, pool='max')
-        self.merger = nn.Sequential(
-            nn.Linear(2*latent_size, hidden_size),
-            nn.ReLU(),
-            nn.Linear(hidden_size,latent_size)
-        )
-        #self.enc = net
-        
-    def forward(self, X, Y, xi=1e-5):
-        N = X.size(1)
-        M = Y.size(1)
-        XX = torch.cat([X.unsqueeze(1).expand(-1,N,-1,-1),X.unsqueeze(2).expand(-1,-1,N,-1)],dim=-1)
-        YX = torch.cat([Y.unsqueeze(1).expand(-1,N,-1,-1), X.unsqueeze(2).expand(-1,-1,M,-1)], dim=-1)
-        #mask = torch.eye(N, N).unsqueeze(0).unsqueeze(-1) * 99999999
-        #if use_cuda:
-        #    mask=mask.cuda()
-        #XX = (XX.chunk(2,dim=-1)[0] - XX.chunk(2,dim=-1)[1]).norm(dim=-1, keepdim=True)
-        #Z_XX = -1*torch.log(XX + mask + xi)
-        #Z_YX = -1*torch.log(YX+xi)
-        #Z_XX = -1*self.enc1(XX+xi) - mask
-        #Z_YX = -1*self.enc2(YX+xi)
-        #Z_XX = torch.max(Z_XX, dim=2)[0]
-        #Z_YX = torch.max(Z_YX, dim=2)[0]
-        Z_XX = self.pair_encoder1(X, X)
-        Z_YX = self.pair_encoder2(X, Y)
-        #Z_X = self.merger(torch.cat([Z_XX, Z_YX], dim=-1))
-        Z_X = Z_YX - Z_XX
-        Z_X = torch.sum(Z_X, dim=1)/N
-        return -1*Z_X #+ math.log(M/(N-1))
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('run_name', type=str)
+    parser.add_argument('--target', type=str, default='wasserstein')
 
-model=ExactDivergenceModel().cuda()
-losses=train(model, generate_multi(generate_gaussian_1d), simplified_divergence2, criterion=nn.MSELoss(), steps=10000, lr=1e-2, lr_decay=False)
-#losses=evaluate(model7, generate_multi(generate_gaussian_1d), simplified_divergence1, criterion=nn.MSELoss(), steps=1000)
+    return parser.parse_args()
 
+if __name__ == '__main__':
+    args = parse_args()
+    print("test")
 
-loglosses=torch.log10(torch.Tensor(losses))
-print([x.mean().item() for x in loglosses.chunk(20)])
-show_examples(model, generate_multi(generate_gaussian_1d), simplified_divergence2, n=8)
+    model = torch.load(os.path.join("runs", args.run_name, "model.pt"))
 
-#plt.plot(losses)
-#plt.legend()
-#plt.xlabel("Steps")
-#plt.ylabel("Mean Squared Error")
-#plt.yscale("log")
-#plt.show()
+    sample_kwargs={'n':32, 'set_size':(10,150)}
+    if args.target == 'wasserstein':
+        baselines = {'sinkhorn_default':wasserstein, 'sinkhorn_exact': lambda X,Y: wasserstein(X,Y, blur=0.001,scaling=0.98)}
+    elif args.target == 'kl':
+        baselines = {'knn':kl_knn}
+    else:
+        raise NotImplementedError()
+    generators = [GaussianGenerator(num_outputs=2, normalize=True), NFGenerator(32, 3, num_outputs=2, normalize=True)]
+    model_loss, baseline_losses = evaluate(model, baselines, generators, wasserstein_exact, 
+        sample_kwargs=sample_kwargs, steps=1000, criterion=nn.L1Loss())
+
+    print("Model Loss:", model_loss)
+    for baseline_name, baseline_loss in baseline_losses.items():
+        print("%s Losses:" % baseline_name, baseline_loss)
