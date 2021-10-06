@@ -434,7 +434,7 @@ class GaussianGenerator():
             mus= 1+5*mus
             A = A
         mus = mus.to(self.device)
-        sigmas = A.transpose(2,3).matmul(A) + torch.diag_embed(torch.rand(batch_size, n_components, n)).to(self.device)
+        sigmas = (A.transpose(2,3).matmul(A) + torch.diag_embed(torch.rand(batch_size, n_components, n))).to(self.device)
         logits = torch.randint(5, size=(batch_size, n_components)).float().to(self.device)
         base_dist = MultivariateNormal(mus, sigmas)
         mixing_dist = Categorical(logits=logits)
