@@ -1180,7 +1180,7 @@ class EquiMultiSetTransformer1(nn.Module):
         self.norm_out = norm_out
 
     def forward(self, X, Y, masks=None):
-        if self.normalize:
+        if self.norm_in:
             avg_norm = torch.cat([X,Y], dim=1).norm(dim=-1,keepdim=True).mean(dim=1,keepdim=True)
             X = X / avg_norm
             Y = Y / avg_norm
