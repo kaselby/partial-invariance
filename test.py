@@ -56,7 +56,7 @@ if __name__ == '__main__':
         baselines = {'knn':kl_knn}
     else:
         raise NotImplementedError()
-    generators = [GaussianGenerator(num_outputs=2, normalize=True), NFGenerator(32, 3, num_outputs=2, normalize=True)]
+    generators = [GaussianGenerator(num_outputs=2), NFGenerator(32, 3, num_outputs=2)]
     model_loss, baseline_losses = evaluate(model, baselines, generators, wasserstein_exact, 
         sample_kwargs=sample_kwargs, steps=1000, criterion=nn.L1Loss())
 

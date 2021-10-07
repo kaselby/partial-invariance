@@ -272,7 +272,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('run_name', type=str)
     parser.add_argument('--voc_dir', type=str, default='./ICR/voc')
-    parser.add_argument('--vec_dir', type=str, default='./ICR/vecs/hypeval2')
+    parser.add_argument('--vec_dir', type=str, default='./ICR/vecs/hypeval')
     parser.add_argument('--data_dir', type=str, default='./ICR/data')
     parser.add_argument('--pca_dim', type=int, default=10)
     parser.add_argument('--hidden_size', type=int, default=128)

@@ -1053,11 +1053,11 @@ class MultiSetTransformer1(nn.Module):
         ZX, ZY = self.enc((self.proj(X),self.proj(Y)), masks=masks)
         ZX = self.pool_x(ZX)
         ZY = self.pool_y(ZY)
-        out = self.dec(torch.cat([ZX, ZY], dim=-1)).squeeze(-1)
+        out = self.dec(torch.cat([ZX, ZY], dim=-1))
         if self.norm_out:
             assert self.norm_in
-            out = out * avg_norm.squeeze(-1)
-        return out
+            out = out * avg_norm
+        return out.squeeze(-1)
         
 
 class MultiSetTransformer2(nn.Module):
@@ -1189,8 +1189,8 @@ class EquiMultiSetTransformer1(nn.Module):
         ZY = ZY.max(dim=2)[0]
         ZX = self.pool_x(ZX)
         ZY = self.pool_y(ZY)
-        out = self.dec(torch.cat([ZX, ZY], dim=-1)).squeeze(-1)
+        out = self.dec(torch.cat([ZX, ZY], dim=-1))
         if self.norm_out:
             assert self.norm_in
-            out = out * avg_norm.squeeze(-1)
-        return out
+            out = out * avg_norm
+        return out.squeeze(-1)
