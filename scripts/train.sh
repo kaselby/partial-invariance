@@ -9,4 +9,15 @@
 #SBATCH --mem=25GB
 #SBATCH --exclude=gpu109
 
-python3 train.py $1 --data nf --target wasserstein --blur 0.001 --scaling 0.98 --equi --checkpoint_name $SLURM_JOB_ID
+run_name=$1
+target=$2
+data=$3
+
+if [ $target == "wasserstein" ]
+then
+    argstring="--target wasserstein --norm_in --norm_out --blur 0.001 --scaling 0.98"
+elif [ $target == "kl" ]
+    argstring="--target kl"
+fi
+
+python3 train.py $1 --data $3 --equi --checkpoint_name $SLURM_JOB_ID $argstring

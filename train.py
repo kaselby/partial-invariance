@@ -14,7 +14,8 @@ def parse_args():
     parser.add_argument('run_name', type=str)
     parser.add_argument('--target', type=str, default='wasserstein')
     parser.add_argument('--data', type=str, default='gmm')
-    parser.add_argument('--normalize', action='store_true')
+    parser.add_argument('--norm_in', action='store_true')
+    parser.add_argument('--norm_out', action='store_true')
     parser.add_argument('--scaleinv', action='store_true')
     parser.add_argument('--checkpoint_dir', type=str, default="/checkpoint/kaselby")
     parser.add_argument('--checkpoint_name', type=str, default=None)
@@ -108,11 +109,12 @@ if __name__ == '__main__':
 
     device = torch.device("cuda:0")
 
+    model_kwargs={'ln':True, 'remove_diag':True, 'num_blocks':2, 'norm_in':args.norm_in, 'norm_out':args.norm_out}
     if args.equi:
-        model=EquiMultiSetTransformer1(1,1, dim_hidden=16, ln=True, remove_diag=True, num_blocks=2, normalize=args.normalize).to(device)
+        model=EquiMultiSetTransformer1(1,1, dim_hidden=16, **model_kwargs).to(device)
     else:
         DIM=32
-        model=MultiSetTransformer1(DIM, 1,1, dim_hidden=256, ln=True, remove_diag=True, num_blocks=2, normalize=args.normalize).to(device)
+        model=MultiSetTransformer1(DIM, 1,1, dim_hidden=256, ln=True, **model_kwargs).to(device)
 
     if torch.cuda.device_count() > 1:
         print("Let's use", torch.cuda.device_count(), "GPUs!")
