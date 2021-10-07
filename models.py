@@ -1056,7 +1056,7 @@ class MultiSetTransformer1(nn.Module):
         out = self.dec(torch.cat([ZX, ZY], dim=-1)).squeeze(-1)
         if self.norm_out:
             assert self.norm_in
-            out = out * avg_norm.squeeze(-1).squeeze(-1)
+            out = out * avg_norm.squeeze(-1)
         return out
         
 
@@ -1192,5 +1192,5 @@ class EquiMultiSetTransformer1(nn.Module):
         out = self.dec(torch.cat([ZX, ZY], dim=-1)).squeeze(-1)
         if self.norm_out:
             assert self.norm_in
-            out = out * avg_norm.squeeze(-1).squeeze(-1)
+            out = out * avg_norm.squeeze(-1)
         return out
