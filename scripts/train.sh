@@ -17,6 +17,7 @@ if [ $target == "wasserstein" ]
 then
     argstring="--target wasserstein --norm_in --norm_out --blur 0.001 --scaling 0.98"
 elif [ $target == "kl" ]
+then
     argstring="--target kl"
 fi
 
