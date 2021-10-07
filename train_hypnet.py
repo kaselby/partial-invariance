@@ -134,7 +134,7 @@ class HyponomyDataset(Dataset):
         dataset_path = os.path.join(data_dir, dataset_name + ".all")
         relations, pairs, labels = cls._read_dataset(dataset_path, min_threshold, inverted_pairs=inverted_pairs)
         n0 = len(pairs)
-        relations, pairs, labels = cls._trim_dataset(relations, pairs, labels, min_threshold)
+        relations, pairs, labels = cls._trim_dataset(vecs, relations, pairs, labels, min_threshold)
         print("Dataset contains %d pairs. %d pairs removed after filtering." % (n0, n0-len(pairs)))
         return cls(vecs, relations, pairs, labels, pca_dim=pca_dim, max_vecs=max_vecs)
 
