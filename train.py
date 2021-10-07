@@ -114,7 +114,7 @@ if __name__ == '__main__':
         model=EquiMultiSetTransformer1(1,1, dim_hidden=16, **model_kwargs).to(device)
     else:
         DIM=32
-        model=MultiSetTransformer1(DIM, 1,1, dim_hidden=256, ln=True, **model_kwargs).to(device)
+        model=MultiSetTransformer1(DIM, 1,1, dim_hidden=256, **model_kwargs).to(device)
 
     if torch.cuda.device_count() > 1:
         print("Let's use", torch.cuda.device_count(), "GPUs!")
