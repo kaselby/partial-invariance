@@ -1008,8 +1008,8 @@ class SetTransformer(nn.Module):
             num_inds=32, dim_hidden=128, num_heads=4, ln=False):
         super(SetTransformer, self).__init__()
         self.enc = nn.Sequential(
-                SAB(dim_input, dim_hidden, num_heads, num_inds, ln=ln),
-                SAB(dim_hidden, dim_hidden, num_heads, num_inds, ln=ln))
+                SAB(dim_input, dim_hidden, num_heads, ln=ln),
+                SAB(dim_hidden, dim_hidden, num_heads, ln=ln))
         self.dec = nn.Sequential(
                 PMA(dim_hidden, num_heads, num_outputs, ln=ln),
                 nn.Linear(dim_hidden, dim_output))
@@ -1052,7 +1052,8 @@ class MultiSetTransformer1(nn.Module):
         ZX, ZY = self.enc((self.proj(X),self.proj(Y)), masks=masks)
         ZX = self.pool_x(ZX)
         ZY = self.pool_y(ZY)
-        return self.dec(torch.cat([ZX, ZY], dim=-1)).squeeze(-1)
+        out = self.dec(torch.cat([ZX, ZY], dim=-1)).squeeze(-1)
+        return out
         
 
 class MultiSetTransformer2(nn.Module):
