@@ -1048,8 +1048,8 @@ class MultiSetTransformer1(nn.Module):
     def forward(self, X, Y, masks=None):
         if self.norm_in:
             avg_norm = torch.cat([X,Y], dim=1).norm(dim=-1,keepdim=True).mean(dim=1,keepdim=True)
-            X /= avg_norm
-            Y /= avg_norm
+            X = X / avg_norm
+            Y = X / avg_norm
         ZX, ZY = self.enc((self.proj(X),self.proj(Y)), masks=masks)
         ZX = self.pool_x(ZX)
         ZY = self.pool_y(ZY)

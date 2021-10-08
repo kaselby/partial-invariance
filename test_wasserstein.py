@@ -47,28 +47,27 @@ def sample_vecs(ft1, ft2, scale=-1):
     return lambda n: (get_samples(ft1, n), get_samples(ft2, n))
 
 
-def evaluate(model, baselines, generators, label_fct, exact_loss=False, batch_size=64, sample_kwargs={}, label_kwargs={}, criterion=nn.L1Loss(), steps=5000):
+def evaluate(model, baselines, generator, label_fct, exact_loss=False, batch_size=64, sample_kwargs={}, label_kwargs={}, criterion=nn.L1Loss(), steps=5000):
     model_losses = []
     baseline_losses = {k:[] for k in baselines.keys()}
     with torch.no_grad():
-        for generator in generators:
-            for i in tqdm.tqdm(range(steps)):
-                if exact_loss:
-                    X, theta = generator(batch_size, **sample_kwargs)
-                    if use_cuda:
-                        X = [x.cuda() for x in X]
-                        #theta = [t.cuda() for t in theta]
-                    labels = label_fct(*theta, **label_kwargs).squeeze(-1)
-                else:
-                    X = generator(batch_size, **sample_kwargs)
-                    if use_cuda:
-                        X = [x.cuda() for x in X]
-                    labels = label_fct(*X, **label_kwargs)
-                model_loss = criterion(model(*X).squeeze(-1), labels)
-                model_losses.append(model_loss.item())
-                for baseline_name, baseline_fct in baselines.items():
-                    baseline_loss = criterion(baseline_fct(*X), labels)
-                    baseline_losses[baseline_name].append(baseline_loss.item())
+        for i in tqdm.tqdm(range(steps)):
+            if exact_loss:
+                X, theta = generator(batch_size, **sample_kwargs)
+                if use_cuda:
+                    X = [x.cuda() for x in X]
+                    #theta = [t.cuda() for t in theta]
+                labels = label_fct(*theta, **label_kwargs).squeeze(-1)
+            else:
+                X = generator(batch_size, **sample_kwargs)
+                if use_cuda:
+                    X = [x.cuda() for x in X]
+                labels = label_fct(*X, **label_kwargs)
+            model_loss = criterion(model(*X).squeeze(-1), labels)
+            model_losses.append(model_loss.item())
+            for baseline_name, baseline_fct in baselines.items():
+                baseline_loss = criterion(baseline_fct(*X), labels)
+                baseline_losses[baseline_name].append(baseline_loss.item())
     return sum(model_losses)/len(model_losses), {k:sum(v)/len(v) for k,v in baseline_losses.items()}
 
 
@@ -81,11 +80,20 @@ if __name__ == '__main__':
     sample_kwargs={'n':32, 'set_size':(10,150)}
     baselines = {'sinkhorn_default':wasserstein, 'sinkhorn_exact': lambda X,Y: wasserstein(X,Y, blur=0.001,scaling=0.98)}
     generators = [GaussianGenerator(num_outputs=2), NFGenerator(32, 3, num_outputs=2)]
-    model_loss, baseline_losses = evaluate(model, baselines, generators, wasserstein_exact, 
-        sample_kwargs=sample_kwargs, steps=1000, criterion=nn.MSELoss())
+    model_loss, baseline_losses = evaluate(model, baselines, generators[0], wasserstein_exact, 
+        sample_kwargs=sample_kwargs, steps=2500, criterion=nn.MSELoss())
 
+    print("GMM:")
     print("Model Loss:", model_loss)
     for baseline_name, baseline_loss in baseline_losses.items():
+        print("%s Losses:" % baseline_name, baseline_loss)
+
+
+    model_loss2, baseline_losses2 = evaluate(model, baselines, generators[1], wasserstein_exact, 
+        sample_kwargs=sample_kwargs, steps=2500, criterion=nn.MSELoss())    
+    print("NF:")
+    print("Model Loss:", model_loss2)
+    for baseline_name, baseline_loss in baseline_losses2.items():
         print("%s Losses:" % baseline_name, baseline_loss)
     '''
     ft = fasttext.load_model("cc.en.32.bin")
