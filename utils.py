@@ -473,9 +473,9 @@ class GaussianGenerator():
             kwargs['n'] = n
         scale = torch.exp(torch.rand(batch_size)*9 - 6) if self.scaleinv else None
         if self.return_params:
-            outputs, dists = zip(*[self._generate_mixture(batch_size, scale=scale, return_params=True, **kwargs) for _ in range(self.num_outputs)])
+            outputs, dists = zip(*[self._generate_mixture_old(batch_size, scale=scale, return_params=True, **kwargs) for _ in range(self.num_outputs)])
         else:
-            outputs = [self._generate_mixture(batch_size, scale=scale, **kwargs) for _ in range(self.num_outputs)]
+            outputs = [self._generate_mixture_old(batch_size, scale=scale, **kwargs) for _ in range(self.num_outputs)]
         if self.normalize:
             avg_norm = torch.cat(outputs, dim=1).norm(dim=-1,keepdim=True).mean(dim=1,keepdim=True)
             for i in range(len(outputs)):
