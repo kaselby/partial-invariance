@@ -26,7 +26,7 @@ def parse_args():
 
     return parser.parse_args()
 
-def normalize(*X):
+def normalize_sets(*X):
     avg_norm = torch.cat(X, dim=1).norm(dim=-1,keepdim=True).mean(dim=1,keepdim=True)
     return [x / avg_norm for x in X], avg_norm
 
@@ -41,14 +41,14 @@ def evaluate(model, baselines, generator, label_fct, exact_loss=False, batch_siz
                     #X = [x.cuda() for x in X]
                     #theta = [t.cuda() for t in theta]
                 if normalize:
-                    Xnorm, avg_norm = normalize(*X)
+                    Xnorm, avg_norm = normalize_sets(*X)
                 labels = label_fct(*theta, X=X[0], **label_kwargs).squeeze(-1)
             else:
                 X = generator(batch_size, **sample_kwargs)
                 #if use_cuda:
                     #X = [x.cuda() for x in X]
                 if normalize:
-                    Xnorm, avg_norm = normalize(*X)
+                    Xnorm, avg_norm = normalize_sets(*X)
                 labels = label_fct(*X, **label_kwargs)
             out = model(*Xnorm).squeeze(-1)
             if normalize:
@@ -83,14 +83,14 @@ def train(model, sample_fct, label_fct, baselines={}, exact_loss=False, criterio
                 #X = [x.cuda() for x in X]
                 #theta = [t.cuda() for t in theta]
             if normalize:
-                X, avg_norm = normalize(*X)
+                X, avg_norm = normalize_sets(*X)
             labels = label_fct(*theta, X=X[0], **label_kwargs).squeeze(-1)
         else:
             X = sample_fct(batch_size, **sample_kwargs)
             #if use_cuda:
                 #X = [x.cuda() for x in X]
             if normalize:
-                X, avg_norm = normalize(*X)
+                X, avg_norm = normalize_sets(*X)
             labels = label_fct(*X, **label_kwargs)
         loss = criterion(model(*X).squeeze(-1), labels)
         loss.backward()
