@@ -81,7 +81,7 @@ if __name__ == '__main__':
     baselines = {'sinkhorn_default':wasserstein, 'sinkhorn_exact': lambda X,Y: wasserstein(X,Y, blur=0.001,scaling=0.98)}
     generators = [GaussianGenerator(num_outputs=2), NFGenerator(32, 3, num_outputs=2)]
     model_loss, baseline_losses = evaluate(model, baselines, generators[0], wasserstein_exact, 
-        sample_kwargs=sample_kwargs, steps=2500, criterion=nn.MSELoss())
+        sample_kwargs=sample_kwargs, steps=1000, criterion=nn.MSELoss())
 
     print("GMM:")
     print("Model Loss:", model_loss)
@@ -90,7 +90,7 @@ if __name__ == '__main__':
 
 
     model_loss2, baseline_losses2 = evaluate(model, baselines, generators[1], wasserstein_exact, 
-        sample_kwargs=sample_kwargs, steps=2500, criterion=nn.MSELoss())    
+        sample_kwargs=sample_kwargs, steps=1000, criterion=nn.MSELoss())    
     print("NF:")
     print("Model Loss:", model_loss2)
     for baseline_name, baseline_loss in baseline_losses2.items():
