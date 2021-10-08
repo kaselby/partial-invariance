@@ -281,7 +281,7 @@ def parse_args():
     parser.add_argument('--max_vecs', type=int, default=250)
     parser.add_argument('--steps', type=int, default=150000)
     parser.add_argument('--batch_size', type=int, default=64)
-    parser.add_argument('--lr', type=int, default=5e-4)
+    parser.add_argument('--lr', type=float, default=5e-4)
     parser.add_argument('--checkpoint_dir', type=str, default="/checkpoint/kaselby")
     parser.add_argument('--checkpoint_name', type=str, default=None)
     parser.add_argument('--output_dir', type=str, default="runs/hypeval")

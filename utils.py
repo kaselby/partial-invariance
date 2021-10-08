@@ -3,7 +3,7 @@ from models import *
 import torch
 import torch.nn as nn
 import math
-from torch.distributions import OneHotCategorical, Normal, MultivariateNormal, Categorical, MixtureSameFamily, Distribution
+from torch.distributions import OneHotCategorical, Normal, MultivariateNormal, Categorical, MixtureSameFamily, Distribution, Dirichlet, LKJCholesky
 import tqdm
 import ot
 from geomloss import SamplesLoss
@@ -422,7 +422,7 @@ class GaussianGenerator():
         self.variable_dim = variable_dim
         self.device = torch.device('cpu') if not use_cuda else torch.device('cuda')
 
-    def _generate_mixture(self, batch_size, n, return_params=False, set_size=(100,150), component_range=(3,10), scale=None):
+    def _generate_mixture_old(self, batch_size, n, return_params=False, set_size=(100,150), component_range=(3,10), scale=None):
         n_samples = torch.randint(*set_size,(1,))
         n_components = torch.randint(*component_range,(1,))
         mus= torch.rand(size=(batch_size, n_components, n))
@@ -437,6 +437,28 @@ class GaussianGenerator():
         sigmas = (A.transpose(2,3).matmul(A) + torch.diag_embed(torch.rand(batch_size, n_components, n))).to(self.device)
         logits = torch.randint(5, size=(batch_size, n_components)).float().to(self.device)
         base_dist = MultivariateNormal(mus, sigmas)
+        mixing_dist = Categorical(logits=logits)
+        dist = MixtureSameFamily(mixing_dist, base_dist)
+        samples = dist.sample(n_samples).transpose(0,1)
+        if return_params:
+            return samples.float().contiguous(), dist
+        else:
+            return samples.float().contiguous()
+
+    def _generate_mixture(self, batch_size, n, return_params=False, set_size=(100,150), component_range=(3,10), scale=None):
+        n_samples = torch.randint(*set_size,(1,))
+        n_components = torch.randint(*component_range,(1,))
+        mus= torch.rand(size=(batch_size, n_components, n))
+        sigmas = LKJCholesky().sample(batch_size, n_components)
+        if scale is not None:
+            mus = mus * scale.unsqueeze(-1).unsqueeze(-1)
+            sigmas = sigmas * scale.unsqueeze(-1).unsqueeze(-1)
+        else:
+            mus= 1+5*mus
+        mus = mus.to(self.device)
+        sigmas = sigmas.to(self.device)
+        logits = Dirichlet(torch.ones(n_components).to(self.device)/n_components).sample(batch_size)
+        base_dist = MultivariateNormal(mus, scale_tril=sigmas)
         mixing_dist = Categorical(logits=logits)
         dist = MixtureSameFamily(mixing_dist, base_dist)
         samples = dist.sample(n_samples).transpose(0,1)
