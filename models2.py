@@ -217,8 +217,8 @@ class MultiSetTransformer(nn.Module):
             input_size = 1
         self.proj = nn.Linear(input_size, latent_size)
         self.enc = EncoderStack(*[CSAB(latent_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, equi=equi) for i in range(num_blocks)])
-        self.pool_x = PMA(latent_size, num_heads, 1, ln=ln)
-        self.pool_y = PMA(latent_size, num_heads, 1, ln=ln)
+        self.pool_x = PMA(latent_size, hidden_size, num_heads, 1, ln=ln)
+        self.pool_y = PMA(latent_size, hidden_size, num_heads, 1, ln=ln)
         self.dec = nn.Sequential(
                 #SAB(dim_hidden, dim_hidden, num_heads, ln=ln),
                 #SAB(dim_hidden, dim_hidden, num_heads, ln=ln),
