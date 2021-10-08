@@ -50,9 +50,11 @@ def evaluate(model, baselines, generator, label_fct, exact_loss=False, batch_siz
                 if normalize:
                     Xnorm, avg_norm = normalize_sets(*X)
                 labels = label_fct(*X, **label_kwargs)
-            out = model(*Xnorm).squeeze(-1)
             if normalize:
+                out = model(*Xnorm).squeeze(-1)
                 out *= avg_norm
+            else:
+                out = model(*X).squeeze(-1)
             model_loss = criterion(out, labels)
             model_losses.append(model_loss.item())
             for baseline_name, baseline_fct in baselines.items():
