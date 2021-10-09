@@ -50,7 +50,7 @@ def evaluate_fct(fct, dataset, batch_size=64):
 
     for i in tqdm.tqdm(range(len(dataset))):
         v1, v2, l = dataset[i]
-
+        v1, v2 = torch.Tensor(v1), torch.Tensor(v2)
         if use_cuda:
             v1, v2 = v1.cuda(), v2.cuda()
 
