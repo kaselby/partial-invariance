@@ -1,3 +1,4 @@
+from numpy.core.arrayprint import _none_or_positive_arg
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -160,7 +161,7 @@ class HyponomyDataset(Dataset):
 
     def __getitem__(self, index):
         w1,w2 = self.pairs[index]
-        transform = self.vecs.pca(w1,w2, n_components=self.pca_dim).transform
+        transform = self.vecs.pca(w1,w2, n_components=self.pca_dim).transform if self.pca_dim > 0 else None
         return self.vecs[w1].get_vecs(transform=transform, max_vecs=self.max_vecs), \
             self.vecs[w2].get_vecs(transform=transform, max_vecs=self.max_vecs), \
             self.labels[index]
@@ -290,7 +291,8 @@ def parse_args():
 
 if __name__ == '__main__':
     args = parse_args()
-    dataset = HyponomyDataset.from_file('HypNet_train', args.data_dir, args.vec_dir, args.voc_dir, pca_dim=args.pca_dim, max_vecs=args.max_vecs)
+    dataset = HyponomyDataset.from_file('HypNet_train', args.data_dir, args.vec_dir, args.voc_dir, 
+        pca_dim=args.pca_dim, min_threshold=args.pca_dim, max_vecs=args.max_vecs)
     train_dataset, eval_dataset = dataset.split(0.85)
     model = MultiSetTransformer1(args.pca_dim, 1, 1, args.hidden_size, num_heads=args.n_heads, num_blocks=args.n_blocks, ln=True)
 
