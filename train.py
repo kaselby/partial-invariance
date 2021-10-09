@@ -151,11 +151,13 @@ if __name__ == '__main__':
         label_kwargs={'scaling':0.98, 'blur':0.001}
         baselines={'sinkhorn_default':wasserstein}
         exact_loss=False
+        lr = 1e-3
     elif args.target == 'kl':
         label_fct = kl_mc
         label_kwargs={}
         baselines={'knn':kl_knn}
         exact_loss=True
+        lr = 3e-5
 
     batch_size=128
     steps=30000
@@ -167,7 +169,7 @@ if __name__ == '__main__':
         raise NotImplementedError("nf or gmm")
 
     losses = train(model, generator, label_fct, baselines=baselines, checkpoint_dir=os.path.join(args.checkpoint_dir, args.checkpoint_name), \
-        exact_loss=exact_loss, output_dir=run_dir, criterion=nn.MSELoss(), steps=steps, lr=1e-3, batch_size=batch_size, \
+        exact_loss=exact_loss, output_dir=run_dir, criterion=nn.MSELoss(), steps=steps, lr=lr, batch_size=batch_size, \
         sample_kwargs=sample_kwargs, label_kwargs=label_kwargs, normalize=args.normalize)
 
 
