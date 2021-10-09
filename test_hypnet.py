@@ -23,7 +23,7 @@ def evaluate_model(model, dataset, batch_size=64):
 
     data_loader=DataLoader(dataset, batch_size=batch_size, collate_fn=collate_batch_with_padding)
     with torch.no_grad():
-        for i, (data, masks, labels) in enumerate(data_loader):
+        for i, (data, masks, labels) in tqdm.tqdm(enumerate(data_loader)):
             j_min = i * batch_size
             j_max = min(len(dataset), (i + 1) * batch_size)
 
@@ -48,7 +48,7 @@ def evaluate_fct(fct, dataset, batch_size=64):
     all_logits = torch.zeros(len(dataset))
     all_labels = torch.zeros(len(dataset))
 
-    for i in range(len(dataset)):
+    for i in tqdm.tqdm(range(len(dataset))):
         v1, v2, l = dataset[i]
 
         if use_cuda:
@@ -88,7 +88,7 @@ if __name__ == '__main__':
     print("Model Accuracy: %f" % model_acc)
     print("Model Precision: %f" % model_prec)
 
-    for name, fct in baseline_fcts:
+    for name, fct in baseline_fcts.items():
         baseline_acc, baseline_prec = evaluate_fct(fct, dataset)
         print("%s Accuracy: %f" % (name, baseline_acc))
         print("%s Precision: %f" % (name, baseline_prec))
