@@ -456,7 +456,10 @@ class GaussianGenerator():
         mus = mus.to(self.device)
         sigmas = sigmas.to(self.device)
         logits = Dirichlet(torch.ones(n_components).to(self.device)/n_components).sample((batch_size,))
-        base_dist = MultivariateNormal(mus, scale_tril=sigmas)
+        try:
+            base_dist = MultivariateNormal(mus, scale_tril=sigmas)
+        except:
+            import pdb;pdb.set_trace()
         mixing_dist = Categorical(logits=logits)
         dist = MixtureSameFamily(mixing_dist, base_dist)
         samples = dist.sample(n_samples).transpose(0,1)
