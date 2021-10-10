@@ -447,7 +447,7 @@ class GaussianGenerator():
 
     def _generate_mixture(self, batch_size, n, return_params=False, set_size=(100,150), component_range=(3,10), scale=None):
         n_samples = torch.randint(*set_size,(1,))
-        n_components = torch.randint(*component_range,(1,))
+        n_components = torch.randint(*component_range,(1,)).item()
         mus= torch.rand(size=(batch_size, n_components, n))
         sigmas = LKJCholesky(n).sample((batch_size, n_components))
         if scale is not None:
@@ -455,7 +455,7 @@ class GaussianGenerator():
             sigmas = sigmas * scale.unsqueeze(-1).unsqueeze(-1)
         mus = mus.to(self.device)
         sigmas = sigmas.to(self.device)
-        logits = Dirichlet(torch.ones(n_components.item()).to(self.device)/n_components).sample(batch_size)
+        logits = Dirichlet(torch.ones(n_components).to(self.device)/n_components).sample(batch_size)
         base_dist = MultivariateNormal(mus, scale_tril=sigmas)
         mixing_dist = Categorical(logits=logits)
         dist = MixtureSameFamily(mixing_dist, base_dist)
