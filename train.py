@@ -52,7 +52,7 @@ def evaluate(model, baselines, generator, label_fct, exact_loss=False, batch_siz
                 labels = label_fct(*X, **label_kwargs)
             if normalize:
                 out = model(*Xnorm).squeeze(-1)
-                out *= avg_norm
+                out *= avg_norm.squeeze(-1).squeeze(-1)
             else:
                 out = model(*X).squeeze(-1)
             model_loss = criterion(out, labels)
