@@ -136,9 +136,15 @@ if __name__ == '__main__':
         DIM=32
         model=MultiSetTransformer1(DIM, 1,1, dim_hidden=256, **model_kwargs).to(device)
 
+    batch_size=64
+    steps=60000
+
     if torch.cuda.device_count() > 1:
-        print("Let's use", torch.cuda.device_count(), "GPUs!")
+        n_gpus = torch.cuda.device_count()
+        print("Let's use", n_gpus, "GPUs!")
         model = nn.DataParallel(model)
+        batch_size *= n_gpus
+        steps = int(steps/n_gpus)
     sample_kwargs={'set_size':(10,150)}
     
     if args.equi:
@@ -159,8 +165,6 @@ if __name__ == '__main__':
         exact_loss=True
         lr = 3e-5
 
-    batch_size=128
-    steps=30000
     if args.data == 'gmm':
         generator = GaussianGenerator(num_outputs=2, scaleinv=args.scaleinv, variable_dim=args.equi, return_params=exact_loss)
     elif args.data == 'nf':

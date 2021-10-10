@@ -175,6 +175,8 @@ def compare(w1, w2, vec_dicts, distance):
     return distance(vecs1, vecs2)
 
 
+
+
 def train(model, dataset, steps, eval_dataset=None, batch_size=64, lr=1e-3, save_every=5000, log_every=10, checkpoint_dir=None, output_dir=None):
     optimizer = optim.Adam(model.parameters(), lr=lr)
     loss_fct = nn.BCEWithLogitsLoss()
