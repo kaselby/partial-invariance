@@ -65,8 +65,8 @@ class EquiMHA(nn.Module):
         self.w_o = nn.Linear(latent_size, latent_size, bias=False)
     
     def forward(self, Q, K, mask=None):
-        Q = self.fc_q(Q)
-        K, V = self.fc_k(K), self.fc_v(K)
+        Q = self.w_q(Q)
+        K, V = self.w_k(K), self.w_v(K)
 
         dim_split = self.latent_size // self.num_heads
         Q_ = torch.stack(Q.split(dim_split, 3), 0)
