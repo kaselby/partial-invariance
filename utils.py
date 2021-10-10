@@ -449,7 +449,7 @@ class GaussianGenerator():
         n_samples = torch.randint(*set_size,(1,))
         n_components = torch.randint(*component_range,(1,))
         mus= torch.rand(size=(batch_size, n_components, n))
-        sigmas = LKJCholesky().sample(batch_size, n_components)
+        sigmas = LKJCholesky(n).sample(batch_size, n_components)
         if scale is not None:
             mus = mus * scale.unsqueeze(-1).unsqueeze(-1)
             sigmas = sigmas * scale.unsqueeze(-1).unsqueeze(-1)
