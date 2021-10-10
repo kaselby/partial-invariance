@@ -455,7 +455,7 @@ class GaussianGenerator():
             sigmas = sigmas * scale.unsqueeze(-1).unsqueeze(-1)
         mus = mus.to(self.device)
         sigmas = sigmas.to(self.device)
-        logits = Dirichlet(torch.ones(n_components).to(self.device)/n_components).sample(batch_size)
+        logits = Dirichlet(torch.ones(n_components).to(self.device)/n_components).sample((batch_size,))
         base_dist = MultivariateNormal(mus, scale_tril=sigmas)
         mixing_dist = Categorical(logits=logits)
         dist = MixtureSameFamily(mixing_dist, base_dist)
