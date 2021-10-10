@@ -3,7 +3,7 @@ from models import *
 import torch
 import torch.nn as nn
 import math
-from torch.distributions import OneHotCategorical, Normal, MultivariateNormal, Categorical, MixtureSameFamily, Distribution, Dirichlet#, LKJCholesky
+from torch.distributions import OneHotCategorical, Normal, MultivariateNormal, Categorical, MixtureSameFamily, Distribution, Dirichlet, LKJCholesky
 import tqdm
 import ot
 from geomloss import SamplesLoss
