@@ -131,7 +131,7 @@ if __name__ == '__main__':
 
     model_kwargs={'ln':True, 'remove_diag':True, 'num_blocks':2, 'norm_in':False, 'norm_out':False}
     if args.equi:
-        model=EquiMultiSetTransformer1(1,1, dim_hidden=16, **model_kwargs).to(device)
+        model=EquiMultiSetTransformer1(1,1, dim_hidden=32, **model_kwargs).to(device)
     else:
         DIM=32
         model=MultiSetTransformer1(DIM, 1,1, dim_hidden=256, **model_kwargs).to(device)
