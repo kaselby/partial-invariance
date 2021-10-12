@@ -82,7 +82,7 @@ class EquiMHA(nn.Module):
         return O
 
 class MAB(nn.Module):
-    def __init__(self, input_size, latent_size, hidden_size, num_heads, ln=False, remove_diag=False, equi=False):
+    def __init__(self, input_size, latent_size, hidden_size, num_heads, ln=False, equi=False):
         super(MAB, self).__init__()
         if equi:
             self.attn = EquiMHA(input_size, latent_size, num_heads)
@@ -92,7 +92,6 @@ class MAB(nn.Module):
         if ln:
             self.ln0 = nn.LayerNorm(latent_size)
             self.ln1 = nn.LayerNorm(latent_size)
-        self.remove_diag = remove_diag
 
     def forward(self, Q, K, mask=None):
         X = Q + self.attn(Q, K, mask=mask)
@@ -113,25 +112,13 @@ class SAB(nn.Module):
 class CSAB(nn.Module):
     def __init__(self, input_size, latent_size, hidden_size, num_heads, ln=False, remove_diag=False, equi=False):
         super(CSAB, self).__init__()
-        if equi:
-            encoder_cls = EquiMHA
-            encoder_args = (input_size, latent_size, num_heads)
-        else:
-            encoder_cls = MHA
-            encoder_args = (input_size, input_size, latent_size, num_heads)
-        self.MHA_XX = encoder_cls(*encoder_args)
-        self.MHA_YY = encoder_cls(*encoder_args)
-        self.MHA_XY = encoder_cls(*encoder_args)
-        self.MHA_YX = encoder_cls(*encoder_args)
-        self.fc_X = nn.Sequential(nn.Linear(latent_size * 2, hidden_size), nn.ReLU(), nn.Linear(hidden_size, latent_size))
-        self.fc_Y = nn.Sequential(nn.Linear(latent_size * 2, hidden_size), nn.ReLU(), nn.Linear(hidden_size, latent_size))
+        self.MAB_XX = MAB(input_size, latent_size, hidden_size, num_heads, equi=equi, ln=ln)
+        self.MAB_YY = MAB(input_size, latent_size, hidden_size, num_heads, equi=equi, ln=ln)
+        self.MAB_XY = MAB(input_size, latent_size, hidden_size, num_heads, equi=equi, ln=ln)
+        self.MAB_YX = MAB(input_size, latent_size, hidden_size, num_heads, equi=equi, ln=ln)
+        self.fc_X = nn.Linear(latent_size * 2, latent_size)
+        self.fc_Y = nn.Linear(latent_size * 2, latent_size)
         self.ln = ln
-        if ln:
-            self.ln_xx = nn.LayerNorm(latent_size)
-            self.ln_xy = nn.LayerNorm(latent_size)
-            self.ln_yx = nn.LayerNorm(latent_size)
-            self.ln_yy = nn.LayerNorm(latent_size)
-            self.ln1 = nn.LayerNorm(latent_size)
         self.remove_diag = remove_diag
 
     def _get_masks(self, N, M, masks):
@@ -158,18 +145,10 @@ class CSAB(nn.Module):
     def forward(self, inputs, masks=None):
         X, Y = inputs
         mask_xx, mask_xy, mask_yx, mask_yy = self._get_masks(X.size(1), Y.size(1), masks)
-        
-        XX = X + self.MHA_XX(X, X, mask=mask_xx)
-        XY = X + self.MHA_XY(X, Y, mask=mask_xy)
-        YX = Y + self.MHA_YX(Y, X, mask=mask_yx)
-        YY = Y + self.MHA_YY(Y, Y, mask=mask_yy)
-
-        if self.ln:
-            XX = self.ln_xx(XX)
-            XY = self.ln_xx(XY)
-            YX = self.ln_xx(YX)
-            YY = self.ln_xx(YY)
-
+        XX = self.MAB_XX(X, X, mask=mask_xx)
+        XY = self.MAB_XY(X, Y, mask=mask_xy)
+        YX = self.MAB_YX(Y, X, mask=mask_yx)
+        YY = self.MAB_YY(Y, Y, mask=mask_yy)
         X_out = X + self.fc_X(torch.cat([XX, XY], dim=-1))
         Y_out = Y + self.fc_Y(torch.cat([YY, YX], dim=-1))
         return (X_out, Y_out)
