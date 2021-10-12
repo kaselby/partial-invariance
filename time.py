@@ -13,8 +13,8 @@ def test(generator, fct, bs=64, **kwargs):
     X = generator(bs, **kwargs)
     out = fct(*X)
 
-t_model = timeit.timeit(lambda: test(generator, model), number=1000)
-t_baseline = timeit.timeit(lambda: test(generator, baseline), number=1000)
+t_model = timeit.timeit(lambda: test(generator, model, n=32), number=1000)
+t_baseline = timeit.timeit(lambda: test(generator, baseline, n=32), number=1000)
 
 print("Model:", t_model)
 print("Model:", t_baseline)
