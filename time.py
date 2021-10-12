@@ -17,5 +17,5 @@ t_model = timeit.timeit(lambda: test(generator, model, n=32), number=1000)
 t_baseline = timeit.timeit(lambda: test(generator, baseline, n=32), number=1000)
 
 print("Model:", t_model)
-print("Model:", t_baseline)
+print("Baseline:", t_baseline)
         
