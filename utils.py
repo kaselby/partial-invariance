@@ -3,7 +3,7 @@ from models import *
 import torch
 import torch.nn as nn
 import math
-from torch.distributions import OneHotCategorical, Normal, MultivariateNormal, Categorical, MixtureSameFamily, Distribution, Dirichlet, LKJCholesky
+from torch.distributions import OneHotCategorical, Normal, MultivariateNormal, Categorical, MixtureSameFamily, Distribution, Dirichlet, LKJCholesky, LogNormal
 import tqdm
 import ot
 from geomloss import SamplesLoss
@@ -455,9 +455,11 @@ class GaussianGenerator():
         n_samples = torch.randint(*set_size,(1,))
         n_components = torch.randint(*component_range,(1,)).item()
         mus= torch.rand(size=(batch_size, n_components, n))
-        sigmas = LKJCholesky(n).sample((batch_size, n_components))
-        while sigmas.isnan().any():
-            sigmas = LKJCholesky(n).sample((batch_size, n_components))
+        c = LKJCholesky(n).sample((batch_size, n_components))
+        while c.isnan().any():
+            c = LKJCholesky(n).sample((batch_size, n_components))
+        s = torch.diag_embed(LogNormal(0,1).sample((batch_size, n_components, n)))
+        sigmas = torch.matmul(s, c)
         if scale is not None:
             mus = mus * scale.unsqueeze(-1).unsqueeze(-1)
             sigmas = sigmas * scale.unsqueeze(-1).unsqueeze(-1)
