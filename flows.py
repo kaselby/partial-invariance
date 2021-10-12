@@ -592,7 +592,6 @@ class BatchOfFlows(nn.Module):
             noise = torch.Tensor(self.batch_size, n, self.num_inputs).normal_()
             device = next(self.parameters()).device
             noise = noise.to(device)
-
             x = noise
             for i in range(self.num_blocks):
                 h = F.relu(torch.bmm(x, (self.weight1[:,i] * self.input_mask).transpose(1,2)) + self.bias1[:,i].unsqueeze(1))
@@ -600,12 +599,24 @@ class BatchOfFlows(nn.Module):
                 z2 = torch.bmm(z1, (self.weight3[:,i] * self.output_mask).transpose(1,2)) + self.bias3[:,i].unsqueeze(1)
                 m, a = z2.chunk(2, 2)
                 x = x * torch.exp(a) + m
-        
         return x
 
     def log_prob(self, x):
-        for i in range(self.num_blocks):
-            pass
+        u = torch.zeros_like(x)
+        log_jacob = torch.zeros(x.size(0))
+        for i in range(self.num_blocks-1, -1, -1):
+            for i_col in range(x.shape[1]):
+                h = F.relu(torch.bmm(u, (self.weight1[:,i] * self.input_mask).transpose(1,2)) + self.bias1[:,i].unsqueeze(1))
+                z1 = F.relu(torch.bmm(h, (self.weight2[:,i] * self.hidden_mask).transpose(1,2)) + self.bias2[:,i].unsqueeze(1))
+                z2 = torch.bmm(z1, (self.weight3[:,i] * self.output_mask).transpose(1,2)) + self.bias3[:,i].unsqueeze(1)
+                m, a = z2.chunk(2, 2)
+                u[:, i_col] = (x[:, i_col] - m[:, i_col]) * torch.exp(
+                    -a[:, i_col]) 
+            log_jacob += -a.sum(-1, keepdim=True)
+        log_probs = (-0.5 * u.pow(2) - 0.5 * math.log(2 * math.pi)).sum(
+            -1, keepdim=True)
+        return (log_probs + log_jacob).sum(-1, keepdim=True)
+        
 
 
 
