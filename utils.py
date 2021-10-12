@@ -412,6 +412,12 @@ def show_samples(sample_fct,label_fct,samples=8,normalize=False,**kwargs):
     y = label_fct(*X)
     print(tabulate.tabulate([['y', *y.tolist()]]))
 
+from copy import deepcopy
+def scale_gmm(mixture, scale):
+    scaled_dist = deepcopy(mixture)
+    scaled_dist.component_distribution.loc *= scale
+    scaled_dist.component_distribution.scale_tril *= scale
+    return scaled_dist
 
 class GaussianGenerator():
     def __init__(self, num_outputs=1, normalize=False, scaleinv=False, return_params=False, variable_dim=False):

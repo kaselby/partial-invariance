@@ -32,16 +32,18 @@ if __name__ == '__main__':
     if args.target == 'wasserstein':
         baselines = {'sinkhorn_default':wasserstein, 'sinkhorn_exact': lambda X,Y: wasserstein(X,Y, blur=0.001,scaling=0.98)}
         label_fct=wasserstein_exact
+        exact_loss=False
     elif args.target == 'kl':
         baselines = {'knn':kl_knn}
         label_fct=kl_mc
+        exact_loss=True
     else:
         raise NotImplementedError()
-    generators = {'gmm':GaussianGenerator(num_outputs=2), 'nf':NFGenerator(32, 3, num_outputs=2)}
+    generators = {'gmm':GaussianGenerator(num_outputs=2, return_params=exact_loss), 'nf':NFGenerator(32, 3, num_outputs=2, return_params=exact_loss)}
 
     for name,generator in generators.items():
         model_loss, baseline_losses = evaluate(model, baselines, generator, label_fct, 
-            sample_kwargs=sample_kwargs, steps=1000, criterion=nn.L1Loss(), normalize=args.normalize)
+            sample_kwargs=sample_kwargs, steps=1000, criterion=nn.L1Loss(), normalize=args.normalize, exact_loss=exact_loss)
 
         print("%s:"%name)
         print("Model Loss:", model_loss)
