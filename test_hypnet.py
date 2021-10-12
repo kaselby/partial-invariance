@@ -54,7 +54,7 @@ def evaluate_fct(fct, dataset, batch_size=64):
         if use_cuda:
             v1, v2 = v1.cuda(), v2.cuda()
 
-        all_logits[i] = fct(v1, v2)
+        all_logits[i] = fct(v1, v2).squeeze(0)
         all_labels[i] = l
     
     def get_accuracy(labels, logits):
