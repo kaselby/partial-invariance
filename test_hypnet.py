@@ -75,11 +75,12 @@ def parse_args():
     parser.add_argument('--pca_dim', type=int, default=10)
     parser.add_argument('--max_vecs', type=int, default=250)
     parser.add_argument('--output_dir', type=str, default="runs/hypeval")
+    parser.add_argument('--dataset', type=str, default="HypNet_test")
     return parser.parse_args()
 
 if __name__ == '__main__':
     args = parse_args()
-    dataset = HyponomyDataset.from_file('HypNet_test', args.data_dir, args.vec_dir, args.voc_dir, pca_dim=args.pca_dim, max_vecs=args.max_vecs)
+    dataset = HyponomyDataset.from_file(args.dataset, args.data_dir, args.vec_dir, args.voc_dir, pca_dim=args.pca_dim, max_vecs=args.max_vecs)
 
     model = torch.load(os.path.join("runs", args.run_name, 'model.pt'))
     baseline_fcts = {'avg_nn_dist': avg_cross_nn_dist, 'kl':kl_knn}
@@ -92,3 +93,12 @@ if __name__ == '__main__':
         baseline_acc, baseline_prec = evaluate_fct(fct, dataset)
         print("%s Accuracy: %f" % (name, baseline_acc))
         print("%s Precision: %f" % (name, baseline_prec))
+
+
+    outfile=os.path.join(args.output_dir, args.run_name, "results-%s.txt"%args.dataset)
+    with open(outfile, 'w') as writer:
+        writer.write("Model Accuracy: %f\n" % model_acc)
+        writer.write("Model Precision: %f\n" % model_prec)
+        for name in baseline_fcts.keys():
+            writer.write("%s Accuracy: %f\n" % (name, baseline_acc))
+            writer.write("%s Precision: %f\n" % (name, baseline_prec))

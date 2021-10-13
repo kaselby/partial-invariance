@@ -164,6 +164,9 @@ if __name__ == '__main__':
         baselines={'knn':kl_knn}
         exact_loss=True
         lr = 3e-5
+        sample_kwargs['nu']=3
+        sample_kwargs['mu']=1
+        sample_kwargs['s']=0.5
 
     if args.data == 'gmm':
         generator = GaussianGenerator(num_outputs=2, scaleinv=args.scaleinv, variable_dim=args.equi, return_params=exact_loss)

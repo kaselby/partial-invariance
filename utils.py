@@ -560,3 +560,35 @@ class NFGenerator():
             return outputs, dists
         else:
             return outputs
+
+
+def test_gen1(*args,**kwargs):
+    def generate(batch_size, n, set_size=(100,150),device=torch.device('cuda'), nu=1, mu=0, s=1):
+        n_samples = torch.randint(*set_size,(1,))
+        mus= torch.rand(size=(batch_size, n))
+        c = LKJCholesky(n, concentration=nu).sample((batch_size,))
+        while c.isnan().any():
+            c = LKJCholesky(n, concentration=nu).sample((batch_size,))
+        s = torch.diag_embed(LogNormal(mu,s).sample((batch_size, n)))
+        sigmas = torch.matmul(s, c)
+        mus = mus.to(device)
+        sigmas = sigmas.to(device)
+        dist = MultivariateNormal(mus, scale_tril=sigmas)
+        samples = dist.sample(n_samples).transpose(0,1)
+        return samples,dist
+    X,Y = generate(*args, **kwargs), generate(*args, **kwargs)
+    return zip(X,Y)
+
+def test_gen2(*args,**kwargs):
+    def generate(batch_size, n, set_size=(100,150),device=torch.device('cuda')):
+        mus= 1+5*torch.rand(size=(batch_size, n))
+        A = torch.rand(size=(batch_size, n, n)) 
+        sigmas = torch.bmm(A.transpose(1,2), A) + 1*torch.diag_embed(torch.rand(batch_size, n))
+        mus = mus.to(device)
+        sigmas = sigmas.to(device)
+        n_samples = torch.randint(*set_size,(1,))
+        dist = MultivariateNormal(mus, sigmas)
+        samples=dist.sample(n_samples).transpose(0,1)
+        return samples.float().contiguous(), dist
+    X,Y = generate(*args, **kwargs), generate(*args, **kwargs)
+    return zip(X,Y)
