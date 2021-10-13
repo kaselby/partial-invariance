@@ -163,15 +163,17 @@ if __name__ == '__main__':
         baselines={'sinkhorn_default':wasserstein}
         exact_loss=False
         lr = 1e-3
+        criterion=nn.MSELoss()
     elif args.target == 'kl':
         label_fct = kl_mc
         label_kwargs={}
         baselines={'knn':kl_knn}
         exact_loss=True
-        lr = 3e-5
+        lr = 1e-5
         sample_kwargs['nu']=3
         sample_kwargs['mu0']=1
         sample_kwargs['s0']=0.5
+        criterion=nn.L1Loss()
 
     if args.data == 'gmm':
         generator = GaussianGenerator(num_outputs=2, scaleinv=args.scaleinv, variable_dim=args.equi, return_params=exact_loss)
@@ -181,7 +183,7 @@ if __name__ == '__main__':
         raise NotImplementedError("nf or gmm")
 
     losses = train(model, generator, label_fct, baselines=baselines, checkpoint_dir=os.path.join(args.checkpoint_dir, args.checkpoint_name), \
-        exact_loss=exact_loss, output_dir=run_dir, criterion=nn.MSELoss(), steps=steps, lr=lr, batch_size=batch_size, \
+        exact_loss=exact_loss, output_dir=run_dir, criterion=criterion, steps=steps, lr=lr, batch_size=batch_size, \
         sample_kwargs=sample_kwargs, label_kwargs=label_kwargs, normalize=args.normalize)
 
 
