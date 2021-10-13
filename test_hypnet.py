@@ -89,16 +89,16 @@ if __name__ == '__main__':
     print("Model Accuracy: %f" % model_acc)
     print("Model Precision: %f" % model_prec)
 
-    for name, fct in baseline_fcts.items():
-        baseline_acc, baseline_prec = evaluate_fct(fct, dataset)
-        print("%s Accuracy: %f" % (name, baseline_acc))
-        print("%s Precision: %f" % (name, baseline_prec))
+    #for name, fct in baseline_fcts.items():
+    #    baseline_acc, baseline_prec = evaluate_fct(fct, dataset)
+    #    print("%s Accuracy: %f" % (name, baseline_acc))
+    #    print("%s Precision: %f" % (name, baseline_prec))
 
 
     outfile=os.path.join(args.output_dir, args.run_name, "results-%s.txt"%args.dataset)
     with open(outfile, 'w') as writer:
         writer.write("Model Accuracy: %f\n" % model_acc)
         writer.write("Model Precision: %f\n" % model_prec)
-        for name in baseline_fcts.keys():
-            writer.write("%s Accuracy: %f\n" % (name, baseline_acc))
-            writer.write("%s Precision: %f\n" % (name, baseline_prec))
+        #for name in baseline_fcts.keys():
+        #    writer.write("%s Accuracy: %f\n" % (name, baseline_acc))
+        #    writer.write("%s Precision: %f\n" % (name, baseline_prec))
