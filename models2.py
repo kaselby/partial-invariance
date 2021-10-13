@@ -251,10 +251,18 @@ class PINE(nn.Module):
         z = []
         for i in range(self.n_sets):
             W_g_i = torch.matmul(getattr(self,'U_%d'%i), getattr(self,'A_%d'%i)).view(-1, self.input_size)
-            g = F.sigmoid(X[i].matmul(W_g_i.transpose(-1,-2)) + getattr(self,'V_%d'%i))
+            g = torch.sigmoid(X[i].matmul(W_g_i.transpose(-1,-2)) + getattr(self,'V_%d'%i))
             z.append(g.sum(dim=1))
         z_stacked = torch.cat(z, dim=-1)
-        h = F.sigmoid(z_stacked.matmul(self.W_h.t()))
+        h = torch.sigmoid(z_stacked.matmul(self.W_h.t()))
         return self.C(h)
 
 
+
+from models2 import PINE
+from utils import *
+
+model = PINE(32, 32, 8, 2, 384, 1).cuda()
+data=GaussianGenerator(num_outputs=2)(8,n=32)
+out=model(data)
+    
