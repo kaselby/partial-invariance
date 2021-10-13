@@ -74,7 +74,7 @@ def parse_args():
     parser.add_argument('--data_dir', type=str, default='./ICR/data')
     parser.add_argument('--pca_dim', type=int, default=10)
     parser.add_argument('--max_vecs', type=int, default=250)
-    parser.add_argument('--output_dir', type=str, default="runs/hypeval")
+    parser.add_argument('--output_dir', type=str, default="runs")
     parser.add_argument('--dataset', type=str, default="HypNet_test")
     return parser.parse_args()
 
