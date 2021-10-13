@@ -13,6 +13,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('run_name', type=str)
     parser.add_argument('--target', type=str, default='wasserstein')
+    parser.add_argument('--model', type=str, default='csab')
     parser.add_argument('--data', type=str, default='gmm')
     parser.add_argument('--normalize', action='store_true')
     #parser.add_argument('--norm_in', action='store_true')
@@ -129,17 +130,22 @@ if __name__ == '__main__':
 
     device = torch.device("cuda:0")
 
-    model_kwargs={'ln':True, 'remove_diag':True, 'num_blocks':2, 'equi':args.equi, 'output_size':1, 'num_heads':4}
-    if args.equi:
-        model_kwargs['input_size'] = 1
-        model_kwargs['latent_size'] = 16
-        model_kwargs['hidden_size'] = 32
+    DIM=32
+    if args.model == 'csab':
+        model_kwargs={'ln':True, 'remove_diag':True, 'num_blocks':2, 'equi':args.equi, 'output_size':1, 'num_heads':4}
+        if args.equi:
+            model_kwargs['input_size'] = 1
+            model_kwargs['latent_size'] = 16
+            model_kwargs['hidden_size'] = 32
+        else:
+            model_kwargs['input_size'] = DIM
+            model_kwargs['latent_size'] = 256
+            model_kwargs['hidden_size'] = 384
+        model=MultiSetTransformer(**model_kwargs).to(device)
+    elif args.model == 'pine':
+        model = PINE(DIM, 32, 8, 2, 384, 1).to(device)
     else:
-        DIM=32
-        model_kwargs['input_size'] = DIM
-        model_kwargs['latent_size'] = 256
-        model_kwargs['hidden_size'] = 384
-    model=MultiSetTransformer(**model_kwargs).to(device)
+        raise NotImplementedError()
 
     batch_size=64
     steps=60000

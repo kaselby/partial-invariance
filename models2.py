@@ -218,3 +218,37 @@ class MultiSetTransformer(nn.Module):
         ZY = self.pool_y(ZY)
         out = self.dec(torch.cat([ZX, ZY], dim=-1))
         return out.squeeze(-1)
+
+import torch.nn.functional as F
+class PINE(nn.Module):
+    def __init__(self, input_size, proj_size, n_proj, n_sets, hidden_size, output_size):
+        self.input_size = input_size
+        self.proj_size = proj_size
+        self.n_proj = n_proj
+        self.n_sets = n_sets
+        self.U = nn.Parameter(torch.empty(n_sets, n_proj, proj_size, 1))
+        self.A = nn.Parameter(torch.empty(n_sets, n_proj, 1, input_size))
+        self.W_h = nn.Parameter(torch.empty(hidden_size, n_sets * n_proj * proj_size))
+        self.V = nn.Parameter(torch.empty(n_sets, n_proj * proj_size))
+        self.C = nn.Linear(hidden_size, output_size)
+
+        self._init_params()
+
+    def _init_params(self):
+        nn.init.kaiming_uniform_(self.U, a=math.sqrt(5))
+        nn.init.kaiming_uniform_(self.A, a=math.sqrt(5))
+        nn.init.kaiming_uniform_(self.W, a=math.sqrt(5))
+        W_g = torch.matmul(self.A, self.U)
+        fan_in, _ = nn.init._calculate_fan_in_and_fan_out(W_g)
+        bound = 1 / math.sqrt(fan_in) if fan_in > 0 else 0
+        nn.init.uniform_(self.V, -bound, bound)
+
+    def forward(self, X):
+        #assume X is a list of tensors of size bs x n_k x d each
+        W_g = torch.matmul(self.A, self.U).view(self.n_sets, -1, self.input_size)
+        g = F.sigmoid(X.transpose(0,2).matmul(W_g.transpose(-1,-2)) + self.V)
+        z = g.sum(dim=0)
+        z_stacked = torch.cat(z.split(self.n_sets, dim=0), dim=-1)
+        h = F.sigmoid(z_stacked.matmul(self.W_h.t()))
+        return self.C(h)
+
