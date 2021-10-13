@@ -1,4 +1,4 @@
-from models import *
+from models2 import *
 from utils import *
 import matplotlib.pyplot as plt
 import torch
@@ -129,12 +129,17 @@ if __name__ == '__main__':
 
     device = torch.device("cuda:0")
 
-    model_kwargs={'ln':True, 'remove_diag':True, 'num_blocks':2, 'norm_in':False, 'norm_out':False}
+    model_kwargs={'ln':True, 'remove_diag':True, 'num_blocks':2, 'equi':args.equi, 'output_size':1, 'num_heads':4}
     if args.equi:
-        model=EquiMultiSetTransformer1(1,1, dim_hidden=32, **model_kwargs).to(device)
+        model_kwargs['input_size'] = 1
+        model_kwargs['latent_size'] = 32
+        model_kwargs['hidden_size'] = 48
     else:
         DIM=32
-        model=MultiSetTransformer1(DIM, 1,1, dim_hidden=256, **model_kwargs).to(device)
+        model_kwargs['input_size'] = DIM
+        model_kwargs['latent_size'] = 256
+        model_kwargs['hidden_size'] = 384
+    model=MultiSetTransformer(**model_kwargs).to(device)
 
     batch_size=64
     steps=60000
