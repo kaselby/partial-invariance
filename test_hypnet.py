@@ -10,10 +10,10 @@ import tqdm
 import argparse
 from sklearn.metrics import average_precision_score
 
-from icr import ICRDict, avg_nn_dist
+from icr import ICRDict
 from models import MultiSetTransformer1
 from train_hypnet import HyponomyDataset, collate_batch_with_padding
-from utils import kl_knn
+from utils import avg_cross_nn_dist, kl_knn
 
 use_cuda = torch.cuda.is_available()
 
@@ -82,7 +82,7 @@ if __name__ == '__main__':
     dataset = HyponomyDataset.from_file('HypNet_test', args.data_dir, args.vec_dir, args.voc_dir, pca_dim=args.pca_dim, max_vecs=args.max_vecs)
 
     model = torch.load(os.path.join("runs", args.run_name, 'model.pt'))
-    baseline_fcts = {'avg_nn_dist': avg_nn_dist, 'kl':kl_knn}
+    baseline_fcts = {'avg_nn_dist': avg_cross_nn_dist, 'kl':kl_knn}
 
     model_acc, model_prec = evaluate_model(model, dataset)
     print("Model Accuracy: %f" % model_acc)
