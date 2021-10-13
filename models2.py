@@ -238,7 +238,7 @@ class PINE(nn.Module):
     def _init_params(self):
         nn.init.kaiming_uniform_(self.U, a=math.sqrt(5))
         nn.init.kaiming_uniform_(self.A, a=math.sqrt(5))
-        nn.init.kaiming_uniform_(self.W, a=math.sqrt(5))
+        nn.init.kaiming_uniform_(self.W_h, a=math.sqrt(5))
         W_g = torch.matmul(self.A, self.U)
         fan_in, _ = nn.init._calculate_fan_in_and_fan_out(W_g)
         bound = 1 / math.sqrt(fan_in) if fan_in > 0 else 0
