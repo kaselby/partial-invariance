@@ -227,30 +227,40 @@ class PINE(nn.Module):
         self.proj_size = proj_size
         self.n_proj = n_proj
         self.n_sets = n_sets
-        self.U = nn.Parameter(torch.empty(n_sets, n_proj, proj_size, 1))
-        self.A = nn.Parameter(torch.empty(n_sets, n_proj, 1, input_size))
+        for i in range(n_sets):
+            self.register_parameter('U_%d'%i, nn.Parameter(torch.empty(n_proj, proj_size, 1)))
+            self.register_parameter('A_%d'%i, nn.Parameter(torch.empty(n_proj, 1, input_size)))
+            self.register_parameter('V_%d'%i, nn.Parameter(torch.empty(n_proj * proj_size)))
         self.W_h = nn.Parameter(torch.empty(hidden_size, n_sets * n_proj * proj_size))
-        self.V = nn.Parameter(torch.empty(n_sets, n_proj * proj_size))
         self.C = nn.Linear(hidden_size, output_size)
 
         self._init_params()
 
     def _init_params(self):
-        nn.init.kaiming_uniform_(self.U, a=math.sqrt(5))
-        nn.init.kaiming_uniform_(self.A, a=math.sqrt(5))
+        for i in range(self.n_sets):
+            nn.init.kaiming_uniform_(getattr(self,'U_%d'%i), a=math.sqrt(5))
+            nn.init.kaiming_uniform_(getattr(self,'A_%d'%i), a=math.sqrt(5))
+            W_g_i = torch.matmul(getattr(self,'U_%d'%i), getattr(self,'A_%d'%i))
+            fan_in, _ = nn.init._calculate_fan_in_and_fan_out(W_g_i)
+            bound = 1 / math.sqrt(fan_in) if fan_in > 0 else 0
+            nn.init.uniform_(getattr(self,'V_%d'%i), -bound, bound)
         nn.init.kaiming_uniform_(self.W_h, a=math.sqrt(5))
-        W_g = torch.matmul(self.U, self.A)
-        fan_in, _ = nn.init._calculate_fan_in_and_fan_out(W_g)
-        bound = 1 / math.sqrt(fan_in) if fan_in > 0 else 0
-        nn.init.uniform_(self.V, -bound, bound)
 
     def forward(self, X):
         #assume X is a list of tensors of size bs x n_k x d each
-        X_stacked = torch.stack(X, dim=1)
-        W_g = torch.matmul(self.U, self.A).view(self.n_sets, -1, self.input_size)
-        g = F.sigmoid(X.transpose(0,2).matmul(W_g.transpose(-1,-2)) + self.V)
-        z = g.sum(dim=0)
-        z_stacked = torch.cat(z.split(self.n_sets, dim=0), dim=-1)
+        z = []
+        for i in range(self.n_sets):
+            W_g_i = torch.matmul(getattr(self,'U_%d'%i), getattr(self,'A_%d'%i)).view(-1, self.input_size)
+            g = F.sigmoid(X[i].transpose(0,2).matmul(W_g_i.transpose(-1,-2)) + getattr(self,'V_%d'%i))
+            z.append(g.sum(dim=0))
+        z_stacked = torch.cat(z, dim=-1)
         h = F.sigmoid(z_stacked.matmul(self.W_h.t()))
         return self.C(h)
+
+from models2 import PINE
+from utils import *
+
+model = PINE(32, 32, 8, 2, 384, 1).cuda()
+data=GaussianGenerator(num_outputs=2)(8,n=32)
+out=model(data)
 
