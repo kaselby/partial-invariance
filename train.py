@@ -174,6 +174,7 @@ if __name__ == '__main__':
         sample_kwargs['mu0']=1
         sample_kwargs['s0']=0.5
         criterion=nn.L1Loss()
+        sample_kwargs['dims'] = (4,10)
 
     if args.data == 'gmm':
         generator = GaussianGenerator(num_outputs=2, scaleinv=args.scaleinv, variable_dim=args.equi, return_params=exact_loss)
