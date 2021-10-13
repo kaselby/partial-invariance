@@ -239,14 +239,14 @@ class PINE(nn.Module):
         nn.init.kaiming_uniform_(self.U, a=math.sqrt(5))
         nn.init.kaiming_uniform_(self.A, a=math.sqrt(5))
         nn.init.kaiming_uniform_(self.W_h, a=math.sqrt(5))
-        W_g = torch.matmul(self.A, self.U)
+        W_g = torch.matmul(self.U, self.A)
         fan_in, _ = nn.init._calculate_fan_in_and_fan_out(W_g)
         bound = 1 / math.sqrt(fan_in) if fan_in > 0 else 0
         nn.init.uniform_(self.V, -bound, bound)
 
     def forward(self, X):
         #assume X is a list of tensors of size bs x n_k x d each
-        W_g = torch.matmul(self.A, self.U).view(self.n_sets, -1, self.input_size)
+        W_g = torch.matmul(self.U, self.A).view(self.n_sets, -1, self.input_size)
         g = F.sigmoid(X.transpose(0,2).matmul(W_g.transpose(-1,-2)) + self.V)
         z = g.sum(dim=0)
         z_stacked = torch.cat(z.split(self.n_sets, dim=0), dim=-1)
