@@ -451,14 +451,14 @@ class GaussianGenerator():
         else:
             return samples.float().contiguous()
 
-    def _generate_mixture(self, batch_size, n, return_params=False, set_size=(100,150), component_range=(3,10), scale=None):
+    def _generate_mixture(self, batch_size, n, return_params=False, set_size=(100,150), component_range=(3,10), scale=None, nu=1, mu0=0, s0=1):
         n_samples = torch.randint(*set_size,(1,))
         n_components = torch.randint(*component_range,(1,)).item()
         mus= torch.rand(size=(batch_size, n_components, n))
-        c = LKJCholesky(n).sample((batch_size, n_components))
+        c = LKJCholesky(n, concentration=nu).sample((batch_size, n_components))
         while c.isnan().any():
             c = LKJCholesky(n).sample((batch_size, n_components))
-        s = torch.diag_embed(LogNormal(0,1).sample((batch_size, n_components, n)))
+        s = torch.diag_embed(LogNormal(mu0,s0).sample((batch_size, n_components, n)))
         sigmas = torch.matmul(s, c)
         if scale is not None:
             mus = mus * scale.unsqueeze(-1).unsqueeze(-1)
