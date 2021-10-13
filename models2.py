@@ -251,8 +251,8 @@ class PINE(nn.Module):
         z = []
         for i in range(self.n_sets):
             W_g_i = torch.matmul(getattr(self,'U_%d'%i), getattr(self,'A_%d'%i)).view(-1, self.input_size)
-            g = F.sigmoid(X[i].transpose(0,2).matmul(W_g_i.transpose(-1,-2)) + getattr(self,'V_%d'%i))
-            z.append(g.sum(dim=0))
+            g = F.sigmoid(X[i].matmul(W_g_i.transpose(-1,-2)) + getattr(self,'V_%d'%i))
+            z.append(g.sum(dim=1))
         z_stacked = torch.cat(z, dim=-1)
         h = F.sigmoid(z_stacked.matmul(self.W_h.t()))
         return self.C(h)
