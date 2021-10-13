@@ -246,6 +246,7 @@ class PINE(nn.Module):
 
     def forward(self, X):
         #assume X is a list of tensors of size bs x n_k x d each
+        X_stacked = torch.stack(X, dim=1)
         W_g = torch.matmul(self.U, self.A).view(self.n_sets, -1, self.input_size)
         g = F.sigmoid(X.transpose(0,2).matmul(W_g.transpose(-1,-2)) + self.V)
         z = g.sum(dim=0)
