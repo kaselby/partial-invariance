@@ -222,6 +222,7 @@ class MultiSetTransformer(nn.Module):
 import torch.nn.functional as F
 class PINE(nn.Module):
     def __init__(self, input_size, proj_size, n_proj, n_sets, hidden_size, output_size):
+        super().__init__()
         self.input_size = input_size
         self.proj_size = proj_size
         self.n_proj = n_proj
