@@ -9,4 +9,4 @@
 #SBATCH --mem=25GB
 #SBATCH --exclude=gpu109
 
-python3 train_hypnet.py $1 --checkpoint_name $SLURM_JOB_ID --lr 1e-3 --steps 500000 --hidden_size 256 --pca_dim 16
+python3 train_hypnet.py $1 --checkpoint_name $SLURM_JOB_ID --lr 1e-3 --steps 750000 --hidden_size 256 --pca_dim 10
