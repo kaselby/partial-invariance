@@ -240,7 +240,7 @@ def train(model, dataset, steps, eval_dataset=None, batch_size=64, lr=1e-3, save
 
     logs = {'losses':losses}
     if eval_dataset is not None:
-        acc, prec = evaluate(model, eval_dataset, batch_size=batch_size, append_missing=True)
+        acc, prec = evaluate(model, eval_dataset, batch_size=batch_size, append_missing=False)
         logs['eval_acc'] = acc
         logs['eval_prec'] = prec
 
