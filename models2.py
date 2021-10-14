@@ -256,13 +256,3 @@ class PINE(nn.Module):
         z_stacked = torch.cat(z, dim=-1)
         h = torch.sigmoid(z_stacked.matmul(self.W_h.t()))
         return self.C(h)
-
-
-
-from models2 import PINE
-from utils import *
-
-model = PINE(32, 32, 8, 2, 384, 1).cuda()
-data=GaussianGenerator(num_outputs=2)(8,n=32)
-out=model(data)
-    
