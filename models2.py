@@ -246,7 +246,7 @@ class PINE(nn.Module):
             nn.init.uniform_(getattr(self,'V_%d'%i), -bound, bound)
         nn.init.kaiming_uniform_(self.W_h, a=math.sqrt(5))
 
-    def forward(self, X):
+    def forward(self, *X):
         #assume X is a list of tensors of size bs x n_k x d each
         z = []
         for i in range(self.n_sets):
