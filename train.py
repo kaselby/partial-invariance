@@ -149,7 +149,7 @@ if __name__ == '__main__':
         else:
             raise NotImplementedError()
     else:
-        model_kwargs={'ln':True, 'remove_diag':True, 'num_blocks':2, 'output_size':1, 'num_heads':4}
+        model_kwargs={'ln':True, 'remove_diag':True, 'num_blocks':2, 'num_heads':4}
         model = EquiMultiSetTransformer1(1,1,dim_hidden=32, **model_kwargs)
 
     batch_size=64
