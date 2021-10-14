@@ -12,39 +12,13 @@ from sklearn.metrics import average_precision_score
 
 from icr import ICRDict
 from models import MultiSetTransformer1
-from train_hypnet import HyponomyDataset, collate_batch_with_padding
+from train_hypnet import HyponomyDataset, collate_batch_with_padding, evaluate
 from utils import avg_cross_nn_dist, kl_knn
 
 use_cuda = torch.cuda.is_available()
 
-def evaluate_model(model, dataset, batch_size=64):
-    all_logits = torch.zeros(len(dataset))
-    all_labels = torch.zeros(len(dataset))
 
-    data_loader=DataLoader(dataset, batch_size=batch_size, collate_fn=collate_batch_with_padding)
-    with torch.no_grad():
-        for i, (data, masks, labels) in tqdm.tqdm(enumerate(data_loader)):
-            j_min = i * batch_size
-            j_max = min(len(dataset), (i + 1) * batch_size)
-
-            if use_cuda:
-                data = [X.cuda() for X in data]
-                masks = [mask.cuda() for mask in masks]
-
-            out = model(*data, masks=masks)
-
-            all_logits[j_min:j_max] = out.squeeze(-1).cpu().detach()
-            all_labels[j_min:j_max] = labels.detach()
-
-    def get_accuracy(labels, logits):
-        return ((labels*2 - 1) * logits > 0).float().sum() / logits.size(0)
-
-    accuracy = get_accuracy(all_labels, all_logits)
-    precision = average_precision_score(all_labels.numpy(), all_logits.numpy())
-
-    return accuracy, precision
-
-def evaluate_fct(fct, dataset, batch_size=64):
+def evaluate_fct(fct, dataset, append_missing=False):
     all_logits = torch.zeros(len(dataset))
     all_labels = torch.zeros(len(dataset))
 
@@ -56,6 +30,12 @@ def evaluate_fct(fct, dataset, batch_size=64):
 
         all_logits[i] = fct(v1, v2).squeeze(0)
         all_labels[i] = l
+
+    if dataset.valid_indices is not None and append_missing:
+        _, missing_labels = dataset.get_invalid()
+        n_missing = len(missing_labels)
+        all_logits = torch.cat([all_logits, torch.zeros(n_missing)], dim=0)
+        all_labels = torch.cat([all_logits, torch.Tensor(missing_labels)], dim=0)
     
     def get_accuracy(labels, logits):
         return ((labels*2 - 1) * logits > 0).float().sum() / logits.size(0)
@@ -85,12 +65,12 @@ if __name__ == '__main__':
     model = torch.load(os.path.join("runs", args.run_name, 'model.pt'))
     baseline_fcts = {'avg_nn_dist': avg_cross_nn_dist, 'kl':kl_knn}
 
-    model_acc, model_prec = evaluate_model(model, dataset)
+    model_acc, model_prec = evaluate(model, dataset, append_missing=True)
     print("Model Accuracy: %f" % model_acc)
     print("Model Precision: %f" % model_prec)
 
     for name, fct in baseline_fcts.items():
-        baseline_acc, baseline_prec = evaluate_fct(fct, dataset)
+        baseline_acc, baseline_prec = evaluate_fct(fct, dataset, append_missing=True)
         print("%s Accuracy: %f" % (name, baseline_acc))
         print("%s Precision: %f" % (name, baseline_prec))
 

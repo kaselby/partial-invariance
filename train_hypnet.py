@@ -117,16 +117,14 @@ class HyponomyDataset(Dataset):
         return np.array(relations), pairs, labels
 
     @staticmethod
-    def _trim_dataset(vecs, relations, pairs, labels, min_threshold):
-        rnew, pnew, lnew = [], [], []
+    def _trim_dataset(vecs, pairs, min_threshold):
+        valid_indices = []
         for i, (w1,w2) in enumerate(pairs):
             n1 = -1 if w1 not in vecs else vecs[w1].n
             n2 = -1 if w2 not in vecs else vecs[w2].n
             if n1 >= min_threshold and n2 >= min_threshold:
-                rnew.append(relations[i])
-                pnew.append(pairs[i])
-                lnew.append(labels[i])
-        return rnew, pnew, lnew
+                valid_indices.append(i)
+        return valid_indices
 
     @classmethod
     def from_file(cls, dataset_name, data_dir, vec_dir, voc_dir, inverted_pairs=False, min_threshold=10, pca_dim=-1, max_vecs=-1):
@@ -135,12 +133,13 @@ class HyponomyDataset(Dataset):
         dataset_path = os.path.join(data_dir, dataset_name + ".all")
         relations, pairs, labels = cls._read_dataset(dataset_path, min_threshold, inverted_pairs=inverted_pairs)
         n0 = len(pairs)
+        valid_indices=None
         if min_threshold >= 0:
-            relations, pairs, labels = cls._trim_dataset(vecs, relations, pairs, labels, min_threshold)
+            valid_indices = cls._trim_dataset(vecs, pairs, min_threshold)
             print("Dataset contains %d pairs. %d pairs removed after filtering." % (n0, n0-len(pairs)))
-        return cls(vecs, relations, pairs, labels, pca_dim=pca_dim, max_vecs=max_vecs)
+        return cls(vecs, relations, pairs, labels, pca_dim=pca_dim, max_vecs=max_vecs, valid_indices=valid_indices)
 
-    def __init__(self, vecs, relations, pairs, labels, pca_dim=-1, max_vecs=-1):
+    def __init__(self, vecs, relations, pairs, labels, pca_dim=-1, max_vecs=-1, valid_indices=None):
         assert len(pairs) == len(labels)
         self.vecs = vecs
         self.relations=relations
@@ -148,7 +147,8 @@ class HyponomyDataset(Dataset):
         self.labels = labels
         self.pca_dim=pca_dim
         self.max_vecs=max_vecs
-        self.n = len(self.pairs)
+        self.valid_indices = valid_indices
+        self.n = len(self.pairs) if valid_indices is None else len(valid_indices)
 
     def split(self, frac):
         n_split = int(frac * self.n)
@@ -160,14 +160,20 @@ class HyponomyDataset(Dataset):
         return d1, d2
 
     def __getitem__(self, index):
-        w1,w2 = self.pairs[index]
+        j = index if self.valid_indices is None else self.valid_indices[index]
+        w1,w2 = self.pairs[j]
         transform = self.vecs.pca(w1,w2, n_components=self.pca_dim).transform if self.pca_dim > 0 else None
         return self.vecs[w1].get_vecs(transform=transform, max_vecs=self.max_vecs), \
             self.vecs[w2].get_vecs(transform=transform, max_vecs=self.max_vecs), \
             self.labels[index]
 
     def __len__(self):
-        return len(self.pairs)
+        return self.n
+
+    def get_invalid(self):
+        assert self.valid_indices is not None
+        invalid_indices = [i for i in range(self.pairs) if not i in self.valid_indices]
+        return [self.pairs[i] for i in invalid_indices], [self.labels[i] for i in invalid_indices]
 
 def compare(w1, w2, vec_dicts, distance):
     vecs1 = vec_dicts[w1].cuda()
@@ -230,7 +236,7 @@ def train(model, dataset, steps, eval_dataset=None, batch_size=64, lr=1e-3, save
 
     logs = {'losses':losses}
     if eval_dataset is not None:
-        acc, prec = evaluate(model, eval_dataset, batch_size=batch_size)
+        acc, prec = evaluate(model, eval_dataset, batch_size=batch_size, append_missing=True)
         logs['eval_acc'] = acc
         logs['eval_prec'] = prec
 
@@ -240,7 +246,7 @@ def train(model, dataset, steps, eval_dataset=None, batch_size=64, lr=1e-3, save
 
     return losses
 
-def evaluate(model, dataset, batch_size=64):
+def evaluate(model, dataset, batch_size=64, append_missing=False):
     all_logits = torch.zeros(len(dataset))
     all_labels = torch.zeros(len(dataset))
 
@@ -258,8 +264,11 @@ def evaluate(model, dataset, batch_size=64):
         all_logits[j_min:j_max] = out.squeeze(-1).cpu().detach()
         all_labels[j_min:j_max] = labels.detach()
     
-    #return all_logits, all_labels
-    
+    if dataset.valid_indices is not None and append_missing:
+        _, missing_labels = dataset.get_invalid()
+        n_missing = len(missing_labels)
+        all_logits = torch.cat([all_logits, torch.zeros(n_missing)], dim=0)
+        all_labels = torch.cat([all_logits, torch.Tensor(missing_labels)], dim=0)
     
     def get_accuracy(labels, logits):
         return ((labels*2 - 1) * logits > 0).float().sum() / logits.size(0)
