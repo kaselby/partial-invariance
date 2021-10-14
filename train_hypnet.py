@@ -152,9 +152,13 @@ class HyponomyDataset(Dataset):
 
     def split(self, frac):
         n_split = int(frac * self.n)
-        r1, r2 = self.relations[:n_split], self.relations[n_split:]
-        p1, p2 = self.pairs[:n_split], self.pairs[n_split:]
-        l1, l2 = self.labels[:n_split], self.labels[n_split:]
+        if self.valid_indices is None:
+            inds1, inds2 = range(self.n)[:n_split], range(self.n)[n_split:]
+        else:
+            inds1, inds2 = self.valid_indices[:n_split], self.valid_indices[n_split:]
+        r1, r2 = [self.relations[i] for i in inds1], [self.relations[i] for i in inds2]
+        p1, p2 = [self.pairs[i] for i in inds1], [self.pairs[i] for i in inds2]
+        l1, l2 = [self.labels[i] for i in inds1], [self.labels[i] for i in inds2]
         d1 = HyponomyDataset(self.vecs, r1, p1, l1, self.pca_dim, self.max_vecs)
         d2 = HyponomyDataset(self.vecs, r2, p2, l2, self.pca_dim, self.max_vecs)
         return d1, d2
