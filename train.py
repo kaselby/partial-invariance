@@ -135,8 +135,8 @@ if __name__ == '__main__':
         model_kwargs={'ln':True, 'remove_diag':True, 'num_blocks':2, 'equi':args.equi, 'output_size':1, 'num_heads':4}
         if args.equi:
             model_kwargs['input_size'] = 1
-            model_kwargs['latent_size'] = 16
-            model_kwargs['hidden_size'] = 32
+            model_kwargs['latent_size'] = 32
+            model_kwargs['hidden_size'] = 48
         else:
             model_kwargs['input_size'] = DIM
             model_kwargs['latent_size'] = 256
