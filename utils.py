@@ -233,7 +233,8 @@ def kl_knn2(X, Y):
     N = X.size(1)
     M = Y.size(1)
     d = X.size(-1)
-    Xmask = (torch.eye(N) * float('inf')).to(X.device)
+    Xmask = (torch.eye(N)).to(X.device)
+    Xmask[Xmask==1] = float('inf')
     Xdists,_ = torch.sort(get_dists(X, X) + Xmask, dim=-1)
     Ydists,_ = torch.sort(get_dists(X, Y), dim=-1)
     rho = Xdists[:,:,0]
