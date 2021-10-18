@@ -240,8 +240,8 @@ def kl_knn2(X, Y):
     rho = Xdists[:,:,0]
     nu = Ydists[:,:,0]
     eps = torch.maximum(rho, nu)
-    l = (Xdists < eps.unsqueeze(-1)).float().sum(dim=-1)
-    k = (Ydists < eps.unsqueeze(-1)).float().sum(dim=-1)
+    l = (Xdists <= eps.unsqueeze(-1)).float().sum(dim=-1) + 1
+    k = (Ydists <= eps.unsqueeze(-1)).float().sum(dim=-1)
 
     kl1 = (torch.digamma(l) - torch.digamma(k)).mean(dim=-1) + math.log(M/(N-1))
     #return kl
