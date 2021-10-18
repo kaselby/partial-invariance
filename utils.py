@@ -175,6 +175,27 @@ def KL_categorical(X, Y):
     probs_Y = counts_Y / counts_Y.sum(dim=-1, keepdim=True)
     return (probs_X * (torch.log(probs_X) - torch.log(probs_Y))).sum(dim=-1)
 
+def get_dists(X, Y=None, bs=32):
+    if Y is None:
+        Y = X
+    X = X if type(X) == torch.Tensor else torch.Tensor(X)
+    Y = Y if type(Y) == torch.Tensor else torch.Tensor(Y)
+    outer_bs = Y.size(0)
+    N = X.size(1)
+    M = Y.size(1)
+    n_batches = int(math.ceil(N/bs))
+    dists = torch.zeros(outer_bs, N, M)
+    if torch.cuda.is_available():
+        X = X.to('cuda')
+        Y = Y.to('cuda')
+        dists=dists.to('cuda')
+    for i in range(n_batches):
+        j_min = i*bs
+        j_max = min(N, (i+1)*bs)
+        all_dists_i = (X[:,j_min:j_max].unsqueeze(2) - Y.unsqueeze(1)).norm(dim=-1)
+        dists[:,j_min:j_max] = all_dists_i
+    return dists
+
 def knn(X, k, Y=None, bs=32):
     if Y is None:
         Y = X
@@ -206,6 +227,29 @@ def kl_knn(X, Y, k=1, xi=1e-5):
     eps = knn(X=X, k=k) + xi
 
     return d/n * torch.log(nu/eps).sum(dim=1) + math.log(m/(n-1))
+
+
+def kl_knn2(X, Y):
+    N = X.size(1)
+    M = Y.size(1)
+    d = X.size(-1)
+    Xmask = (torch.eye(N) * float('inf')).to(X.device)
+    Xdists,_ = torch.sort(get_dists(X, X) + Xmask, dim=-1)
+    Ydists,_ = torch.sort(get_dists(X, Y), dim=-1)
+    rho = Xdists[:,:,0]
+    nu = Ydists[:,:,0]
+    eps = torch.maximum(rho, nu)
+    l = (Xdists < eps.unsqueeze(-1)).float().sum(dim=-1)
+    k = (Ydists < eps.unsqueeze(-1)).float().sum(dim=-1)
+
+    kl1 = (torch.digamma(l) - torch.digamma(k)).mean(dim=-1) + math.log(M/(N-1))
+    #return kl
+    rho_l = torch.gather(Xdists, -1, l.long().unsqueeze(-1)).squeeze(-1)
+    nu_k = torch.gather(Ydists, -1, k.long().unsqueeze(-1)).squeeze(-1)
+    kl2 = torch.log(nu_k/rho_l).mean(dim=-1) * d + kl1
+    return kl1, kl2
+
+
 
 def simplified_divergence1(X, Y, k=1, xi=1e-5):
     n = X.size(1)
@@ -251,6 +295,17 @@ def kl_nd_gaussian(P, Q):
     return 1./2 * ( torch.logdet(Sigma2) - torch.logdet(Sigma1) -
                 d +
                 torch.diagonal(Lambda2.matmul(Sigma1), dim1=-2, dim2=-1).sum(dim=-1) +
+                (mu2-mu1).unsqueeze(-1).transpose(-1, -2).matmul(Lambda2).matmul((mu2-mu1).unsqueeze(-1)).squeeze(-1).squeeze(-1)
+    )
+
+def kl_nd_gaussian2(P, Q):
+    mu1, Sigma1 = P.loc, P.covariance_matrix
+    mu2, Sigma2 = Q.loc, Q.covariance_matrix
+    d = mu1.size(-1)
+    Lambda2 = Q.precision_matrix
+    return (torch.logdet(Sigma2) - torch.logdet(Sigma1), 
+                -d, 
+                torch.diagonal(Lambda2.matmul(Sigma1), dim1=-2, dim2=-1).sum(dim=-1),
                 (mu2-mu1).unsqueeze(-1).transpose(-1, -2).matmul(Lambda2).matmul((mu2-mu1).unsqueeze(-1)).squeeze(-1).squeeze(-1)
     )
 
@@ -592,3 +647,31 @@ def test_gen2(*args,**kwargs):
         return samples.float().contiguous(), dist
     X,Y = generate(*args, **kwargs), generate(*args, **kwargs)
     return zip(X,Y)
+
+
+def test_dist(d1, d2, n1, n2, N, k=1, bs=64):
+    kl = 0
+    for i in range(math.ceil(N/bs)):
+        effective_bs = min(N, (i+1)*bs) - i*bs
+        n_samples1 = torch.randint(n1,n2,(1,))
+        n_samples2 = torch.randint(n1,n2,(1,))
+        X,Y = d1.sample((effective_bs,n_samples1)).squeeze(2), d2.sample((effective_bs,n_samples2)).squeeze(2)
+        kl += kl_knn(X=X, Y=Y, k=k).sum(dim=0)
+    return kl / N
+
+
+def whiten(X):
+    mu = X.mean(dim=1, keepdim=True)
+    Sigma2 = (X-mu).transpose(1,2).matmul((X-mu)) / (X.size(1)-1)
+    evals, evecs = torch.linalg.eig(Sigma2)
+    lambd = (evecs.matmul(torch.diag_embed(evals.pow(-1./2))).matmul(evecs.transpose(1,2))).real
+    return (X-mu).matmul(lambd.transpose(1,2))
+
+def whiten_split(X,Y):
+    n = X.size(1)
+    D = torch.cat([X,Y],dim=1)
+    Dp = whiten(D)
+    return Dp[:, :n], Dp[:, n:]
+
+
+    
