@@ -55,14 +55,14 @@ class MHA(nn.Module):
         return O
 
 class EquiMHA(nn.Module):
-    def __init__(self, input_size, latent_size, num_heads):
+    def __init__(self, dim_Q, dim_K, dim_V, num_heads):
         super(EquiMHA, self).__init__()
-        self.latent_size=latent_size
+        self.latent_size=dim_V
         self.num_heads = num_heads
-        self.w_q = nn.Linear(input_size, latent_size, bias=False)
-        self.w_k = nn.Linear(input_size, latent_size, bias=False)
-        self.w_v = nn.Linear(input_size, latent_size, bias=False)
-        self.w_o = nn.Linear(latent_size, latent_size, bias=False)
+        self.w_q = nn.Linear(dim_Q, dim_V, bias=False)
+        self.w_k = nn.Linear(dim_K, dim_V, bias=False)
+        self.w_v = nn.Linear(dim_K, dim_V, bias=False)
+        self.w_o = nn.Linear(dim_V, dim_V, bias=False)
     
     def forward(self, Q, K, mask=None):
         Q = self.w_q(Q)
@@ -82,12 +82,13 @@ class EquiMHA(nn.Module):
         return O
 
 class MAB(nn.Module):
-    def __init__(self, input_size, latent_size, hidden_size, num_heads, ln=False, equi=False):
+    def __init__(self, input_size, latent_size, hidden_size, num_heads, attn_size=None, ln=False, equi=False):
         super(MAB, self).__init__()
+        attn_size = attn_size if attn_size is not None else input_size
         if equi:
-            self.attn = EquiMHA(input_size, latent_size, num_heads)
+            self.attn = EquiMHA(input_size, attn_size, latent_size, num_heads)
         else:
-            self.attn = MHA(input_size, input_size, latent_size, num_heads)
+            self.attn = MHA(input_size, attn_size, latent_size, num_heads)
         self.fc = nn.Sequential(nn.Linear(latent_size, hidden_size), nn.ReLU(), nn.Linear(hidden_size, latent_size))
         if ln:
             self.ln0 = nn.LayerNorm(latent_size)
@@ -107,6 +108,18 @@ class SAB(nn.Module):
 
     def forward(self, X, mask=None):
         return self.mab(X, X, mask=mask)
+
+class ISAB(nn.Module):
+    def __init__(self, input_size, latent_size, hidden_size, num_heads, num_inds, ln=False, equi=False):
+        super(ISAB, self).__init__()
+        self.I = nn.Parameter(torch.Tensor(1, num_inds, latent_size))
+        nn.init.xavier_uniform_(self.I)
+        self.mab0 = MAB(latent_size, latent_size, hidden_size, num_heads, attn_size=input_size, ln=ln, equi=equi)
+        self.mab1 = MAB(input_size, latent_size, hidden_size, num_heads, ln=ln, equi=equi)
+
+    def forward(self, X):
+        H = self.mab0(self.I.repeat(X.size(0), 1, 1), X)
+        return self.mab1(X, H)
 
 
 class CSAB(nn.Module):
@@ -152,6 +165,42 @@ class CSAB(nn.Module):
         X_out = X + self.fc_X(torch.cat([XX, XY], dim=-1))
         Y_out = Y + self.fc_Y(torch.cat([YY, YX], dim=-1))
         return (X_out, Y_out)
+
+
+class ICSAB(nn.Module):
+    def __init__(self, input_size, latent_size, hidden_size, num_heads, num_inds, ln=False, equi=False):
+        super(ICSAB, self).__init__()
+        self.I_X = nn.Parameter(torch.Tensor(1, num_inds, latent_size))
+        self.I_Y = nn.Parameter(torch.Tensor(1, num_inds, latent_size))
+        nn.init.xavier_uniform_(self.I_X)
+        nn.init.xavier_uniform_(self.I_Y)
+        self.MAB0_X = MAB(latent_size, latent_size, hidden_size, num_heads, attn_size=input_size, equi=equi, ln=ln)
+        self.MAB0_Y = MAB(latent_size, latent_size, hidden_size, num_heads, attn_size=input_size, equi=equi, ln=ln)
+        #self.MAB0_XY = MAB(latent_size, latent_size, hidden_size, num_heads, attn_size=input_size, equi=equi, ln=ln)
+        #self.MAB0_YX = MAB(latent_size, latent_size, hidden_size, num_heads, attn_size=input_size, equi=equi, ln=ln)
+        self.MAB1_XX = MAB(input_size, latent_size, hidden_size, num_heads, equi=equi, ln=ln)
+        self.MAB1_YY = MAB(input_size, latent_size, hidden_size, num_heads, equi=equi, ln=ln)
+        self.MAB1_XY = MAB(input_size, latent_size, hidden_size, num_heads, equi=equi, ln=ln)
+        self.MAB1_YX = MAB(input_size, latent_size, hidden_size, num_heads, equi=equi, ln=ln)
+        self.fc_X = nn.Linear(latent_size * 2, latent_size)
+        self.fc_Y = nn.Linear(latent_size * 2, latent_size)
+        self.ln = ln
+
+    def forward(self, inputs):
+        X,Y = inputs
+        H_X = self.MAB0_X(self.I_X.repeat(X.size(0), 1, 1), X)
+        H_Y = self.MAB0_Y(self.I_Y.repeat(X.size(0), 1, 1), Y)
+        XX = self.MAB1_XX(X, H_X)
+        XY = self.MAB1_XY(X, H_Y)
+        YX = self.MAB1_YX(Y, H_X)
+        YY = self.MAB1_YY(Y, H_Y)
+        X_out = X + self.fc_X(torch.cat([XX, XY], dim=-1))
+        Y_out = Y + self.fc_Y(torch.cat([YY, YX], dim=-1))
+        return (X_out, Y_out)
+
+
+
+
 
 class PMA(nn.Module):
     def __init__(self, latent_size, hidden_size, num_heads, num_seeds, ln=False):
