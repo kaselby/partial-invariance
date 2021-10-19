@@ -168,7 +168,7 @@ class CSAB(nn.Module):
 
 
 class ICSAB(nn.Module):
-    def __init__(self, input_size, latent_size, hidden_size, num_heads, num_inds, ln=False, equi=False):
+    def __init__(self, input_size, latent_size, hidden_size, num_heads, num_inds, ln=False, equi=False, remove_diag=False):
         super(ICSAB, self).__init__()
         self.I_X = nn.Parameter(torch.Tensor(1, num_inds, latent_size))
         self.I_Y = nn.Parameter(torch.Tensor(1, num_inds, latent_size))
