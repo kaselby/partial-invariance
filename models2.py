@@ -186,7 +186,7 @@ class ICSAB(nn.Module):
         self.fc_Y = nn.Linear(latent_size * 2, latent_size)
         self.ln = ln
 
-    def forward(self, inputs):
+    def forward(self, inputs, masks=None):
         X,Y = inputs
         H_X = self.MAB0_X(self.I_X.repeat(X.size(0), 1, 1), X)
         H_Y = self.MAB0_Y(self.I_Y.repeat(X.size(0), 1, 1), Y)
