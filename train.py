@@ -132,7 +132,7 @@ if __name__ == '__main__':
     device = torch.device("cuda:0")
 
     if True:
-        DIM=32
+        DIM=2
         if args.model == 'csab':
             model_kwargs={'ln':True, 'remove_diag':True, 'num_blocks':2, 'equi':args.equi, 'output_size':1, 'num_heads':4}
             if args.equi:
@@ -186,8 +186,9 @@ if __name__ == '__main__':
         sample_kwargs['s0']=0.5
         criterion=nn.L1Loss()
         if args.equi:
-            sample_kwargs['dims'] = (1,4)
+            sample_kwargs['dims'] = (2,4)
         else:
+            DIM=2
             sample_kwargs['n'] = 2
 
     if args.data == 'gmm':
