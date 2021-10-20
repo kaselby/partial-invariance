@@ -185,11 +185,16 @@ class ICSAB(nn.Module):
         self.fc_X = nn.Linear(latent_size * 2, latent_size)
         self.fc_Y = nn.Linear(latent_size * 2, latent_size)
         self.ln = ln
+        self.equi = equi
 
     def forward(self, inputs, masks=None):
         X,Y = inputs
-        H_X = self.MAB0_X(self.I_X.repeat(X.size(0), 1, 1), X)
-        H_Y = self.MAB0_Y(self.I_Y.repeat(X.size(0), 1, 1), Y)
+        if self.equi:
+            I_X, I_Y = self.I_X.repeat(X.size(0), 1, 1).unsqueeze(-2), self.I_Y.repeat(Y.size(0), 1, 1).unsqueeze(-2)
+        else:
+            I_X, I_Y = self.I_X.repeat(X.size(0), 1, 1), self.I_Y.repeat(Y.size(0), 1, 1)
+        H_X = self.MAB0_X(I_X, X)
+        H_Y = self.MAB0_Y(I_Y, Y)
         XX = self.MAB1_XX(X, H_X)
         XY = self.MAB1_XY(X, H_Y)
         YX = self.MAB1_YX(Y, H_X)
