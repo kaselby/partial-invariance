@@ -186,7 +186,7 @@ if __name__ == '__main__':
         sample_kwargs['s0']=0.5
         criterion=nn.L1Loss()
         if args.equi:
-            sample_kwargs['dims'] = (24,40)
+            sample_kwargs['dims'] = (1,4)
         else:
             sample_kwargs['n'] = 2
 
