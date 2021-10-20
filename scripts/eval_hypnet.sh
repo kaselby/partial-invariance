@@ -9,4 +9,4 @@
 #SBATCH --mem=25GB
 #SBATCH --exclude=gpu109
 
-python3 test_hypnet.py $1 --dataset $2
+python3 test_hypnet.py $1 --dataset $2 --append_missing

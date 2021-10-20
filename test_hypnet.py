@@ -56,6 +56,7 @@ def parse_args():
     parser.add_argument('--max_vecs', type=int, default=250)
     parser.add_argument('--output_dir', type=str, default="runs")
     parser.add_argument('--dataset', type=str, default="HypNet_test")
+    parser.add_argument('--append_missing', action='store_true')
     return parser.parse_args()
 
 if __name__ == '__main__':
@@ -75,7 +76,7 @@ if __name__ == '__main__':
         print("%s Precision: %f" % (name, baseline_prec))
 
 
-    outfile=os.path.join(args.output_dir, args.run_name, "results-%s.txt"%args.dataset)
+    outfile=os.path.join(args.output_dir, args.run_name, "eval", "results-%s.txt"%args.dataset)
     with open(outfile, 'w') as writer:
         writer.write("Model Accuracy: %f\n" % model_acc)
         writer.write("Model Precision: %f\n" % model_prec)
