@@ -76,7 +76,10 @@ if __name__ == '__main__':
         print("%s Precision: %f" % (name, baseline_prec))
 
 
-    outfile=os.path.join(args.output_dir, args.run_name, "eval", "results-%s.txt"%args.dataset)
+    outdir=os.path.join(args.output_dir, args.run_name, "eval")
+    outfile = os.path.join(outdir, "results-%s.txt"%args.dataset)
+    if not os.path.exists(outdir):
+        os.makedirs(outdir)
     with open(outfile, 'w') as writer:
         writer.write("Model Accuracy: %f\n" % model_acc)
         writer.write("Model Precision: %f\n" % model_prec)

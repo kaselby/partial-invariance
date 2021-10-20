@@ -7,7 +7,7 @@
 #SBATCH --partition=t4v1,t4v2,p100
 #SBATCH --cpus-per-gpu=1
 #SBATCH --mem=25GB
-#SBATCH --exclude=gpu109,gpu023
+#SBATCH --exclude=gpu109
 
 run_name=$1
 target=$2
