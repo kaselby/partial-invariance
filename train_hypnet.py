@@ -176,7 +176,7 @@ class HyponomyDataset(Dataset):
 
     def get_invalid(self):
         assert self.valid_indices is not None
-        invalid_indices = [i for i in range(self.pairs) if not i in self.valid_indices]
+        invalid_indices = [i for i in range(len(self.pairs)) if not i in self.valid_indices]
         return [self.pairs[i] for i in invalid_indices], [self.labels[i] for i in invalid_indices]
 
 def compare(w1, w2, vec_dicts, distance):
