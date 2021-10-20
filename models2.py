@@ -190,7 +190,8 @@ class ICSAB(nn.Module):
     def forward(self, inputs, masks=None):
         X,Y = inputs
         if self.equi:
-            I_X, I_Y = self.I_X.repeat(X.size(0), 1, 1).unsqueeze(-2), self.I_Y.repeat(Y.size(0), 1, 1).unsqueeze(-2)
+            I_X = self.I_X.unsqueeze(-2).expand(X.size(0), -1, X.size(2), -1)
+            I_Y = self.I_Y.unsqueeze(-2).expand(Y.size(0), -1, Y.size(2), -1)
         else:
             I_X, I_Y = self.I_X.repeat(X.size(0), 1, 1), self.I_Y.repeat(Y.size(0), 1, 1)
         H_X = self.MAB0_X(I_X, X)
