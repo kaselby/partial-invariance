@@ -169,13 +169,22 @@ if __name__ == '__main__':
     else:
         sample_kwargs['n'] = DIM
 
-    if args.target == 'wasserstein':
+    if args.target == 'w1':
         label_fct = wasserstein
         label_kwargs={'scaling':0.98, 'blur':0.001}
         baselines={'sinkhorn_default':wasserstein}
         exact_loss=False
         lr = 1e-3
         criterion=nn.MSELoss()
+        mixture=True
+    elif args.target == 'w2':
+        label_fct = wasserstein2_gaussian
+        label_kwargs={}
+        baselines={'sinkhorn_default':wasserstein2}
+        exact_loss=True
+        lr = 1e-3
+        criterion=nn.MSELoss()
+        mixture=False
     elif args.target == 'kl':
         label_fct = kl_mc
         label_kwargs={}
@@ -186,6 +195,7 @@ if __name__ == '__main__':
         sample_kwargs['mu0']=1
         sample_kwargs['s0']=0.5
         criterion=nn.L1Loss()
+        mixture=True
         if args.equi:
             sample_kwargs['dims'] = (2,4)
         else:
@@ -193,7 +203,7 @@ if __name__ == '__main__':
             sample_kwargs['n'] = 2
 
     if args.data == 'gmm':
-        generator = GaussianGenerator(num_outputs=2, scaleinv=args.scaleinv, variable_dim=args.equi, return_params=exact_loss)
+        generator = GaussianGenerator(num_outputs=2, scaleinv=args.scaleinv, variable_dim=args.equi, return_params=exact_loss, mixture=mixture)
     elif args.data == 'nf':
         generator = NFGenerator(32, 2, num_outputs=2, use_maf=False, variable_dim=args.equi, return_params=exact_loss)
     else:

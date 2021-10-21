@@ -375,6 +375,16 @@ def wasserstein(X, Y, **kwargs):
     loss = SamplesLoss(p=1, **kwargs)
     return loss(X, Y)
 
+def wasserstein2(X, Y, **kwargs):
+    loss = SamplesLoss(p=2, **kwargs)
+    return loss(X, Y)
+
+def wasserstein2_gaussian(P, Q):
+    mu1, Sigma1 = P.loc, P.covariance_matrix
+    mu2, Sigma2 = Q.loc, Q.covariance_matrix
+    s1 = matrix_pow(Sigma1, 1./2)
+    return (mu2-mu1).norm(dim=-1).pow(2) + torch.diag(Sigma1 + Sigma2 - 2 * matrix_pow(s1.matmul(Sigma2).matmul(s1), 1./2)).sum()
+
 '''
 def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(), batch_size=64, steps=3000, lr=1e-5, lr_decay=False, epoch_size=250, milestones=[], *sample_args, **sample_kwargs):
     #model.train(True)
@@ -476,13 +486,34 @@ def scale_gmm(mixture, scale):
     return scaled_dist
 
 class GaussianGenerator():
-    def __init__(self, num_outputs=1, normalize=False, scaleinv=False, return_params=False, variable_dim=False):
+    def __init__(self, num_outputs=1, mixture=True, normalize=False, scaleinv=False, return_params=False, variable_dim=False):
         self.num_outputs = num_outputs
         self.normalize = normalize
         self.scaleinv = scaleinv
         self.return_params = return_params
         self.variable_dim = variable_dim
+        self.mixture = mixture
         self.device = torch.device('cpu') if not use_cuda else torch.device('cuda')
+
+    def _generate(self, batch_size, n, return_params=False, set_size=(100,150), scale=None, nu=1, mu0=0, s0=1):
+        n_samples = torch.randint(*set_size,(1,))
+        mus= torch.rand(size=(batch_size, n))
+        c = LKJCholesky(n, concentration=nu).sample((batch_size,))
+        while c.isnan().any():
+            c = LKJCholesky(n).sample((batch_size,))
+        s = torch.diag_embed(LogNormal(mu0,s0).sample((batch_size, n)))
+        sigmas = torch.matmul(s, c)
+        if scale is not None:
+            mus = mus * scale.unsqueeze(-1).unsqueeze(-1)
+            sigmas = sigmas * scale.unsqueeze(-1).unsqueeze(-1)
+        mus = mus.to(self.device)
+        sigmas = sigmas.to(self.device)
+        dist = MultivariateNormal(mus, scale_tril=sigmas)
+        samples = dist.sample(n_samples).transpose(0,1)
+        if return_params:
+            return samples.float().contiguous(), dist
+        else:
+            return samples.float().contiguous()
 
     def _generate_mixture_old(self, batch_size, n, return_params=False, set_size=(100,150), component_range=(3,10), scale=None):
         n_samples = torch.randint(*set_size,(1,))
@@ -536,10 +567,11 @@ class GaussianGenerator():
             n = torch.randint(*dims,(1,)).item()
             kwargs['n'] = n
         scale = torch.exp(torch.rand(batch_size)*9 - 6) if self.scaleinv else None
+        gen_fct = self._generate_mixture if self.mixture else self._generate
         if self.return_params:
-            outputs, dists = zip(*[self._generate_mixture(batch_size, scale=scale, return_params=True, **kwargs) for _ in range(self.num_outputs)])
+            outputs, dists = zip(*[gen_fct(batch_size, scale=scale, return_params=True, **kwargs) for _ in range(self.num_outputs)])
         else:
-            outputs = [self._generate_mixture(batch_size, scale=scale, **kwargs) for _ in range(self.num_outputs)]
+            outputs = [gen_fct(batch_size, scale=scale, **kwargs) for _ in range(self.num_outputs)]
         if self.normalize:
             avg_norm = torch.cat(outputs, dim=1).norm(dim=-1,keepdim=True).mean(dim=1,keepdim=True)
             for i in range(len(outputs)):
@@ -660,6 +692,10 @@ def test_dist(d1, d2, n1, n2, N, k=1, bs=64):
         kl += kl_knn(X=X, Y=Y, k=k).sum(dim=0)
     return kl / N
 
+
+def matrix_pow(X, p):
+    evals, evecs = torch.linalg.eig(X)
+    return (evecs.matmul(torch.diag_embed(evals.pow(p))).matmul(evecs.transpose(1,2))).real
 
 def whiten(X):
     mu = X.mean(dim=1, keepdim=True)
