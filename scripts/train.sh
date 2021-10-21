@@ -21,4 +21,4 @@ then
     argstring="--target kl"
 fi
 
-python3 train.py $1 --data $3 --checkpoint_name $SLURM_JOB_ID $argstring --equi
+python3 train.py $1 --data $3 --checkpoint_name $SLURM_JOB_ID $argstring --equi --num_inds $4
