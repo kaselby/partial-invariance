@@ -35,7 +35,7 @@ def evaluate_fct(fct, dataset, append_missing=False):
         _, missing_labels = dataset.get_invalid()
         n_missing = len(missing_labels)
         all_logits = torch.cat([all_logits, torch.zeros(n_missing)], dim=0)
-        all_labels = torch.cat([all_logits, torch.Tensor(missing_labels)], dim=0)
+        all_labels = torch.cat([all_labels, torch.Tensor(missing_labels)], dim=0)
     
     def get_accuracy(labels, logits):
         return ((labels*2 - 1) * logits > 0).float().sum() / logits.size(0)
@@ -61,7 +61,7 @@ def parse_args():
 
 if __name__ == '__main__':
     args = parse_args()
-    dataset = HyponomyDataset.from_file(args.dataset, args.data_dir, args.vec_dir, args.voc_dir, pca_dim=args.pca_dim, max_vecs=args.max_vecs)
+    dataset = HyponomyDataset.from_file(args.dataset, args.data_dir, args.vec_dir, args.voc_dir, pca_dim=args.pca_dim, min_threshold=args.pca_dim, max_vecs=args.max_vecs)
 
     model = torch.load(os.path.join("runs", args.run_name, 'model.pt'))
     baseline_fcts = {'avg_nn_dist': avg_cross_nn_dist, 'kl':kl_knn}
