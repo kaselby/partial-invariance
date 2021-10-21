@@ -133,7 +133,7 @@ if __name__ == '__main__':
     device = torch.device("cuda:0")
 
     if True:
-        DIM=2
+        DIM=32
         if args.model == 'csab':
             model_kwargs={'ln':True, 'remove_diag':True, 'num_blocks':2, 'equi':args.equi, 'output_size':1, 'num_heads':4, 'num_inds':args.num_inds}
             if args.equi:
