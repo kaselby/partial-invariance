@@ -136,7 +136,7 @@ class HyponomyDataset(Dataset):
         valid_indices=None
         if min_threshold >= 0:
             valid_indices = cls._trim_dataset(vecs, pairs, min_threshold)
-            print("Dataset contains %d pairs. %d pairs removed after filtering." % (n0, n0-len(pairs)))
+            print("Dataset contains %d pairs. %d pairs removed after filtering." % (n0, n0-len(valid_indices)))
         return cls(vecs, relations, pairs, labels, pca_dim=pca_dim, max_vecs=max_vecs, valid_indices=valid_indices)
 
     def __init__(self, vecs, relations, pairs, labels, pca_dim=-1, max_vecs=-1, valid_indices=None):
@@ -272,7 +272,7 @@ def evaluate(model, dataset, batch_size=64, append_missing=False):
         _, missing_labels = dataset.get_invalid()
         n_missing = len(missing_labels)
         all_logits = torch.cat([all_logits, torch.zeros(n_missing)], dim=0)
-        all_labels = torch.cat([all_logits, torch.Tensor(missing_labels)], dim=0)
+        all_labels = torch.cat([all_labels, torch.Tensor(missing_labels)], dim=0)
     
     def get_accuracy(labels, logits):
         return ((labels*2 - 1) * logits > 0).float().sum() / logits.size(0)
