@@ -379,7 +379,7 @@ def wasserstein2(X, Y, **kwargs):
     loss = SamplesLoss(p=2, **kwargs)
     return loss(X, Y)
 
-def wasserstein2_gaussian(P, Q):
+def wasserstein2_gaussian(P, Q, X=None):
     mu1, Sigma1 = P.loc, P.covariance_matrix
     mu2, Sigma2 = Q.loc, Q.covariance_matrix
     s1 = matrix_pow(Sigma1, 1./2)
