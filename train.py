@@ -26,6 +26,8 @@ def parse_args():
     parser.add_argument('--blur', type=float, default=0.05)
     parser.add_argument('--equi', action='store_true')
     parser.add_argument('--num_inds', type=int, default=-1)
+    parser.add_argument('--num_blocks', type=int, default=2)
+    parser.add_argument('--num_heads', type=int, default=4)
 
     return parser.parse_args()
 
@@ -135,7 +137,7 @@ if __name__ == '__main__':
     if True:
         DIM=32
         if args.model == 'csab':
-            model_kwargs={'ln':True, 'remove_diag':True, 'num_blocks':2, 'equi':args.equi, 'output_size':1, 'num_heads':4, 'num_inds':args.num_inds}
+            model_kwargs={'ln':True, 'remove_diag':True, 'num_blocks':args.num_blocks, 'equi':args.equi, 'output_size':1, 'num_heads':args.num_heads, 'num_inds':args.num_inds}
             if args.equi:
                 model_kwargs['input_size'] = 1
                 model_kwargs['latent_size'] = 32
