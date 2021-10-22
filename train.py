@@ -28,6 +28,8 @@ def parse_args():
     parser.add_argument('--num_inds', type=int, default=-1)
     parser.add_argument('--num_blocks', type=int, default=2)
     parser.add_argument('--num_heads', type=int, default=4)
+    parser.add_argument('--batch_size', type=int, default=64)
+    parser.add_argument('--steps', type=int, default=60000)
 
     return parser.parse_args()
 
@@ -155,8 +157,8 @@ if __name__ == '__main__':
         model_kwargs={'ln':True, 'remove_diag':True, 'num_blocks':2, 'num_heads':4}
         model = EquiMultiSetTransformer1(1,1,dim_hidden=32, **model_kwargs).to(device)
 
-    batch_size=64
-    steps=60000
+    batch_size=args.batch_size
+    steps=args.steps
 
     if torch.cuda.device_count() > 1:
         n_gpus = torch.cuda.device_count()
