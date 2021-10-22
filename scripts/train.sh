@@ -13,12 +13,15 @@ run_name=$1
 target=$2
 data=$3
 
-if [ $target == "wasserstein" ]
+if [ $target == "w1" ]
 then
-    argstring="--target wasserstein --normalize --blur 0.001 --scaling 0.98"
+    argstring="--normalize --blur 0.001 --scaling 0.98"
+elif [ $target == "w2" ]
+then
+    argstring="--normalize"
 elif [ $target == "kl" ]
 then
-    argstring="--target kl"
+    argstring=""
 fi
 
-python3 train.py $1 --data $3 --checkpoint_name $SLURM_JOB_ID $argstring --equi --num_inds $4
+python3 train.py $1 --target $2 --data $3 --checkpoint_name $SLURM_JOB_ID $argstring --equi --num_inds $4
