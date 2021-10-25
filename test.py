@@ -45,12 +45,13 @@ if __name__ == '__main__':
 
     for name,generator in generators.items():
         print("%s:"%name)
+        seed = torch.randint(100, (1,)).item()
         for run_name in args.run_names:
             model = torch.load(os.path.join("runs", run_name, "model.pt"))
             model_loss = evaluate(model, generator, label_fct, 
-                sample_kwargs=sample_kwargs, steps=500, criterion=nn.L1Loss(), normalize=normalize, exact_loss=exact_loss)
+                sample_kwargs=sample_kwargs, steps=500, criterion=nn.L1Loss(), normalize=normalize, exact_loss=exact_loss, seed=seed)
             print("%s Loss: %f" % (run_name, model_loss))
         for baseline_name, baseline_fct in baselines.items():
             baseline_loss = evaluate(baseline_fct, generator, label_fct, 
-                sample_kwargs=sample_kwargs, steps=500, criterion=nn.L1Loss(), normalize=False, exact_loss=exact_loss)
+                sample_kwargs=sample_kwargs, steps=500, criterion=nn.L1Loss(), normalize=False, exact_loss=exact_loss, seed=seed)
             print("%s Loss: %f" % (baseline_name, baseline_loss))
