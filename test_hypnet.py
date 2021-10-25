@@ -64,14 +64,14 @@ if __name__ == '__main__':
     dataset = HyponomyDataset.from_file(args.dataset, args.data_dir, args.vec_dir, args.voc_dir, pca_dim=args.pca_dim, min_threshold=args.pca_dim, max_vecs=args.max_vecs)
 
     model = torch.load(os.path.join("runs", args.run_name, 'model.pt'))
-    baseline_fcts = {'avg_nn_dist': avg_cross_nn_dist, 'kl':kl_knn}
+    baseline_fcts = {'kl':kl_knn}
 
-    model_acc, model_prec = evaluate(model, dataset, append_missing=True)
+    model_acc, model_prec = evaluate(model, dataset, append_missing=args.append_missing)
     print("Model Accuracy: %f" % model_acc)
     print("Model Precision: %f" % model_prec)
 
     for name, fct in baseline_fcts.items():
-        baseline_acc, baseline_prec = evaluate_fct(fct, dataset, append_missing=True)
+        baseline_acc, baseline_prec = evaluate_fct(fct, dataset, append_missing=args.append_missing)
         print("%s Accuracy: %f" % (name, baseline_acc))
         print("%s Precision: %f" % (name, baseline_prec))
 
