@@ -18,13 +18,14 @@ if __name__ == '__main__':
         append_missing = (len(split) > 2 and split[2][:2] == 'am')
         with open(file, 'r') as reader:
             lines = reader.readlines()
+            
         assert len(lines) % 2 == 0
         def get_val(line):
             return float(line.split(" ")[-1].strip())
 
         if not dataset in results:
             results[dataset] = {}
-        for i in range(len(lines)/2):
+        for i in range(int(len(lines)/2)):
             j = 2*i
             baseline_name = lines[j].split(" ")[0]
             baseline_acc, baseline_prec = get_val(lines[j]), get_val(lines[j+1])
