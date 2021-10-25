@@ -167,7 +167,7 @@ if __name__ == '__main__':
         model = nn.DataParallel(model)
         batch_size *= n_gpus
         steps = int(steps/n_gpus)
-    sample_kwargs={'set_size':(10,150)}
+    sample_kwargs={'set_size':(100,300)}
     
     if args.equi:
         sample_kwargs['dims'] = (24,40)

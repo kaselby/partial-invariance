@@ -46,7 +46,7 @@ if __name__ == '__main__':
     for name,generator in generators.items():
         print("%s:"%name)
         for run_name in args.run_names:
-            model = torch.load(os.path.join("runs", args.run_name, "model.pt"))
+            model = torch.load(os.path.join("runs", run_name, "model.pt"))
             model_loss = evaluate(model, generator, label_fct, 
                 sample_kwargs=sample_kwargs, steps=500, criterion=nn.L1Loss(), normalize=args.normalize, exact_loss=exact_loss)
             print("%s Loss: %f" % (run_name, model_loss))
