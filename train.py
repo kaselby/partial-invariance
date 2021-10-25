@@ -10,6 +10,7 @@ import shutil
 import glob
 import tqdm
 import numpy as np
+import random
 
 def parse_args():
     parser = argparse.ArgumentParser()
