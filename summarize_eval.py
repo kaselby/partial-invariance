@@ -18,7 +18,7 @@ if __name__ == '__main__':
         append_missing = (len(split) > 2 and split[2][:2] == 'am')
         with open(file, 'r') as reader:
             lines = reader.readlines()
-            
+
         assert len(lines) % 2 == 0
         def get_val(line):
             return float(line.split(" ")[-1].strip())
@@ -43,8 +43,9 @@ if __name__ == '__main__':
         for dataset in results.keys():
             writer.write(dataset+":\n")
             for baseline in results[dataset].keys():
-                writer.write("\t%s:\n" % baseline)
+                writer.write("\t%s:" % baseline)
                 for key, val in results[dataset][baseline].items():
-                    writer.write("\t\t%s: %d\n" % (key, val))
+                    writer.write("\t%s: %f" % (key, val))
+                writer.write('\t')
         
 
