@@ -16,7 +16,7 @@ def parse_args():
     parser.add_argument('--target', type=str, default='wasserstein')
     parser.add_argument('--model', type=str, default='csab')
     parser.add_argument('--data', type=str, default='gmm')
-    parser.add_argument('--normalize', action='store_true')
+    parser.add_argument('--normalize', type=str, choices=('none', 'scale', 'whiten'))
     #parser.add_argument('--norm_in', action='store_true')
     #parser.add_argument('--norm_out', action='store_true')
     parser.add_argument('--scaleinv', action='store_true')
@@ -47,19 +47,22 @@ def evaluate(model, baselines, generator, label_fct, exact_loss=False, batch_siz
                 #if use_cuda:
                     #X = [x.cuda() for x in X]
                     #theta = [t.cuda() for t in theta]
-                if normalize:
-                    Xnorm, avg_norm = normalize_sets(*X)
+
                 labels = label_fct(*theta, X=X[0], **label_kwargs).squeeze(-1)
             else:
                 X = generator(batch_size, **sample_kwargs)
                 #if use_cuda:
                     #X = [x.cuda() for x in X]
-                if normalize:
+                if normalize == 'scale':
                     Xnorm, avg_norm = normalize_sets(*X)
                 labels = label_fct(*X, **label_kwargs)
-            if normalize:
+            if normalize == 'scale':
+                Xnorm, avg_norm = normalize_sets(*X)
                 out = model(*Xnorm).squeeze(-1)
                 out *= avg_norm.squeeze(-1).squeeze(-1)
+            elif normalize == 'whiten':
+                Xnorm = whiten_split(*X)
+                out = model(*Xnorm).squeeze(-1)
             else:
                 out = model(*X).squeeze(-1)
             model_loss = criterion(out, labels)
@@ -70,7 +73,7 @@ def evaluate(model, baselines, generator, label_fct, exact_loss=False, batch_siz
     return sum(model_losses)/len(model_losses), {k:sum(v)/len(v) for k,v in baseline_losses.items()}
 
 def train(model, sample_fct, label_fct, baselines={}, exact_loss=False, criterion=nn.L1Loss(), batch_size=64, steps=3000, lr=1e-5, 
-    checkpoint_dir=None, output_dir=None, save_every=1000, sample_kwargs={}, label_kwargs={}, normalize=False):
+    checkpoint_dir=None, output_dir=None, save_every=1000, sample_kwargs={}, label_kwargs={}, normalize='none'):
     #model.train(True)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     losses = []
@@ -91,16 +94,18 @@ def train(model, sample_fct, label_fct, baselines={}, exact_loss=False, criterio
             #if use_cuda:
                 #X = [x.cuda() for x in X]
                 #theta = [t.cuda() for t in theta]
-            if normalize:
+            if normalize == 'scale':
                 X, avg_norm = normalize_sets(*X)
             labels = label_fct(*theta, X=X[0], **label_kwargs).squeeze(-1)
         else:
             X = sample_fct(batch_size, **sample_kwargs)
             #if use_cuda:
                 #X = [x.cuda() for x in X]
-            if normalize:
+            if normalize == 'scale':
                 X, avg_norm = normalize_sets(*X)
             labels = label_fct(*X, **label_kwargs)
+        if normalize == 'whiten':
+            X = whiten_split(*X)
         loss = criterion(model(*X).squeeze(-1), labels)
         loss.backward()
         optimizer.step()

@@ -15,13 +15,13 @@ data=$3
 
 if [ $target == "w1" ]
 then
-    argstring="--normalize --blur 0.001 --scaling 0.98"
+    argstring="--normalize scale --blur 0.001 --scaling 0.98"
 elif [ $target == "w2" ]
 then
-    argstring="--normalize"
+    argstring="--normalize scale"
 elif [ $target == "kl" ]
 then
-    argstring=""
+    argstring="--normalize whiten"
 fi
 
 python3 train.py $1 --target $2 --data $3 --checkpoint_name $SLURM_JOB_ID $argstring --equi --num_inds $4
