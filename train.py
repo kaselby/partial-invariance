@@ -9,6 +9,7 @@ import os
 import shutil
 import glob
 import tqdm
+import numpy as np
 
 def parse_args():
     parser = argparse.ArgumentParser()
