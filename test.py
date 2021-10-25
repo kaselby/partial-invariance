@@ -14,9 +14,10 @@ from train import evaluate
 use_cuda=torch.cuda.is_available()
 
 
+
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('run_name', type=str)
+    parser.add_argument('run_names', type=str, nargs='+')
     parser.add_argument('--target', type=str, default='wasserstein')
     parser.add_argument('--normalize', action='store_true')
 
@@ -26,7 +27,7 @@ if __name__ == '__main__':
     args = parse_args()
     print("test")
 
-    model = torch.load(os.path.join("runs", args.run_name, "model.pt"))
+    
 
     sample_kwargs={'n':32, 'set_size':(10,150)}
     if args.target == 'wasserstein':
@@ -42,10 +43,13 @@ if __name__ == '__main__':
     generators = {'gmm':GaussianGenerator(num_outputs=2, return_params=exact_loss), 'nf':NFGenerator(32, 3, num_outputs=2, return_params=exact_loss)}
 
     for name,generator in generators.items():
-        model_loss, baseline_losses = evaluate(model, baselines, generator, label_fct, 
-            sample_kwargs=sample_kwargs, steps=1000, criterion=nn.L1Loss(), normalize=args.normalize, exact_loss=exact_loss)
-
         print("%s:"%name)
-        print("Model Loss:", model_loss)
-        for baseline_name, baseline_loss in baseline_losses.items():
-            print("%s Losses:" % baseline_name, baseline_loss)
+        for run_name in args.run_names:
+            model = torch.load(os.path.join("runs", args.run_name, "model.pt"))
+            model_loss = evaluate(model, generator, label_fct, 
+                sample_kwargs=sample_kwargs, steps=500, criterion=nn.L1Loss(), normalize=args.normalize, exact_loss=exact_loss)
+            print("%s Loss: %f" % (run_name, model_loss))
+        for baseline_name, baseline_fct in baselines.items():
+            baseline_loss = evaluate(baseline_fct, generator, label_fct, 
+                sample_kwargs=sample_kwargs, steps=500, criterion=nn.L1Loss(), normalize=args.normalize, exact_loss=exact_loss)
+            print("%s Loss: %f" % baseline_name, baseline_loss)

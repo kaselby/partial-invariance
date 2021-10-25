@@ -720,5 +720,9 @@ def whiten_split(X,Y):
     Dp = whiten(D)
     return Dp[:, :n], Dp[:, n:]
 
+def normalize_sets(*X):
+    avg_norm = torch.cat(X, dim=1).norm(dim=-1,keepdim=True).mean(dim=1,keepdim=True)
+    return [x / avg_norm for x in X], avg_norm
+
 
     

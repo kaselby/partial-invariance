@@ -33,28 +33,21 @@ def parse_args():
 
     return parser.parse_args()
 
-def normalize_sets(*X):
-    avg_norm = torch.cat(X, dim=1).norm(dim=-1,keepdim=True).mean(dim=1,keepdim=True)
-    return [x / avg_norm for x in X], avg_norm
 
-def evaluate(model, baselines, generator, label_fct, exact_loss=False, batch_size=64, sample_kwargs={}, label_kwargs={}, criterion=nn.L1Loss(), steps=5000, normalize=False):
+
+def evaluate(model, generator, label_fct, exact_loss=False, batch_size=64, sample_kwargs={}, label_kwargs={}, criterion=nn.L1Loss(), steps=5000, normalize=False, seed=None):
+    if seed is not None:
+        torch.manual_seed(seed)
+        np.random.seed(seed)
+        random.seed(seed)
     model_losses = []
-    baseline_losses = {k:[] for k in baselines.keys()}
     with torch.no_grad():
         for i in tqdm.tqdm(range(steps)):
             if exact_loss:
                 X, theta = generator(batch_size, **sample_kwargs)
-                #if use_cuda:
-                    #X = [x.cuda() for x in X]
-                    #theta = [t.cuda() for t in theta]
-
                 labels = label_fct(*theta, X=X[0], **label_kwargs).squeeze(-1)
             else:
                 X = generator(batch_size, **sample_kwargs)
-                #if use_cuda:
-                    #X = [x.cuda() for x in X]
-                if normalize == 'scale':
-                    Xnorm, avg_norm = normalize_sets(*X)
                 labels = label_fct(*X, **label_kwargs)
             if normalize == 'scale':
                 Xnorm, avg_norm = normalize_sets(*X)
@@ -67,10 +60,7 @@ def evaluate(model, baselines, generator, label_fct, exact_loss=False, batch_siz
                 out = model(*X).squeeze(-1)
             model_loss = criterion(out, labels)
             model_losses.append(model_loss.item())
-            for baseline_name, baseline_fct in baselines.items():
-                baseline_loss = criterion(baseline_fct(*X), labels)
-                baseline_losses[baseline_name].append(baseline_loss.item())
-    return sum(model_losses)/len(model_losses), {k:sum(v)/len(v) for k,v in baseline_losses.items()}
+    return sum(model_losses)/len(model_losses)
 
 def train(model, sample_fct, label_fct, baselines={}, exact_loss=False, criterion=nn.L1Loss(), batch_size=64, steps=3000, lr=1e-5, 
     checkpoint_dir=None, output_dir=None, save_every=1000, sample_kwargs={}, label_kwargs={}, normalize='none'):
@@ -118,9 +108,15 @@ def train(model, sample_fct, label_fct, baselines={}, exact_loss=False, criterio
                 os.remove(checkpoint_path)
             torch.save({'model':model,'optimizer':optimizer, 'step': i, 'losses':losses}, checkpoint_path)
 
-    model_loss, baseline_losses = evaluate(model, baselines, sample_fct, label_fct, exact_loss=exact_loss, 
+    seed = torch.randint(100, (1,)).item()
+    model_loss = evaluate(model, sample_fct, label_fct, exact_loss=exact_loss, 
         batch_size=batch_size, label_kwargs=label_kwargs, sample_kwargs=sample_kwargs, criterion=criterion, 
-        steps=500, normalize=normalize)
+        steps=500, normalize=normalize, seed=seed)
+    baseline_losses = {}
+    for baseline, baseline_fct in baselines.items():
+        baseline_losses[baseline] = evaluate(baseline_fct, sample_fct, label_fct, exact_loss=exact_loss, 
+            batch_size=batch_size, label_kwargs=label_kwargs, sample_kwargs=sample_kwargs, criterion=criterion, 
+            steps=500, normalize=normalize, seed=seed)
 
     torch.save(model._modules['module'], os.path.join(output_dir,"model.pt"))  
     torch.save({'losses':losses, 'eval_losses':{'model':model_loss, **baseline_losses}}, os.path.join(output_dir,"logs.pt"))   
@@ -201,7 +197,7 @@ if __name__ == '__main__':
         exact_loss=True
         lr = 1e-5
         sample_kwargs['nu']=3
-        sample_kwargs['mu0']=1
+        sample_kwargs['mu0']=0.5
         sample_kwargs['s0']=0.5
         criterion=nn.L1Loss()
         mixture=True
