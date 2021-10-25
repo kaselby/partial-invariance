@@ -1,6 +1,7 @@
 import argparse
 import os
 import glob
+import csv
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -40,7 +41,17 @@ if __name__ == '__main__':
             else:
                 results[dataset][baseline_name]['acc'] = baseline_acc
                 results[dataset][baseline_name]['prec'] = baseline_prec
-    
+
+    csvfile = os.path.join("runs", args.run_name, "eval-results.csv")
+    with open(csvfile, 'w') as file:
+        csvwriter = csv.writer(file)
+        csvwriter.writerow(["Dataset", "Baseline", "Acc", "Prec", "Acc-AM", "Prec-AM"])
+        for dataset in results.keys():
+            for baseline, baseline_results in results[dataset].items():
+                headers = ['acc','prec','acc-am','prec-am']
+                row = [dataset, baseline, *[baseline_results[key] if key in baseline_results else -1 for key in headers]]
+                csvwriter.writerow(row)
+
     outfile = os.path.join("runs", args.run_name, "eval-results.txt")
     with open(outfile, 'w') as writer:
         for dataset in results.keys():
