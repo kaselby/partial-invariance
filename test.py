@@ -19,7 +19,6 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('run_names', type=str, nargs='+')
     parser.add_argument('--target', type=str, default='wasserstein')
-    parser.add_argument('--normalize', action='store_true')
 
     return parser.parse_args()
 
@@ -34,10 +33,12 @@ if __name__ == '__main__':
         baselines = {'sinkhorn_default':wasserstein, 'sinkhorn_exact': lambda X,Y: wasserstein(X,Y, blur=0.001,scaling=0.98)}
         label_fct=wasserstein_exact
         exact_loss=False
+        normalize='scale'
     elif args.target == 'kl':
         baselines = {'knn':kl_knn}
         label_fct=kl_mc
         exact_loss=True
+        normalize='whiten'
     else:
         raise NotImplementedError()
     generators = {'gmm':GaussianGenerator(num_outputs=2, return_params=exact_loss), 'nf':NFGenerator(32, 3, num_outputs=2, return_params=exact_loss)}

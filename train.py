@@ -151,7 +151,7 @@ if __name__ == '__main__':
                 model_kwargs['hidden_size'] = 384
             model=MultiSetTransformer(**model_kwargs).to(device)
         elif args.model == 'pine':
-            model = PINE(DIM, 32, 8, 2, 384, 1).to(device)
+            model = PINE(DIM, 32, 16, 2, 384, 1).to(device)
         else:
             raise NotImplementedError()
     else:
