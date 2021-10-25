@@ -603,7 +603,7 @@ class BatchOfFlows(nn.Module):
 
     def log_prob(self, x):
         u = torch.zeros_like(x)
-        log_jacob = torch.zeros(*x.size()[:-1],1)
+        log_jacob = torch.zeros(*x.size()[:-1],1).to(x.device)
         for i in range(self.num_blocks-1, -1, -1):
             for i_col in range(x.size(-1)):
                 h = F.relu(torch.bmm(u, (self.weight1[:,i] * self.input_mask).transpose(1,2)) + self.bias1[:,i].unsqueeze(1))
