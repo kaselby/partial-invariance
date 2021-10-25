@@ -53,4 +53,4 @@ if __name__ == '__main__':
         for baseline_name, baseline_fct in baselines.items():
             baseline_loss = evaluate(baseline_fct, generator, label_fct, 
                 sample_kwargs=sample_kwargs, steps=500, criterion=nn.L1Loss(), normalize=normalize, exact_loss=exact_loss)
-            print("%s Loss: %f" % baseline_name, baseline_loss)
+            print("%s Loss: %f" % (baseline_name, baseline_loss))
