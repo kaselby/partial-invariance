@@ -371,19 +371,29 @@ def wasserstein_exact(X, Y):
         dists = dists.cuda()
     return dists
 
+def wasserstein2_exact(X, Y):
+    bs = X.size(0)
+    dists = torch.zeros(bs)
+    for i in range(bs):
+        costs = ot.dist(X[i].cpu().detach().numpy(), Y[i].cpu().detach().numpy(), metric='sqeuclidean')
+        dists[i] = ot.emd2([],[],costs)
+    if use_cuda:
+        dists = dists.cuda()
+    return dists
+
 def wasserstein(X, Y, **kwargs):
     loss = SamplesLoss(p=1, **kwargs)
     return loss(X, Y)
 
 def wasserstein2(X, Y, **kwargs):
     loss = SamplesLoss(p=2, **kwargs)
-    return loss(X, Y)
+    return loss(X, Y)*2
 
 def wasserstein2_gaussian(P, Q, X=None):
     mu1, Sigma1 = P.loc, P.covariance_matrix
     mu2, Sigma2 = Q.loc, Q.covariance_matrix
     s1 = matrix_pow(Sigma1, 1./2)
-    return (mu2-mu1).norm(dim=-1).pow(2) + torch.diag(Sigma1 + Sigma2 - 2 * matrix_pow(s1.matmul(Sigma2).matmul(s1), 1./2)).sum()
+    return ((mu2-mu1).norm(dim=-1).pow(2) + torch.diagonal(Sigma1 + Sigma2 - 2 * matrix_pow(s1.matmul(Sigma2).matmul(s1), 1./2), dim1=-2, dim2=-1).sum(dim=-1)).sqrt()
 
 '''
 def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(), batch_size=64, steps=3000, lr=1e-5, lr_decay=False, epoch_size=250, milestones=[], *sample_args, **sample_kwargs):
@@ -538,7 +548,7 @@ class GaussianGenerator():
         else:
             return samples.float().contiguous()
 
-    def _generate_mixture(self, batch_size, n, return_params=False, set_size=(100,150), component_range=(3,10), scale=None, nu=1, mu0=0, s0=1):
+    def _generate_mixture(self, batch_size, n, return_params=False, set_size=(100,150), component_range=(1,10), scale=None, nu=1, mu0=0, s0=1):
         n_samples = torch.randint(*set_size,(1,))
         n_components = torch.randint(*component_range,(1,)).item()
         mus= torch.rand(size=(batch_size, n_components, n))

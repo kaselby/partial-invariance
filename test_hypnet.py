@@ -77,6 +77,7 @@ if __name__ == '__main__':
 
 
     outdir=os.path.join(args.output_dir, args.run_name, "eval")
+    suffix = "results-%s.txt"%args.dataset if not args.append_missing else "results-%s-am.txt"%args.dataset
     outfile = os.path.join(outdir, "results-%s.txt"%args.dataset)
     if not os.path.exists(outdir):
         os.makedirs(outdir)
