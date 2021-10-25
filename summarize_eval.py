@@ -13,9 +13,12 @@ if __name__ == '__main__':
     dirname = os.path.join("runs", args.run_name, 'eval')
     results={}
     for file in glob.glob(os.path.join(dirname, "*.txt")):
-        split = file.split('-')
-        dataset = split[1]
-        append_missing = (len(split) > 2 and split[2][:2] == 'am')
+        append_missing = 'am' in file.split('/')[-1]
+        if append_missing:
+            dataset = file.split('-')[1]
+        else:
+            dataset = file.split('-')[1][:-4]
+
         with open(file, 'r') as reader:
             lines = reader.readlines()
 
