@@ -46,6 +46,6 @@ if __name__ == '__main__':
                 writer.write("\t%s:" % baseline)
                 for key, val in results[dataset][baseline].items():
                     writer.write("\t%s: %f" % (key, val))
-                writer.write('\t')
+                writer.write('\n')
         
 
