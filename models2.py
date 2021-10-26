@@ -277,6 +277,14 @@ class MultiSetTransformer(nn.Module):
         out = self.dec(torch.cat([ZX, ZY], dim=-1))
         return out.squeeze(-1)
 
+
+
+
+
+#
+#   PINE
+#
+
 import torch.nn.functional as F
 class PINE(nn.Module):
     def __init__(self, input_size, proj_size, n_proj, n_sets, hidden_size, output_size):
@@ -314,3 +322,160 @@ class PINE(nn.Module):
         z_stacked = torch.cat(z, dim=-1)
         h = torch.sigmoid(z_stacked.matmul(self.W_h.t()))
         return self.C(h)
+
+class EquiPINE(nn.Module):
+    def __init__(self, latent_size, proj_size, n_proj, n_sets, hidden_size, output_size):
+        super().__init__()
+        self.latent_size = latent_size
+        self.proj_size = proj_size
+        self.n_proj = n_proj
+        self.n_sets = n_sets
+        for i in range(n_sets):
+            self.register_parameter('P_%d'%i, nn.Parameter(torch.empty(latent_size, 1)))
+            self.register_parameter('U_%d'%i, nn.Parameter(torch.empty(n_proj, proj_size, 1)))
+            self.register_parameter('A_%d'%i, nn.Parameter(torch.empty(n_proj, 1, latent_size)))
+            self.register_parameter('V_%d'%i, nn.Parameter(torch.empty(n_proj * proj_size)))
+        self.W_h = nn.Parameter(torch.empty(hidden_size, n_sets * n_proj * proj_size))
+        self.C = nn.Linear(hidden_size, output_size)
+
+        self._init_params()
+
+    def _init_params(self):
+        for i in range(self.n_sets):
+            nn.init.kaiming_uniform_(getattr(self,'U_%d'%i), a=math.sqrt(5))
+            nn.init.kaiming_uniform_(getattr(self,'A_%d'%i), a=math.sqrt(5))
+            W_g_i = torch.matmul(getattr(self,'U_%d'%i), getattr(self,'A_%d'%i))
+            fan_in, _ = nn.init._calculate_fan_in_and_fan_out(W_g_i)
+            bound = 1 / math.sqrt(fan_in) if fan_in > 0 else 0
+            nn.init.uniform_(getattr(self,'V_%d'%i), -bound, bound)
+        nn.init.kaiming_uniform_(self.W_h, a=math.sqrt(5))
+
+    def forward(self, *X):
+        #assume X is a list of tensors of size bs x n_k x d each
+        z = []
+        for i in range(self.n_sets):
+            X_i = torch.matmul(X[i].unsqueeze(-1), getattr(self, 'P_%d'%i).transpose(0,1))
+            W_g_i = torch.matmul(getattr(self,'U_%d'%i), getattr(self,'A_%d'%i)).view(-1, self.latent_size)
+            g = torch.sigmoid(X_i.matmul(W_g_i.transpose(-1,-2)) + getattr(self,'V_%d'%i))
+            z.append(g.max(dim=2).sum(dim=1))
+        z_stacked = torch.cat(z, dim=-1)
+        h = torch.sigmoid(z_stacked.matmul(self.W_h.t()))
+        return self.C(h)
+
+
+#
+#   RN
+#
+
+class RelationNetwork(nn.Module):
+    def __init__(self, net, remove_diag=False, pool='sum'):
+        super().__init__()
+        self.net = net
+        self.remove_diag = remove_diag
+        self.pool = pool
+    
+    def forward(self, X, Y):
+        N = X.size(1)
+        M = Y.size(1)
+        pairs = torch.cat([Y.unsqueeze(1).expand(-1,N,-1,*Y.size()[2:]), X.unsqueeze(2).expand(-1,-1,M,*X.size()[2:])], dim=-1)
+        Z = self.net(pairs)
+        if self.remove_diag:
+            mask = torch.eye(N, N).unsqueeze(0).unsqueeze(-1) * -999999999
+            if use_cuda:
+                mask=mask.cuda()
+            Z = Z + mask
+        if self.pool == 'sum':
+            Z = torch.sum(Z, dim=2)
+        elif self.pool == 'max':
+            Z = torch.max(Z, dim=2)[0]
+        else:
+            raise NotImplementedError()
+        return Z
+
+class RNBlock(nn.Module):
+    def __init__(self, latent_size, hidden_size, remove_diag=False, ln=False, pool='sum'):
+        super().__init__()
+        net = nn.Sequential(nn.Linear(latent_size, hidden_size), nn.ReLU(), nn.Linear(hidden_size, latent_size))
+        self.rn = RelationNetwork(net, remove_diag, pool)
+        self.fc = nn.Sequential(nn.Linear(latent_size, hidden_size), nn.ReLU(), nn.Linear(hidden_size, latent_size))
+        if ln:
+            self.ln0 = nn.LayerNorm(latent_size)
+            self.ln1 = nn.LayerNorm(latent_size)
+
+    def forward(self, X):
+        Z = X + self.rn(X)
+        Z = Z if getattr(self, 'ln0', None) is None else self.ln0(Z)
+        Z = Z + self.fc(Z)
+        Z = Z if getattr(self, 'ln1', None) is None else self.ln1(Z)
+        return Z
+
+class MultiRNBlock(nn.Module):
+    def __init__(self, latent_size, hidden_size, remove_diag=False, pool='sum', ln=False):
+        super().__init__()
+        self.e_xx = RNBlock(latent_size, hidden_size, remove_diag=remove_diag, pool=pool, ln=ln)
+        self.e_xy = RNBlock(latent_size, hidden_size, remove_diag=False, pool=pool, ln=ln)
+        self.e_yx = RNBlock(latent_size, hidden_size, remove_diag=False, pool=pool, ln=ln)
+        self.e_yy = RNBlock(latent_size, hidden_size, remove_diag=remove_diag, pool=pool, ln=ln)
+        self.fc_X = nn.Linear(2*latent_size, latent_size)
+        self.fc_Y = nn.Linear(2*latent_size, latent_size)
+        self.remove_diag = remove_diag
+        self.pool = pool
+    
+    def forward(self, X, Y):
+        Z_XX = self.e_xx(X, X)
+        Z_XY = self.e_xy(X, Y)
+        Z_YX = self.e_yx(Y, X)
+        Z_YY = self.e_yy(Y, Y)
+        X_out = X + F.relu(self.fc_X(torch.cat([Z_XX, Z_XY], dim=-1)))
+        Y_out = X + F.relu(self.fc_Y(torch.cat([Z_YY, Z_YX], dim=-1)))
+
+        return X_out, Y_out
+
+
+class RNModel(nn.Module):
+    def __init__(self, input_size, latent_size, hidden_size, output_size, num_blocks=2, remove_diag=False, ln=False, pool1='sum', pool2='sum', equi=False):
+        super().__init__()
+        if equi:
+            input_size = 1
+        self.proj = nn.Linear(input_size, latent_size)
+        self.enc = nn.Sequential(*[RNBlock(latent_size, hidden_size, ln=ln, remove_diag=remove_diag, pool=pool1, equi=equi) for _ in range(num_blocks)])
+        self.dec = nn.Linear(latent_size, output_size)
+                
+    def forward(self, X):
+        Xproj = self.proj(X.unsqueeze(-1)) if self.equi else self.proj(X)
+        ZX = self.enc(Xproj)
+        if self.equi:
+            ZX = ZX.max(dim=2)[0]
+        if self.pool == 'sum':
+            ZX = torch.sum(ZX, dim=1)
+        elif self.pool == 'max':
+            ZX = torch.max(ZX, dim=1)[0]
+        else:
+            raise NotImplementedError()
+        return self.dec(ZX).squeeze(-1)
+
+class MultiRNModel(nn.Module):
+    def __init__(self, input_size, latent_size, hidden_size, output_size, num_blocks=2, remove_diag=False, ln=False, pool1='sum', pool2='sum', equi=False):
+        super().__init__()
+        if equi:
+            input_size = 1
+        self.proj = nn.Linear(input_size, latent_size)
+        self.enc = EncoderStack(*[MultiRNBlock(latent_size, hidden_size, ln=ln, remove_diag=remove_diag, equi=equi, pool=pool1) for i in range(num_blocks)])
+        self.dec = nn.Linear(2*latent_size, output_size)
+        self.remove_diag = remove_diag
+        self.equi=equi
+
+    def forward(self, X, Y, masks=None):
+        if self.equi:
+            Xproj, Yproj = self.proj(X.unsqueeze(-1)), self.proj(Y.unsqueeze(-1))
+        else:
+            Xproj, Yproj = self.proj(X), self.proj(Y)
+        ZX, ZY = self.enc((Xproj, Yproj), masks=masks)
+        if self.equi:
+            ZX = ZX.max(dim=2)[0]
+            ZY = ZY.max(dim=2)[0]
+        ZX = ZX.max(dim=1)[0]
+        ZY = ZY.max(dim=1)[0]
+        out = self.dec(torch.cat([ZX, ZY], dim=-1))
+        return out.squeeze(-1)
+
