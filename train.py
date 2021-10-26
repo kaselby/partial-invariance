@@ -206,7 +206,7 @@ if __name__ == '__main__':
         sample_kwargs['s0']=0.5
         criterion=nn.MSELoss()
         mixture=True
-        batch_size /= 4
+        batch_size = int(batch_size/4)
         if args.equi:
             sample_kwargs['dims'] = (2,4)
         else:
