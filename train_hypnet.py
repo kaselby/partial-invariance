@@ -74,7 +74,7 @@ def collate_batch_with_padding(inputs):
 
 class HyponomyDataset(Dataset):
     @staticmethod
-    def _read_dataset(dataset_path, min_threshold, inverted_pairs=False):
+    def _read_dataset(dataset_path, inverted_pairs=False):
         """Reads the hypernymy pairs, relation type and the true label from the given file and returns these
             four properties a separate lists.
 
@@ -147,8 +147,14 @@ class HyponomyDataset(Dataset):
         self.labels = labels
         self.pca_dim=pca_dim
         self.max_vecs=max_vecs
-        self.valid_indices = valid_indices
-        self.n = len(self.pairs) if valid_indices is None else len(valid_indices)
+        if valid_indices is None:
+            self.n = len(pairs)
+            self.valid_indices = range(self.n)
+        else:
+            self.n = len(valid_indices)
+            self.valid_indices = valid_indices
+        self.positive = [i for i in self.valid_indices if labels[i] == True]
+        self.negative = [i for i in self.valid_indices if labels[i] == False]
 
     def split(self, frac):
         n_split = int(frac * self.n)
@@ -179,6 +185,37 @@ class HyponomyDataset(Dataset):
         invalid_indices = [i for i in range(len(self.pairs)) if not i in self.valid_indices]
         return [self.pairs[i] for i in invalid_indices], [self.labels[i] for i in invalid_indices]
 
+    def get_classes(self):
+        return self.negative, self.positive
+
+
+class RandomSubsampler(torch.utils.data.Sampler):
+    r"""Samples elements randomly from a given list of indices, without replacement.
+
+    Args:
+        indices (sequence): a sequence of indices
+        generator (Generator): Generator used in sampling.
+    """
+    def __init__(self, dataset, idx_by_class, upsample=False, generator=None) -> None:
+        self.dataset = dataset
+        self.idx_by_class = idx_by_class
+        self.n_classes = len(self.idx_by_class)
+        if self.upsample:
+            self.n = max([len(class_i) for class_i in idx_by_class])
+        else:
+            self.n = min([len(class_i) for class_i in idx_by_class])
+        self.generator = generator
+
+    def __iter__(self):
+        samplers_by_class = [RandomSampler(self.idx_by_class[i], replacement=True, num_samples=self.n) for i in range(self.n_classes)]
+        for j_i in torch.randint(self.n_classes, size=(self.n,)):
+            t_j = next(samplers_by_class[j_i])
+            yield dataset[t_j]
+
+    def __len__(self) -> int:
+        return self.n
+
+
 def compare(w1, w2, vec_dicts, distance):
     vecs1 = vec_dicts[w1].cuda()
     vecs2 = vec_dicts[w2].cuda()
@@ -187,7 +224,7 @@ def compare(w1, w2, vec_dicts, distance):
 
 
 
-def train(model, dataset, steps, eval_dataset=None, batch_size=64, lr=1e-3, save_every=5000, log_every=10, checkpoint_dir=None, output_dir=None):
+def train(model, dataset, steps, eval_dataset=None, batch_size=64, lr=1e-3, save_every=5000, log_every=10, checkpoint_dir=None, output_dir=None, subsample='none'):
     optimizer = optim.Adam(model.parameters(), lr=lr)
     loss_fct = nn.BCEWithLogitsLoss()
 
@@ -204,7 +241,12 @@ def train(model, dataset, steps, eval_dataset=None, batch_size=64, lr=1e-3, save
             losses = load_dict['losses']
 
     while current_step < steps:
-        data_loader = DataLoader(dataset, batch_size=batch_size, sampler=RandomSampler(dataset, replacement=True), collate_fn=collate_batch_with_padding, drop_last=True)
+        if subsample == 'none':
+            sampler = RandomSampler(dataset, replacement=True)
+        else:
+            assert subsample == 'up' or subsample == 'down'
+            sampler = RandomSubsampler(dataset, dataset.get_classes(), upsample=(subsample=='up'))
+        data_loader = DataLoader(dataset, batch_size=batch_size, sampler=sampler, collate_fn=collate_batch_with_padding, drop_last=True)
         for data, masks, labels in tqdm.tqdm(data_loader):
             optimizer.zero_grad()
 
