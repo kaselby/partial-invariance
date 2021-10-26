@@ -13,6 +13,7 @@ from sklearn.metrics import average_precision_score
 
 from icr import ICRDict
 from models import MultiSetTransformer1
+from models2 import MultiSetTransformer
 
 use_cuda = torch.cuda.is_available()
 
@@ -196,14 +197,11 @@ class RandomSubsampler(torch.utils.data.Sampler):
         indices (sequence): a sequence of indices
         generator (Generator): Generator used in sampling.
     """
-    def __init__(self, dataset, idx_by_class, upsample=False, generator=None) -> None:
+    def __init__(self, dataset, idx_by_class, generator=None) -> None:
         self.dataset = dataset
         self.idx_by_class = idx_by_class
         self.n_classes = len(self.idx_by_class)
-        if self.upsample:
-            self.n = max([len(class_i) for class_i in idx_by_class])
-        else:
-            self.n = min([len(class_i) for class_i in idx_by_class])
+        self.n = len(dataset)
         self.generator = generator
 
     def __iter__(self):
@@ -224,7 +222,7 @@ def compare(w1, w2, vec_dicts, distance):
 
 
 
-def train(model, dataset, steps, eval_dataset=None, batch_size=64, lr=1e-3, save_every=5000, log_every=10, checkpoint_dir=None, output_dir=None, subsample='none'):
+def train(model, dataset, steps, eval_dataset=None, batch_size=64, lr=1e-3, save_every=5000, log_every=10, checkpoint_dir=None, output_dir=None, reweight=False):
     optimizer = optim.Adam(model.parameters(), lr=lr)
     loss_fct = nn.BCEWithLogitsLoss()
 
@@ -241,11 +239,10 @@ def train(model, dataset, steps, eval_dataset=None, batch_size=64, lr=1e-3, save
             losses = load_dict['losses']
 
     while current_step < steps:
-        if subsample == 'none':
-            sampler = RandomSampler(dataset, replacement=True)
+        if reweight:
+            sampler = RandomSubsampler(dataset, dataset.get_classes())   
         else:
-            assert subsample == 'up' or subsample == 'down'
-            sampler = RandomSubsampler(dataset, dataset.get_classes(), upsample=(subsample=='up'))
+            sampler = RandomSampler(dataset, replacement=True)
         data_loader = DataLoader(dataset, batch_size=batch_size, sampler=sampler, collate_fn=collate_batch_with_padding, drop_last=True)
         for data, masks, labels in tqdm.tqdm(data_loader):
             optimizer.zero_grad()
@@ -334,7 +331,8 @@ def parse_args():
     parser.add_argument('--vec_dir', type=str, default='./ICR/vecs/hypeval')
     parser.add_argument('--data_dir', type=str, default='./ICR/data')
     parser.add_argument('--pca_dim', type=int, default=10)
-    parser.add_argument('--hidden_size', type=int, default=128)
+    parser.add_argument('--hidden_size', type=int, default=512)
+    parser.add_argument('--latent_size', type=int, default=256)
     parser.add_argument('--n_heads', type=int, default=8)
     parser.add_argument('--n_blocks', type=int, default=2)
     parser.add_argument('--max_vecs', type=int, default=250)
@@ -344,6 +342,7 @@ def parse_args():
     parser.add_argument('--checkpoint_dir', type=str, default="/checkpoint/kaselby")
     parser.add_argument('--checkpoint_name', type=str, default=None)
     parser.add_argument('--output_dir', type=str, default="runs/hypeval")
+    parser.add_argument('--reweight', action='store_true')
     return parser.parse_args()
 
 if __name__ == '__main__':
@@ -351,7 +350,7 @@ if __name__ == '__main__':
     dataset = HyponomyDataset.from_file('HypNet_train', args.data_dir, args.vec_dir, args.voc_dir, 
         pca_dim=args.pca_dim, min_threshold=args.pca_dim, max_vecs=args.max_vecs)
     train_dataset, eval_dataset = dataset.split(0.85)
-    model = MultiSetTransformer1(args.pca_dim, 1, 1, args.hidden_size, num_heads=args.n_heads, num_blocks=args.n_blocks, ln=True)
+    model = MultiSetTransformer(args.pca_dim, args.latent_size, args.hidden_size, 1, num_heads=args.n_heads, num_blocks=args.n_blocks, ln=True)
 
     if use_cuda:
         model = model.cuda()
@@ -364,7 +363,8 @@ if __name__ == '__main__':
     if not os.path.exists(checkpoint_dir):
         os.makedirs(checkpoint_dir)
 
-    train(model, train_dataset, args.steps, eval_dataset=eval_dataset, batch_size=args.batch_size, lr=args.lr, checkpoint_dir=checkpoint_dir, output_dir=output_dir)
+    train(model, train_dataset, args.steps, eval_dataset=eval_dataset, batch_size=args.batch_size, lr=args.lr, 
+        checkpoint_dir=checkpoint_dir, output_dir=output_dir, reweight=args.reweight)
 
 
 
