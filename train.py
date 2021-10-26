@@ -169,14 +169,15 @@ if __name__ == '__main__':
         model = nn.DataParallel(model)
         batch_size *= n_gpus
         steps = int(steps/n_gpus)
-    sample_kwargs={'set_size':(100,300)}
     
+    sample_kwargs={}
     if args.equi:
         sample_kwargs['dims'] = (24,40)
     else:
         sample_kwargs['n'] = DIM
 
     if args.target == 'w1':
+        sample_kwargs['set_size'] = (10,150)
         label_fct = wasserstein
         label_kwargs={'scaling':0.98, 'blur':0.001}
         baselines={'sinkhorn_default':wasserstein}
@@ -185,6 +186,7 @@ if __name__ == '__main__':
         criterion=nn.MSELoss()
         mixture=True
     elif args.target == 'w2':
+        sample_kwargs['set_size'] = (10,150)
         label_fct = wasserstein2_gaussian
         label_kwargs={}
         baselines={'sinkhorn_default':wasserstein2}
@@ -193,6 +195,7 @@ if __name__ == '__main__':
         criterion=nn.MSELoss()
         mixture=False
     elif args.target == 'kl':
+        sample_kwargs['set_size'] = (200,300)
         label_fct = kl_mc
         label_kwargs={}
         baselines={'knn':kl_knn}
@@ -203,8 +206,7 @@ if __name__ == '__main__':
         sample_kwargs['s0']=0.5
         criterion=nn.MSELoss()
         mixture=True
-        sample_kwargs['set_size'] = (100,300)
-        batch_size /= 2
+        batch_size /= 4
         if args.equi:
             sample_kwargs['dims'] = (2,4)
         else:
