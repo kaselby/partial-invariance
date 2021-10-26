@@ -203,7 +203,7 @@ if __name__ == '__main__':
         sample_kwargs['s0']=0.5
         criterion=nn.MSELoss()
         mixture=True
-        sample_kwargs=['set_size'] = (100,300)
+        sample_kwargs['set_size'] = (100,300)
         batch_size /= 2
         if args.equi:
             sample_kwargs['dims'] = (2,4)
