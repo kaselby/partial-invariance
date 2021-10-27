@@ -82,13 +82,15 @@ class EquiMHA(nn.Module):
         return O
 
 class MAB(nn.Module):
-    def __init__(self, input_size, latent_size, hidden_size, num_heads, attn_size=None, ln=False, equi=False):
+    def __init__(self, input_size, latent_size, hidden_size, num_heads, attn_size=None, ln=False, equi=False, dropout=0.1):
         super(MAB, self).__init__()
         attn_size = attn_size if attn_size is not None else input_size
         if equi:
             self.attn = EquiMHA(input_size, attn_size, latent_size, num_heads)
         else:
             self.attn = MHA(input_size, attn_size, latent_size, num_heads)
+        if dropout > 0:
+            self.dropout = nn.Dropout(dropout)
         self.fc = nn.Sequential(nn.Linear(latent_size, hidden_size), nn.ReLU(), nn.Linear(hidden_size, latent_size))
         if ln:
             self.ln0 = nn.LayerNorm(latent_size)
@@ -96,8 +98,10 @@ class MAB(nn.Module):
 
     def forward(self, Q, K, mask=None):
         X = Q + self.attn(Q, K, mask=mask)
+        X = X if getattr(self, 'dropout', None) is None else self.dropout(X)
         X = X if getattr(self, 'ln0', None) is None else self.ln0(X)
         X = X + self.fc(X)
+        X = X if getattr(self, 'dropout', None) is None else self.dropout(X)
         X = X if getattr(self, 'ln1', None) is None else self.ln1(X)
         return X
 
@@ -123,15 +127,14 @@ class ISAB(nn.Module):
 
 
 class CSAB(nn.Module):
-    def __init__(self, input_size, latent_size, hidden_size, num_heads, ln=False, remove_diag=False, equi=False):
+    def __init__(self, input_size, latent_size, hidden_size, num_heads, remove_diag=False, **kwargs):
         super(CSAB, self).__init__()
-        self.MAB_XX = MAB(input_size, latent_size, hidden_size, num_heads, equi=equi, ln=ln)
-        self.MAB_YY = MAB(input_size, latent_size, hidden_size, num_heads, equi=equi, ln=ln)
-        self.MAB_XY = MAB(input_size, latent_size, hidden_size, num_heads, equi=equi, ln=ln)
-        self.MAB_YX = MAB(input_size, latent_size, hidden_size, num_heads, equi=equi, ln=ln)
+        self.MAB_XX = MAB(input_size, latent_size, hidden_size, num_heads, **kwargs)
+        self.MAB_YY = MAB(input_size, latent_size, hidden_size, num_heads, **kwargs)
+        self.MAB_XY = MAB(input_size, latent_size, hidden_size, num_heads, **kwargs)
+        self.MAB_YX = MAB(input_size, latent_size, hidden_size, num_heads, **kwargs)
         self.fc_X = nn.Linear(latent_size * 2, latent_size)
         self.fc_Y = nn.Linear(latent_size * 2, latent_size)
-        self.ln = ln
         self.remove_diag = remove_diag
 
     def _get_masks(self, N, M, masks):
@@ -168,24 +171,22 @@ class CSAB(nn.Module):
 
 
 class ICSAB(nn.Module):
-    def __init__(self, input_size, latent_size, hidden_size, num_heads, num_inds, ln=False, equi=False, remove_diag=False):
+    def __init__(self, input_size, latent_size, hidden_size, num_heads, num_inds, **kwargs):
         super(ICSAB, self).__init__()
         self.I_X = nn.Parameter(torch.Tensor(1, num_inds, latent_size))
         self.I_Y = nn.Parameter(torch.Tensor(1, num_inds, latent_size))
         nn.init.xavier_uniform_(self.I_X)
         nn.init.xavier_uniform_(self.I_Y)
-        self.MAB0_X = MAB(latent_size, latent_size, hidden_size, num_heads, attn_size=input_size, equi=equi, ln=ln)
-        self.MAB0_Y = MAB(latent_size, latent_size, hidden_size, num_heads, attn_size=input_size, equi=equi, ln=ln)
+        self.MAB0_X = MAB(latent_size, latent_size, hidden_size, num_heads, attn_size=input_size, **kwargs)
+        self.MAB0_Y = MAB(latent_size, latent_size, hidden_size, num_heads, attn_size=input_size, **kwargs)
         #self.MAB0_XY = MAB(latent_size, latent_size, hidden_size, num_heads, attn_size=input_size, equi=equi, ln=ln)
         #self.MAB0_YX = MAB(latent_size, latent_size, hidden_size, num_heads, attn_size=input_size, equi=equi, ln=ln)
-        self.MAB1_XX = MAB(input_size, latent_size, hidden_size, num_heads, equi=equi, ln=ln)
-        self.MAB1_YY = MAB(input_size, latent_size, hidden_size, num_heads, equi=equi, ln=ln)
-        self.MAB1_XY = MAB(input_size, latent_size, hidden_size, num_heads, equi=equi, ln=ln)
-        self.MAB1_YX = MAB(input_size, latent_size, hidden_size, num_heads, equi=equi, ln=ln)
+        self.MAB1_XX = MAB(input_size, latent_size, hidden_size, num_heads, **kwargs)
+        self.MAB1_YY = MAB(input_size, latent_size, hidden_size, num_heads, **kwargs)
+        self.MAB1_XY = MAB(input_size, latent_size, hidden_size, num_heads, **kwargs)
+        self.MAB1_YX = MAB(input_size, latent_size, hidden_size, num_heads, **kwargs)
         self.fc_X = nn.Linear(latent_size * 2, latent_size)
         self.fc_Y = nn.Linear(latent_size * 2, latent_size)
-        self.ln = ln
-        self.equi = equi
 
     def forward(self, inputs, masks=None):
         X,Y = inputs
@@ -245,15 +246,15 @@ class SetTransformer(nn.Module):
         return self.dec(ZX).squeeze(-1)
 
 class MultiSetTransformer(nn.Module):
-    def __init__(self, input_size, latent_size, hidden_size, output_size, num_heads=4, num_blocks=2, remove_diag=False, ln=False, equi=False, num_inds=-1):
+    def __init__(self, input_size, latent_size, hidden_size, output_size, num_heads=4, num_blocks=2, remove_diag=False, ln=False, equi=False, dropout=0.1, num_inds=-1):
         super(MultiSetTransformer, self).__init__()
         if equi:
             input_size = 1
         self.proj = nn.Linear(input_size, latent_size)
         if num_inds > 0:
-            self.enc = EncoderStack(*[ICSAB(latent_size, latent_size, hidden_size, num_heads, num_inds, ln=ln, remove_diag=remove_diag, equi=equi) for i in range(num_blocks)])
+            self.enc = EncoderStack(*[ICSAB(latent_size, latent_size, hidden_size, num_heads, num_inds, ln=ln, remove_diag=remove_diag, equi=equi, dropout=dropout) for i in range(num_blocks)])
         else:
-            self.enc = EncoderStack(*[CSAB(latent_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, equi=equi) for i in range(num_blocks)])
+            self.enc = EncoderStack(*[CSAB(latent_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, equi=equi, dropout=dropout) for i in range(num_blocks)])
         self.pool_x = PMA(latent_size, hidden_size, num_heads, 1, ln=ln)
         self.pool_y = PMA(latent_size, hidden_size, num_heads, 1, ln=ln)
         self.dec = nn.Sequential(

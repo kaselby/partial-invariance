@@ -32,7 +32,8 @@ def parse_args():
     parser.add_argument('--num_heads', type=int, default=4)
     parser.add_argument('--batch_size', type=int, default=64)
     parser.add_argument('--steps', type=int, default=60000)
-
+    parser.add_argument('--dropout', type=float, default=0)
+    parser.add_argument('--old_model', action='store_true')
     return parser.parse_args()
 
 
@@ -139,10 +140,18 @@ if __name__ == '__main__':
 
     device = torch.device("cuda:0")
 
-    if True:
+    if not args.old_model:
         DIM=32
         if args.model == 'csab':
-            model_kwargs={'ln':True, 'remove_diag':True, 'num_blocks':args.num_blocks, 'equi':args.equi, 'output_size':1, 'num_heads':args.num_heads, 'num_inds':args.num_inds}
+            model_kwargs={
+                'ln':True,
+                'remove_diag':True,
+                'num_blocks':args.num_blocks,
+                'equi':args.equi, 'output_size':1,
+                'num_heads':args.num_heads,
+                'num_inds':args.num_inds,
+                'dropout':args.dropout
+            }
             if args.equi:
                 model_kwargs['input_size'] = 1
                 model_kwargs['latent_size'] = 32
@@ -157,7 +166,7 @@ if __name__ == '__main__':
         else:
             raise NotImplementedError()
     else:
-        model_kwargs={'ln':True, 'remove_diag':True, 'num_blocks':2, 'num_heads':4}
+        model_kwargs={'ln':True, 'remove_diag':True, 'num_blocks':2, 'num_heads':4, 'dropout':args.dropout}
         if args.equi:
             model = EquiMultiSetTransformer1(1,1,dim_hidden=32, **model_kwargs).to(device)
         else:
