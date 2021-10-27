@@ -132,7 +132,7 @@ class HyponomyDataset(Dataset):
         load_dict = load_dataset_vecs(dataset_name, vec_dir, voc_dir)
         vecs = ICRDict.from_dict(load_dict)
         dataset_path = os.path.join(data_dir, dataset_name + ".all")
-        relations, pairs, labels = cls._read_dataset(dataset_path, min_threshold, inverted_pairs=inverted_pairs)
+        relations, pairs, labels = cls._read_dataset(dataset_path, inverted_pairs=inverted_pairs)
         n0 = len(pairs)
         valid_indices=None
         if min_threshold >= 0:
