@@ -158,7 +158,10 @@ if __name__ == '__main__':
             raise NotImplementedError()
     else:
         model_kwargs={'ln':True, 'remove_diag':True, 'num_blocks':2, 'num_heads':4}
-        model = EquiMultiSetTransformer1(1,1,dim_hidden=32, **model_kwargs).to(device)
+        if args.equi:
+            model = EquiMultiSetTransformer1(1,1,dim_hidden=32, **model_kwargs).to(device)
+        else:
+            model = MultiSetTransformer1(32, 1,1,dim_hidden=256, **model_kwargs).to(device)
 
     batch_size=args.batch_size
     steps=args.steps
