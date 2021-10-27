@@ -166,6 +166,7 @@ if __name__ == '__main__':
         else:
             raise NotImplementedError()
     else:
+        DIM=32
         model_kwargs={'ln':True, 'remove_diag':True, 'num_blocks':2, 'num_heads':4, 'dropout':args.dropout}
         if args.equi:
             model = EquiMultiSetTransformer1(1,1,dim_hidden=32, **model_kwargs).to(device)
