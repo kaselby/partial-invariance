@@ -19,6 +19,9 @@ then
 elif [ $target == "w2" ]
 then
     argstring="--normalize scale"
+elif [ $target == "w1_exact" ]
+then
+    argstring="--normalize scale"
 elif [ $target == "kl" ]
 then
     argstring="--normalize none"
