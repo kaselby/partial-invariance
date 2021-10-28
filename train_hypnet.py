@@ -198,7 +198,6 @@ class RandomSubsampler(torch.utils.data.Sampler):
         generator (Generator): Generator used in sampling.
     """
     def __init__(self, dataset, idx_by_class, generator=None) -> None:
-        self.dataset = dataset
         self.idx_by_class = idx_by_class
         self.n_classes = len(self.idx_by_class)
         self.n = len(dataset)
@@ -208,7 +207,7 @@ class RandomSubsampler(torch.utils.data.Sampler):
         samplers_by_class = [iter(RandomSampler(self.idx_by_class[i], replacement=True, num_samples=self.n)) for i in range(self.n_classes)]
         for j_i in torch.randint(self.n_classes, size=(self.n,)):
             t_j = next(samplers_by_class[j_i])
-            yield self.dataset[t_j]
+            yield t_j
 
     def __len__(self) -> int:
         return self.n
