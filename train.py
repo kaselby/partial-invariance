@@ -226,10 +226,10 @@ if __name__ == '__main__':
         baselines={'knn':kl_knn}
         exact_loss=True
         lr = 1e-5
-        sample_kwargs['nu']=3
+        sample_kwargs['nu']=5
         sample_kwargs['mu0']=0.5
         sample_kwargs['s0']=0.5
-        criterion=nn.MSELoss()
+        criterion=nn.L1Loss()
         mixture=True
         batch_size = int(batch_size/4)
         if args.equi:
