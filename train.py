@@ -212,7 +212,7 @@ if __name__ == '__main__':
         mixture=False
     elif args.target == 'w1_exact':
         sample_kwargs['set_size'] = (10,150)
-        label_fct = wasserstein2_gaussian
+        label_fct = wasserstein_mc
         label_kwargs={}
         baselines={'sinkhorn_default':wasserstein2}
         exact_loss=True
