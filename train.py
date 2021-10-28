@@ -112,6 +112,7 @@ def train(model, sample_fct, label_fct, baselines={}, exact_loss=False, criterio
             torch.save({'model':model,'optimizer':optimizer, 'step': i, 'losses':losses}, checkpoint_path)
 
     seed = torch.randint(100, (1,)).item()
+    '''
     model_loss = evaluate(model, sample_fct, label_fct, exact_loss=exact_loss, 
         batch_size=batch_size, label_kwargs=label_kwargs, sample_kwargs=sample_kwargs, criterion=criterion, 
         steps=500, normalize=normalize, seed=seed)
@@ -120,9 +121,10 @@ def train(model, sample_fct, label_fct, baselines={}, exact_loss=False, criterio
         baseline_losses[baseline] = evaluate(baseline_fct, sample_fct, label_fct, exact_loss=exact_loss, 
             batch_size=batch_size, label_kwargs=label_kwargs, sample_kwargs=sample_kwargs, criterion=criterion, 
             steps=500, normalize=normalize, seed=seed)
+    '''
 
     torch.save(model._modules['module'], os.path.join(output_dir,"model.pt"))  
-    torch.save({'losses':losses, 'eval_losses':{'model':model_loss, **baseline_losses}}, os.path.join(output_dir,"logs.pt"))   
+    torch.save({'losses':losses}, os.path.join(output_dir,"logs.pt"))   
 
     return losses
 
@@ -200,6 +202,15 @@ if __name__ == '__main__':
         criterion=nn.MSELoss()
         mixture=True
     elif args.target == 'w2':
+        sample_kwargs['set_size'] = (10,150)
+        label_fct = wasserstein2_gaussian
+        label_kwargs={}
+        baselines={'sinkhorn_default':wasserstein2}
+        exact_loss=True
+        lr = 1e-3
+        criterion=nn.MSELoss()
+        mixture=False
+    elif args.target == 'w1_exact':
         sample_kwargs['set_size'] = (10,150)
         label_fct = wasserstein2_gaussian
         label_kwargs={}
