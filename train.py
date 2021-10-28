@@ -196,7 +196,7 @@ if __name__ == '__main__':
         label_kwargs={'scaling':0.98, 'blur':0.001}
         baselines={'sinkhorn_default':wasserstein}
         exact_loss=False
-        lr = 1e-3
+        lr = 5e-3
         criterion=nn.MSELoss()
         mixture=True
     elif args.target == 'w2':

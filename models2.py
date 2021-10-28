@@ -32,10 +32,10 @@ class MHA(nn.Module):
         super(MHA, self).__init__()
         self.dim_V = dim_V
         self.num_heads = num_heads
-        self.w_q = nn.Linear(dim_Q, dim_V, bias=False)
-        self.w_k = nn.Linear(dim_K, dim_V, bias=False)
-        self.w_v = nn.Linear(dim_K, dim_V, bias=False)
-        self.w_o = nn.Linear(dim_V, dim_V, bias=False)
+        self.w_q = nn.Linear(dim_Q, dim_V, bias=True)
+        self.w_k = nn.Linear(dim_K, dim_V, bias=True)
+        self.w_v = nn.Linear(dim_K, dim_V, bias=True)
+        self.w_o = nn.Linear(dim_V, dim_V, bias=True)
 
     def forward(self, Q, K, mask=None):
         Q_ = self.w_q(Q)
