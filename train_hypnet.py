@@ -208,7 +208,7 @@ class RandomSubsampler(torch.utils.data.Sampler):
         samplers_by_class = [iter(RandomSampler(self.idx_by_class[i], replacement=True, num_samples=self.n)) for i in range(self.n_classes)]
         for j_i in torch.randint(self.n_classes, size=(self.n,)):
             t_j = next(samplers_by_class[j_i])
-            yield dataset[t_j]
+            yield self.dataset[t_j]
 
     def __len__(self) -> int:
         return self.n
