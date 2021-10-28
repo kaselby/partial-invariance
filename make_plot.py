@@ -18,9 +18,11 @@ if __name__ == '__main__':
         logs = torch.load(filename)
         losses = logs['losses']
 
+        plt.figure(run_name)
         plt.plot(losses)
         plt.legend()
         plt.xlabel("Steps")
         plt.ylabel("Mean Squared Error")
         plt.yscale("log")
-        plt.show()
+    
+    plt.show()
