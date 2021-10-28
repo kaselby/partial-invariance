@@ -21,7 +21,7 @@ then
     argstring="--normalize scale"
 elif [ $target == "kl" ]
 then
-    argstring="--normalize whiten"
+    argstring="--normalize none"
 fi
 
 python3 train.py $1 --target $2 --data $3 --checkpoint_name $SLURM_JOB_ID $argstring --equi --num_inds $4

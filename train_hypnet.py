@@ -150,7 +150,7 @@ class HyponomyDataset(Dataset):
         self.max_vecs=max_vecs
         if valid_indices is None:
             self.n = len(pairs)
-            self.valid_indices = range(self.n)
+            self.valid_indices = list(range(self.n))
         else:
             self.n = len(valid_indices)
             self.valid_indices = valid_indices

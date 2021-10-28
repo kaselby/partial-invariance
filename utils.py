@@ -395,6 +395,12 @@ def wasserstein2_gaussian(P, Q, X=None):
     s1 = matrix_pow(Sigma1, 1./2)
     return ((mu2-mu1).norm(dim=-1).pow(2) + torch.diagonal(Sigma1 + Sigma2 - 2 * matrix_pow(s1.matmul(Sigma2).matmul(s1), 1./2), dim1=-2, dim2=-1).sum(dim=-1)).sqrt()
 
+def wasserstein_mc(P, Q, N=5000, X=None, **kwargs):
+    X = P.sample((N,))
+    Y = Q.sample((N,))
+    return wasserstein(X, Y, **kwargs)
+
+
 '''
 def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(), batch_size=64, steps=3000, lr=1e-5, lr_decay=False, epoch_size=250, milestones=[], *sample_args, **sample_kwargs):
     #model.train(True)

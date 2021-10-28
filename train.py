@@ -29,9 +29,9 @@ def parse_args():
     parser.add_argument('--equi', action='store_true')
     parser.add_argument('--num_inds', type=int, default=-1)
     parser.add_argument('--num_blocks', type=int, default=2)
-    parser.add_argument('--num_heads', type=int, default=4)
+    parser.add_argument('--num_heads', type=int, default=8)
     parser.add_argument('--batch_size', type=int, default=64)
-    parser.add_argument('--steps', type=int, default=60000)
+    parser.add_argument('--steps', type=int, default=120000)
     parser.add_argument('--dropout', type=float, default=0)
     parser.add_argument('--old_model', action='store_true')
     return parser.parse_args()
@@ -147,7 +147,8 @@ if __name__ == '__main__':
                 'ln':True,
                 'remove_diag':True,
                 'num_blocks':args.num_blocks,
-                'equi':args.equi, 'output_size':1,
+                'equi':args.equi, 
+                'output_size':1,
                 'num_heads':args.num_heads,
                 'num_inds':args.num_inds,
                 'dropout':args.dropout
