@@ -379,15 +379,15 @@ def wasserstein2_exact(X, Y):
         dists[i] = ot.emd2([],[],costs)
     if use_cuda:
         dists = dists.cuda()
-    return dists
+    return dists.sqrt()
 
-def wasserstein(X, Y, **kwargs):
-    loss = SamplesLoss(p=1, **kwargs)
+def wasserstein(X, Y, p=1, **kwargs):
+    loss = SamplesLoss(p=p, **kwargs)
     return loss(X, Y)
 
 def wasserstein2(X, Y, **kwargs):
     loss = SamplesLoss(p=2, **kwargs)
-    return loss(X, Y)*2
+    return (loss(X, Y)*2).sqrt()
 
 def wasserstein2_gaussian(P, Q, X=None):
     mu1, Sigma1 = P.loc, P.covariance_matrix
