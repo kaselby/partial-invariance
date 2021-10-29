@@ -141,51 +141,8 @@ if __name__ == '__main__':
         os.makedirs(run_dir)
 
     device = torch.device("cuda:0")
-
-    if not args.old_model:
-        DIM=32
-        if args.model == 'csab':
-            model_kwargs={
-                'ln':True,
-                'remove_diag':True,
-                'num_blocks':args.num_blocks,
-                'equi':args.equi, 
-                'output_size':1,
-                'num_heads':args.num_heads,
-                'num_inds':args.num_inds,
-                'dropout':args.dropout
-            }
-            if args.equi:
-                model_kwargs['input_size'] = 1
-                model_kwargs['latent_size'] = 32
-                model_kwargs['hidden_size'] = 48
-            else:
-                model_kwargs['input_size'] = DIM
-                model_kwargs['latent_size'] = 256
-                model_kwargs['hidden_size'] = 384
-            model=MultiSetTransformer(**model_kwargs).to(device)
-        elif args.model == 'pine':
-            model = PINE(DIM, 32, 16, 2, 384, 1).to(device)
-        else:
-            raise NotImplementedError()
-    else:
-        DIM=32
-        model_kwargs={'ln':True, 'remove_diag':True, 'num_blocks':2, 'num_heads':4}
-        if args.equi:
-            model = EquiMultiSetTransformer1(1,1,dim_hidden=32, **model_kwargs).to(device)
-        else:
-            model = MultiSetTransformer1(32, 1,1,dim_hidden=256, **model_kwargs).to(device)
-
-    batch_size=args.batch_size
-    steps=args.steps
-
-    if torch.cuda.device_count() > 1:
-        n_gpus = torch.cuda.device_count()
-        print("Let's use", n_gpus, "GPUs!")
-        model = nn.DataParallel(model)
-        batch_size *= n_gpus
-        steps = int(steps/n_gpus)
     
+    DIM=32
     sample_kwargs={}
     if args.equi:
         sample_kwargs['dims'] = (24,40)
@@ -238,6 +195,50 @@ if __name__ == '__main__':
             DIM=2
             sample_kwargs['n'] = 2
 
+    if not args.old_model:
+        if args.model == 'csab':
+            model_kwargs={
+                'ln':True,
+                'remove_diag':True,
+                'num_blocks':args.num_blocks,
+                'equi':args.equi, 
+                'output_size':1,
+                'num_heads':args.num_heads,
+                'num_inds':args.num_inds,
+                'dropout':args.dropout
+            }
+            if args.equi:
+                model_kwargs['input_size'] = 1
+                model_kwargs['latent_size'] = 32
+                model_kwargs['hidden_size'] = 48
+            else:
+                model_kwargs['input_size'] = DIM
+                model_kwargs['latent_size'] = 256
+                model_kwargs['hidden_size'] = 384
+            model=MultiSetTransformer(**model_kwargs).to(device)
+        elif args.model == 'pine':
+            model = PINE(DIM, 32, 16, 2, 384, 1).to(device)
+        else:
+            raise NotImplementedError()
+    else:
+        DIM=32
+        model_kwargs={'ln':True, 'remove_diag':True, 'num_blocks':2, 'num_heads':4}
+        if args.equi:
+            model = EquiMultiSetTransformer1(1,1,dim_hidden=32, **model_kwargs).to(device)
+        else:
+            model = MultiSetTransformer1(32, 1,1,dim_hidden=256, **model_kwargs).to(device)
+
+    batch_size=args.batch_size
+    steps=args.steps
+
+    if torch.cuda.device_count() > 1:
+        n_gpus = torch.cuda.device_count()
+        print("Let's use", n_gpus, "GPUs!")
+        model = nn.DataParallel(model)
+        batch_size *= n_gpus
+        steps = int(steps/n_gpus)
+    
+
     if args.data == 'gmm':
         generator = GaussianGenerator(num_outputs=2, scaleinv=args.scaleinv, variable_dim=args.equi, return_params=exact_loss, mixture=mixture)
     elif args.data == 'nf':
@@ -248,18 +249,4 @@ if __name__ == '__main__':
     losses = train(model, generator, label_fct, baselines=baselines, checkpoint_dir=os.path.join(args.checkpoint_dir, args.checkpoint_name), \
         exact_loss=exact_loss, output_dir=run_dir, criterion=criterion, steps=steps, lr=lr, batch_size=batch_size, \
         sample_kwargs=sample_kwargs, label_kwargs=label_kwargs, normalize=args.normalize)
-
-
-
-
-'''
-d=2
-hs=32
-nh=4
-ln=True
-n_blocks=2
-model= EquiEncoder(hs, n_blocks, nh, ln).cuda()
-losses=train(model, generate_gaussian_nd, wasserstein, criterion=nn.MSELoss(), steps=20000, lr=1e-3, n=2, set_size=(50,75))
-'''
-
 
