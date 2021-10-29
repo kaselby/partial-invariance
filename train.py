@@ -220,18 +220,18 @@ if __name__ == '__main__':
         criterion=nn.MSELoss()
         mixture=False
     elif args.target == 'kl':
-        sample_kwargs['set_size'] = (200,300)
+        sample_kwargs['set_size'] = (10,150)
         label_fct = kl_mc
         label_kwargs={}
         baselines={'knn':kl_knn}
         exact_loss=True
         lr = 1e-5
-        sample_kwargs['nu']=5
-        sample_kwargs['mu0']=0.5
-        sample_kwargs['s0']=0.5
+        sample_kwargs['nu']=3
+        sample_kwargs['mu0']=0
+        sample_kwargs['s0']=0.2
         criterion=nn.L1Loss()
         mixture=True
-        batch_size = int(batch_size/4)
+        #batch_size = int(batch_size/4)
         if args.equi:
             sample_kwargs['dims'] = (2,4)
         else:

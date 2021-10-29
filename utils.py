@@ -401,6 +401,12 @@ def wasserstein_mc(P, Q, N=5000, X=None, **kwargs):
     return wasserstein(X, Y, **kwargs)
 
 
+class PrecisionLoss(nn.Module):
+    def forward(self, predictions, labels):
+        pass
+
+
+
 '''
 def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(), batch_size=64, steps=3000, lr=1e-5, lr_decay=False, epoch_size=250, milestones=[], *sample_args, **sample_kwargs):
     #model.train(True)
