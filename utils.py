@@ -383,7 +383,10 @@ def wasserstein2_exact(X, Y):
 
 def wasserstein(X, Y, p=1, **kwargs):
     loss = SamplesLoss(p=p, **kwargs)
-    return loss(X, Y)
+    out = loss(X, Y)
+    if p > 1:
+        out = (out*p).pow(1./p)
+    return out
 
 def wasserstein2(X, Y, **kwargs):
     loss = SamplesLoss(p=2, **kwargs)
@@ -396,8 +399,8 @@ def wasserstein2_gaussian(P, Q, X=None):
     return ((mu2-mu1).norm(dim=-1).pow(2) + torch.diagonal(Sigma1 + Sigma2 - 2 * matrix_pow(s1.matmul(Sigma2).matmul(s1), 1./2), dim1=-2, dim2=-1).sum(dim=-1)).sqrt()
 
 def wasserstein_mc(P, Q, N=5000, X=None, **kwargs):
-    X = P.sample((N,)).transpose(0,1)
-    Y = Q.sample((N,)).transpose(0,1)
+    X = P.sample((N,)).transpose(0,1).contiguous()
+    Y = Q.sample((N,)).transpose(0,1).contiguous()
     return wasserstein(X, Y, **kwargs)
 
 

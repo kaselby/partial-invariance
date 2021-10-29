@@ -198,7 +198,7 @@ if __name__ == '__main__':
         label_kwargs={'scaling':0.98, 'blur':0.001}
         baselines={'sinkhorn_default':wasserstein}
         exact_loss=False
-        lr = 5e-3
+        lr = 2e-3
         criterion=nn.MSELoss()
         mixture=True
     elif args.target == 'w2':
@@ -220,7 +220,7 @@ if __name__ == '__main__':
         criterion=nn.MSELoss()
         mixture=False
     elif args.target == 'kl':
-        sample_kwargs['set_size'] = (10,150)
+        sample_kwargs['set_size'] = (100,150)
         label_fct = kl_mc
         label_kwargs={}
         baselines={'knn':kl_knn}
