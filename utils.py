@@ -403,6 +403,7 @@ def wasserstein_mc(P, Q, N=5000, X=None, **kwargs):
 
 class PrecisionLoss(nn.Module):
     def forward(self, predictions, labels):
+        # assume predictions 
         pass
 
 
@@ -523,8 +524,8 @@ class GaussianGenerator():
         c = LKJCholesky(n, concentration=nu).sample((batch_size,))
         while c.isnan().any():
             c = LKJCholesky(n).sample((batch_size,))
-        s = torch.diag_embed(LogNormal(mu0,s0).sample((batch_size, n)))
-        sigmas = torch.matmul(s, c)
+        #s = torch.diag_embed(LogNormal(mu0,s0).sample((batch_size, n)))
+        sigmas = c#torch.matmul(s, c)
         if scale is not None:
             mus = mus * scale.unsqueeze(-1).unsqueeze(-1)
             sigmas = sigmas * scale.unsqueeze(-1).unsqueeze(-1)
