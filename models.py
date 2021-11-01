@@ -570,7 +570,17 @@ def generate_masks(X_lengths, Y_lengths):
 
     return mask_xx, mask_xy, mask_yx, mask_yy
     
+class ISAB(nn.Module):
+    def __init__(self, dim_in, dim_out, num_heads, num_inds, ln=False):
+        super(ISAB, self).__init__()
+        self.I = nn.Parameter(torch.Tensor(1, num_inds, dim_out))
+        nn.init.xavier_uniform_(self.I)
+        self.mab0 = MAB(dim_out, dim_in, dim_out, num_heads, ln=ln)
+        self.mab1 = MAB(dim_in, dim_out, dim_out, num_heads, ln=ln)
 
+    def forward(self, X):
+        H = self.mab0(self.I.repeat(X.size(0), 1, 1), X)
+        return self.mab1(X, H)
 
 
 class MAB(nn.Module):

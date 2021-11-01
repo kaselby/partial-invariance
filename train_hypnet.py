@@ -227,6 +227,7 @@ def train(model, dataset, steps, eval_dataset=None, batch_size=64, lr=1e-3, save
 
     current_step=0
     losses = []
+    epoch_metrics = []
 
     if checkpoint_dir is not None:
         checkpoint_path = os.path.join(checkpoint_dir, "checkpoint.pt")
@@ -275,8 +276,10 @@ def train(model, dataset, steps, eval_dataset=None, batch_size=64, lr=1e-3, save
                 losses.append(loss.item())
 
             current_step += batch_size
+        eval_acc, eval_prec = evaluate(model, eval_dataset)
+        epoch_metrics.append(eval_acc, eval_prec)
 
-    logs = {'losses':losses}
+    logs = {'losses':losses, 'epoch-metrics':epoch_metrics}
     if eval_dataset is not None:
         acc, prec = evaluate(model, eval_dataset, batch_size=batch_size, append_missing=False)
         logs['eval_acc'] = acc
@@ -342,12 +345,14 @@ def parse_args():
     parser.add_argument('--checkpoint_name', type=str, default=None)
     parser.add_argument('--output_dir', type=str, default="runs/hypeval")
     parser.add_argument('--reweight', action='store_true')
+    parser.add_argument('--seed', type=int, default=1234)
     return parser.parse_args()
 
 if __name__ == '__main__':
     args = parse_args()
     dataset = HyponomyDataset.from_file('HypNet_train', args.data_dir, args.vec_dir, args.voc_dir, 
         pca_dim=args.pca_dim, min_threshold=args.pca_dim, max_vecs=args.max_vecs)
+    torch.random.seed(args.seed)
     train_dataset, eval_dataset = dataset.split(0.85)
     model = MultiSetTransformer(args.pca_dim, args.latent_size, args.hidden_size, 1, num_heads=args.n_heads, num_blocks=args.n_blocks, ln=True)
 
