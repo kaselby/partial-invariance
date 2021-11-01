@@ -354,7 +354,7 @@ if __name__ == '__main__':
     args = parse_args()
     dataset = HyponomyDataset.from_file('HypNet_train', args.data_dir, args.vec_dir, args.voc_dir, 
         pca_dim=args.pca_dim, min_threshold=args.pca_dim, max_vecs=args.max_vecs)
-    torch.random.seed(args.seed)
+    torch.manual_seed(args.seed)
     train_dataset, eval_dataset = dataset.split(0.85)
     model = MultiSetTransformer(args.pca_dim, args.latent_size, args.hidden_size, 1, num_heads=args.n_heads, num_blocks=args.n_blocks, ln=True)
 
