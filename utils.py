@@ -406,7 +406,7 @@ def wasserstein_mc(P, Q, N=5000, X=None, **kwargs):
 
 class PrecisionLoss(nn.Module):
     def forward(self, scores, labels):
-        predictions = nn.Sigmoid(scores)
+        predictions = torch.sigmoid(scores)
         tp = predictions[labels==1].sum()
         return tp / predictions.sum()
 
