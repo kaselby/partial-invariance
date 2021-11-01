@@ -449,7 +449,7 @@ class MultiRNBlock(nn.Module):
         Z_YX = self.e_yx(Y, X, mask=mask_yx)
         Z_YY = self.e_yy(Y, Y, mask=mask_yy)
         X_out = X + F.relu(self.fc_X(torch.cat([Z_XX, Z_XY], dim=-1)))
-        Y_out = X + F.relu(self.fc_Y(torch.cat([Z_YY, Z_YX], dim=-1)))
+        Y_out = Y + F.relu(self.fc_Y(torch.cat([Z_YY, Z_YX], dim=-1)))
 
         return X_out, Y_out
 
