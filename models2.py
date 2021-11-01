@@ -439,7 +439,7 @@ class RNModel(nn.Module):
         if equi:
             input_size = 1
         self.proj = nn.Linear(input_size, latent_size)
-        self.enc = nn.Sequential(*[RNBlock(latent_size, hidden_size, ln=ln, remove_diag=remove_diag, pool=pool1, equi=equi) for _ in range(num_blocks)])
+        self.enc = nn.Sequential(*[RNBlock(latent_size, hidden_size, ln=ln, remove_diag=remove_diag, pool=pool1, equi=False) for _ in range(num_blocks)])
         self.dec = nn.Linear(latent_size, output_size)
                 
     def forward(self, X):
