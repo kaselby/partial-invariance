@@ -28,7 +28,7 @@ def generate_masks(X_lengths, Y_lengths):
     return mask_xx, mask_xy, mask_yx, mask_yy
 
 class MHA(nn.Module):
-    def __init__(self, dim_Q, dim_K, dim_V, num_heads,):
+    def __init__(self, dim_Q, dim_K, dim_V, num_heads):
         super(MHA, self).__init__()
         self.dim_V = dim_V
         self.num_heads = num_heads
@@ -369,25 +369,23 @@ class EquiPINE(nn.Module):
 #
 
 class RelationNetwork(nn.Module):
-    def __init__(self, net, remove_diag=False, pool='sum'):
+    def __init__(self, net, pool='sum'):
         super().__init__()
         self.net = net
-        self.remove_diag = remove_diag
         self.pool = pool
     
-    def forward(self, X, Y):
+    def forward(self, X, Y, mask=None):
         N = X.size(1)
         M = Y.size(1)
         pairs = torch.cat([Y.unsqueeze(1).expand(-1,N,-1,*Y.size()[2:]), X.unsqueeze(2).expand(-1,-1,M,*X.size()[2:])], dim=-1)
         Z = self.net(pairs)
-        if self.remove_diag:
-            mask = torch.eye(N, N).unsqueeze(0).unsqueeze(-1) * -999999999
-            if use_cuda:
-                mask=mask.cuda()
-            Z = Z + mask
         if self.pool == 'sum':
+            if mask is not None:
+                Z = Z * mask.unsqueeze(0).expand_as(Z)
             Z = torch.sum(Z, dim=2)
         elif self.pool == 'max':
+            if mask is not None:
+                Z = Z + mask * -99999999
             Z = torch.max(Z, dim=2)[0]
         else:
             raise NotImplementedError()
@@ -403,8 +401,8 @@ class RNBlock(nn.Module):
             self.ln0 = nn.LayerNorm(latent_size)
             self.ln1 = nn.LayerNorm(latent_size)
 
-    def forward(self, X):
-        Z = X + self.rn(X)
+    def forward(self, X, mask=None):
+        Z = X + self.rn(X, mask=mask)
         Z = Z if getattr(self, 'ln0', None) is None else self.ln0(Z)
         Z = Z + self.fc(Z)
         Z = Z if getattr(self, 'ln1', None) is None else self.ln1(Z)
@@ -413,20 +411,42 @@ class RNBlock(nn.Module):
 class MultiRNBlock(nn.Module):
     def __init__(self, latent_size, hidden_size, remove_diag=False, pool='sum', ln=False):
         super().__init__()
-        self.e_xx = RNBlock(latent_size, hidden_size, remove_diag=remove_diag, pool=pool, ln=ln)
-        self.e_xy = RNBlock(latent_size, hidden_size, remove_diag=False, pool=pool, ln=ln)
-        self.e_yx = RNBlock(latent_size, hidden_size, remove_diag=False, pool=pool, ln=ln)
-        self.e_yy = RNBlock(latent_size, hidden_size, remove_diag=remove_diag, pool=pool, ln=ln)
+        self.e_xx = RNBlock(latent_size, hidden_size, pool=pool, ln=ln)
+        self.e_xy = RNBlock(latent_size, hidden_size, pool=pool, ln=ln)
+        self.e_yx = RNBlock(latent_size, hidden_size, pool=pool, ln=ln)
+        self.e_yy = RNBlock(latent_size, hidden_size, pool=pool, ln=ln)
         self.fc_X = nn.Linear(2*latent_size, latent_size)
         self.fc_Y = nn.Linear(2*latent_size, latent_size)
         self.remove_diag = remove_diag
         self.pool = pool
+
+    def _get_masks(self, N, M, masks):
+        if self.remove_diag:
+            diag_xx = (1 - torch.eye(N)).unsqueeze(0)
+            diag_yy = (1 - torch.eye(M)).unsqueeze(0)
+            if use_cuda:
+                diag_xx = diag_xx.cuda()
+                diag_yy = diag_yy.cuda()
+            if masks is not None:
+                mask_xx, mask_xy, mask_yx, mask_yy = masks
+                mask_xx = mask_xx * diag_xx
+                mask_yy = mask_yy * diag_yy
+            else:
+                mask_xx, mask_yy = diag_xx, diag_yy
+                mask_xy, mask_yx = None, None
+        else:
+            if masks is not None:
+                mask_xx, mask_xy, mask_yx, mask_yy = masks 
+            else: 
+                mask_xx, mask_xy, mask_yx, mask_yy = None,None,None,None
+        return mask_xx, mask_xy, mask_yx, mask_yy
     
-    def forward(self, X, Y):
-        Z_XX = self.e_xx(X, X)
-        Z_XY = self.e_xy(X, Y)
-        Z_YX = self.e_yx(Y, X)
-        Z_YY = self.e_yy(Y, Y)
+    def forward(self, X, Y, masks=None):
+        mask_xx, mask_xy, mask_yx, mask_yy = self._get_masks(X.size(1), Y.size(1), masks)
+        Z_XX = self.e_xx(X, X, mask=mask_xx)
+        Z_XY = self.e_xy(X, Y, mask=mask_xy)
+        Z_YX = self.e_yx(Y, X, mask=mask_yx)
+        Z_YY = self.e_yy(Y, Y, mask=mask_yy)
         X_out = X + F.relu(self.fc_X(torch.cat([Z_XX, Z_XY], dim=-1)))
         Y_out = X + F.relu(self.fc_Y(torch.cat([Z_YY, Z_YX], dim=-1)))
 
@@ -465,6 +485,7 @@ class MultiRNModel(nn.Module):
         self.dec = nn.Linear(2*latent_size, output_size)
         self.remove_diag = remove_diag
         self.equi=equi
+        
 
     def forward(self, X, Y, masks=None):
         if self.equi:
