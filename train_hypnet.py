@@ -1,6 +1,7 @@
 from numpy.core.arrayprint import _none_or_positive_arg
 import torch
 import torch.nn as nn
+from torch.nn.modules.loss import BCEWithLogitsLoss
 import torch.optim as optim
 from torch.utils.data import Dataset,DataLoader, RandomSampler, BatchSampler
 
@@ -221,10 +222,9 @@ def compare(w1, w2, vec_dicts, distance):
 
 
 
-def train(model, dataset, steps, eval_dataset=None, batch_size=64, lr=1e-3, save_every=5000, log_every=10, checkpoint_dir=None, output_dir=None, reweight=False):
+def train(model, dataset, steps, eval_dataset=None, batch_size=64, lr=1e-3, save_every=5000, log_every=10, 
+    checkpoint_dir=None, output_dir=None, reweight=False, loss_fct=BCEWithLogitsLoss()):
     optimizer = optim.Adam(model.parameters(), lr=lr)
-    loss_fct = nn.BCEWithLogitsLoss()
-
     current_step=0
     losses = []
     epoch_metrics = []
