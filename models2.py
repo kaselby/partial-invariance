@@ -409,7 +409,7 @@ class RNBlock(nn.Module):
         return Z
 
 class MultiRNBlock(nn.Module):
-    def __init__(self, latent_size, hidden_size, remove_diag=False, pool='sum', ln=False):
+    def __init__(self, latent_size, hidden_size, remove_diag=False, pool='max', ln=False):
         super().__init__()
         self.e_xx = RNBlock(latent_size, hidden_size, pool=pool, ln=ln)
         self.e_xy = RNBlock(latent_size, hidden_size, pool=pool, ln=ln)
