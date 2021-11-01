@@ -15,6 +15,7 @@ from sklearn.metrics import average_precision_score
 from icr import ICRDict
 from models import MultiSetTransformer1
 from models2 import MultiSetTransformer
+from utils import PrecisionLoss
 
 use_cuda = torch.cuda.is_available()
 
@@ -346,6 +347,7 @@ def parse_args():
     parser.add_argument('--output_dir', type=str, default="runs/hypeval")
     parser.add_argument('--reweight', action='store_true')
     parser.add_argument('--seed', type=int, default=1234)
+    parser.add_argument('--loss', type=str, choices=['bce', 'prec'], default='bce')
     return parser.parse_args()
 
 if __name__ == '__main__':
@@ -367,8 +369,10 @@ if __name__ == '__main__':
     if not os.path.exists(checkpoint_dir):
         os.makedirs(checkpoint_dir)
 
+    loss_fct = BCEWithLogitsLoss() if args.loss == 'bce' else PrecisionLoss()
+
     train(model, train_dataset, args.steps, eval_dataset=eval_dataset, batch_size=args.batch_size, lr=args.lr, 
-        checkpoint_dir=checkpoint_dir, output_dir=output_dir, reweight=args.reweight)
+        checkpoint_dir=checkpoint_dir, output_dir=output_dir, reweight=args.reweight, loss_fct=loss_fct)
 
 
 
