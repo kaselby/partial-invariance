@@ -278,7 +278,7 @@ def train(model, dataset, steps, eval_dataset=None, batch_size=64, lr=1e-3, save
 
             current_step += batch_size
         eval_acc, eval_prec = evaluate(model, eval_dataset)
-        epoch_metrics.append(eval_acc, eval_prec)
+        epoch_metrics.append((eval_acc, eval_prec))
 
     logs = {'losses':losses, 'epoch-metrics':epoch_metrics}
     if eval_dataset is not None:
