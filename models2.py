@@ -401,8 +401,8 @@ class RNBlock(nn.Module):
             self.ln0 = nn.LayerNorm(latent_size)
             self.ln1 = nn.LayerNorm(latent_size)
 
-    def forward(self, X, mask=None):
-        Z = X + self.rn(X, mask=mask)
+    def forward(self, X, Y, mask=None):
+        Z = X + self.rn(X, Y, mask=mask)
         Z = Z if getattr(self, 'ln0', None) is None else self.ln0(Z)
         Z = Z + self.fc(Z)
         Z = Z if getattr(self, 'ln1', None) is None else self.ln1(Z)
