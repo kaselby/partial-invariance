@@ -441,7 +441,8 @@ class MultiRNBlock(nn.Module):
                 mask_xx, mask_xy, mask_yx, mask_yy = None,None,None,None
         return mask_xx, mask_xy, mask_yx, mask_yy
     
-    def forward(self, X, Y, masks=None):
+    def forward(self, inputs, masks=None):
+        X, Y = inputs
         mask_xx, mask_xy, mask_yx, mask_yy = self._get_masks(X.size(1), Y.size(1), masks)
         Z_XX = self.e_xx(X, X, mask=mask_xx)
         Z_XY = self.e_xy(X, Y, mask=mask_xy)
