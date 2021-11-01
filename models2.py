@@ -394,7 +394,7 @@ class RelationNetwork(nn.Module):
 class RNBlock(nn.Module):
     def __init__(self, latent_size, hidden_size, ln=False, pool='sum'):
         super().__init__()
-        net = nn.Sequential(nn.Linear(latent_size, hidden_size), nn.ReLU(), nn.Linear(hidden_size, latent_size))
+        net = nn.Sequential(nn.Linear(2*latent_size, hidden_size), nn.ReLU(), nn.Linear(hidden_size, latent_size))
         self.rn = RelationNetwork(net, pool)
         self.fc = nn.Sequential(nn.Linear(latent_size, hidden_size), nn.ReLU(), nn.Linear(hidden_size, latent_size))
         if ln:
