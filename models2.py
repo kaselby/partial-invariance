@@ -392,10 +392,10 @@ class RelationNetwork(nn.Module):
         return Z
 
 class RNBlock(nn.Module):
-    def __init__(self, latent_size, hidden_size, remove_diag=False, ln=False, pool='sum'):
+    def __init__(self, latent_size, hidden_size, ln=False, pool='sum'):
         super().__init__()
         net = nn.Sequential(nn.Linear(latent_size, hidden_size), nn.ReLU(), nn.Linear(hidden_size, latent_size))
-        self.rn = RelationNetwork(net, remove_diag, pool)
+        self.rn = RelationNetwork(net, pool)
         self.fc = nn.Sequential(nn.Linear(latent_size, hidden_size), nn.ReLU(), nn.Linear(hidden_size, latent_size))
         if ln:
             self.ln0 = nn.LayerNorm(latent_size)
