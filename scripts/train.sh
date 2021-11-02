@@ -15,7 +15,7 @@ data=$3
 num_inds=$4
 equi=$5
 is=$6
-ls=$7
+lts=$7
 hs=$8
 
 
@@ -38,4 +38,4 @@ then
     argstring = "${argstring} --equi"
 fi
 
-python3 train.py $run_name --target $target --data $data --num_inds $num_inds --dim $is --latent_size $ls --hidden_size $hs --checkpoint_name $SLURM_JOB_ID $argstring 
+python3 train.py $run_name --target $target --data $data --num_inds $num_inds --dim $is --latent_size $lts --hidden_size $hs --checkpoint_name $SLURM_JOB_ID $argstring 

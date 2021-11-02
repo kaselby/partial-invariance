@@ -29,7 +29,7 @@ def parse_args():
     parser.add_argument('--equi', action='store_true')
     parser.add_argument('--num_inds', type=int, default=-1)
     parser.add_argument('--num_blocks', type=int, default=2)
-    parser.add_argument('--num_heads', type=int, default=8)
+    parser.add_argument('--num_heads', type=int, default=4)
     parser.add_argument('--batch_size', type=int, default=64)
     parser.add_argument('--steps', type=int, default=120000)
     parser.add_argument('--dropout', type=float, default=0)
