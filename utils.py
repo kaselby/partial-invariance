@@ -403,7 +403,10 @@ def wasserstein_mc(P, Q, N=5000, X=None, **kwargs):
     Y = Q.sample((N,)).transpose(0,1).contiguous()
     return wasserstein(X, Y, **kwargs)
 
-def mi_corr_gaussian(corr, d):
+def mi_corr_gaussian(corr, d=None, X=None):
+    assert (d is None) != (X is None)
+    if X is not None:
+        d = X.size(-1)
     return -d/2 * math.log(1-corr**2)
 
 
@@ -617,18 +620,32 @@ class GaussianGenerator():
 
 
 class CorrelatedGaussianGenerator():
-    def __init__(self, corr, base_dim):
+    def __init__(self, corr, return_params=False):
         self.corr = corr
-        self.base_dim = base_dim
+        self.return_params=return_params
+        
+    def _build_dist(self, batch_size, corr, n):
+        mu = torch.zeros((batch_size, n))
+        I = torch.eye(n).unsqueeze(0).expand(batch_size, -1, -1)
+        if use_cuda:
+            I = I.cuda()
+            mu = mu.cuda()
+        rhoI = corr.unsqueeze(-1).unsqueeze(-1) * I
+        cov = torch.cat([torch.cat([I, rhoI], dim=1), torch.cat([rhoI, I], dim=1)], dim=2)
+        return MultivariateNormal(mu, covariance_matrix=cov)
 
-    def _generate(self, batch_size):
-        X1 = torch.randn((batch_size, self.base_dim))
-        X2 = torch.randn((batch_size, self.base_dim))
-        X3 = self.corr * X1 + math.sqrt(1-self.corr**2) * X2
-        return X1, X3
+    def _generate(self, batch_size, n, set_size=(100,150)):
+        n_samples = torch.randint(*set_size,(1,))
+        corr = torch.rand((batch_size,))
+        dists = self._build_dist(batch_size, corr, n)
+        X, Y = dists.sample(n_samples).transpose(0,1).chunk(2, dim=-1)
+        if self.return_params:
+            return (X, Y), corr
+        else:
+            return X, Y
 
     def __call__(self, batch_size, **kwargs):
-        return self._generate(batch_size)
+        return self._generate(batch_size, **kwargs)
 
 
 
