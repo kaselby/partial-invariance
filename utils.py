@@ -522,7 +522,7 @@ class GaussianGenerator():
         self.mixture = mixture
         self.device = torch.device('cpu') if not use_cuda else torch.device('cuda')
 
-    def _generate(self, batch_size, n, return_params=False, set_size=(100,150), scale=None, nu=1, mu0=0, s0=1):
+    def _generate(self, batch_size, n, return_params=False, set_size=(100,150), scale=None, nu=3, mu0=0, s0=1):
         n_samples = torch.randint(*set_size,(1,))
         mus= torch.rand(size=(batch_size, n))
         c = LKJCholesky(n, concentration=nu).sample((batch_size,))

@@ -65,8 +65,8 @@ def evaluate(model, generator, label_fct, exact_loss=False, batch_size=64, sampl
             model_losses.append(model_loss.item())
     return sum(model_losses)/len(model_losses)
 
-def train(model, sample_fct, label_fct, baselines={}, exact_loss=False, criterion=nn.L1Loss(), batch_size=64, steps=3000, lr=1e-5, 
-    checkpoint_dir=None, output_dir=None, save_every=1000, sample_kwargs={}, label_kwargs={}, normalize='none'):
+def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(), batch_size=64, steps=3000, lr=1e-5, 
+    checkpoint_dir=None, save_every=1000, sample_kwargs={}, label_kwargs={}, normalize='none'):
     #model.train(True)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     losses = []
@@ -122,9 +122,6 @@ def train(model, sample_fct, label_fct, baselines={}, exact_loss=False, criterio
             batch_size=batch_size, label_kwargs=label_kwargs, sample_kwargs=sample_kwargs, criterion=criterion, 
             steps=500, normalize=normalize, seed=seed)
     '''
-
-    torch.save(model._modules['module'], os.path.join(output_dir,"model.pt"))  
-    torch.save({'losses':losses}, os.path.join(output_dir,"logs.pt"))   
 
     return losses
 
@@ -263,6 +260,10 @@ if __name__ == '__main__':
         raise NotImplementedError("nf or gmm")
 
     losses = train(model, generator, label_fct, baselines=baselines, checkpoint_dir=os.path.join(args.checkpoint_dir, args.checkpoint_name), \
-        exact_loss=exact_loss, output_dir=run_dir, criterion=criterion, steps=steps, lr=lr, batch_size=batch_size, \
+        exact_loss=exact_loss, criterion=criterion, steps=steps, lr=lr, batch_size=batch_size, \
         sample_kwargs=sample_kwargs, label_kwargs=label_kwargs, normalize=args.normalize)
+
+    
+    torch.save(model._modules['module'], os.path.join(run_dir,"model.pt"))  
+    torch.save({'losses':losses, 'args':args}, os.path.join(run_dir,"logs.pt"))   
 
