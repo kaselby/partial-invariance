@@ -403,6 +403,10 @@ def wasserstein_mc(P, Q, N=5000, X=None, **kwargs):
     Y = Q.sample((N,)).transpose(0,1).contiguous()
     return wasserstein(X, Y, **kwargs)
 
+def mi_corr_gaussian(corr, d):
+    return -d/2 * math.log(1-corr**2)
+
+
 
 class PrecisionLoss(nn.Module):
     def forward(self, scores, labels):
@@ -565,7 +569,7 @@ class GaussianGenerator():
         else:
             return samples.float().contiguous()
 
-    def _generate_mixture(self, batch_size, n, return_params=False, set_size=(100,150), component_range=(1,10), scale=None, nu=1, mu0=0, s0=1):
+    def _generate_mixture(self, batch_size, n, return_params=False, set_size=(100,150), component_range=(1,10), scale=None, nu=3, mu0=0, s0=1):
         n_samples = torch.randint(*set_size,(1,))
         n_components = torch.randint(*component_range,(1,)).item()
         mus= torch.rand(size=(batch_size, n_components, n))
@@ -610,6 +614,23 @@ class GaussianGenerator():
             return outputs, dists
         else:
             return outputs
+
+
+class CorrelatedGaussianGenerator():
+    def __init__(self, corr, base_dim):
+        self.corr = corr
+        self.base_dim = base_dim
+
+    def _generate(self, batch_size):
+        X1 = torch.randn((batch_size, self.base_dim))
+        X2 = torch.randn((batch_size, self.base_dim))
+        X3 = self.corr * X1 + math.sqrt(1-self.corr**2) * X2
+        return X1, X3
+
+    def __call__(self, batch_size, **kwargs):
+        return self._generate(batch_size)
+
+
 
 from flows import MADE, MADE_IAF, BatchNormFlow, Reverse, FlowSequential, BatchOfFlows
 def build_maf(num_inputs, num_hidden, num_blocks, nf_cls=MADE_IAF):
