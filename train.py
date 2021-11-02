@@ -246,7 +246,7 @@ if __name__ == '__main__':
     else:
         raise NotImplementedError("nf or gmm")
 
-    losses = train(model, generator, label_fct, baselines=baselines, checkpoint_dir=os.path.join(args.checkpoint_dir, args.checkpoint_name), \
+    losses = train(model, generator, label_fct, checkpoint_dir=os.path.join(args.checkpoint_dir, args.checkpoint_name), \
         exact_loss=exact_loss, criterion=criterion, steps=steps, lr=args.lr, batch_size=batch_size, \
         sample_kwargs=sample_kwargs, label_kwargs=label_kwargs, normalize=args.normalize)
 
