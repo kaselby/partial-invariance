@@ -34,6 +34,10 @@ def parse_args():
     parser.add_argument('--steps', type=int, default=120000)
     parser.add_argument('--dropout', type=float, default=0)
     parser.add_argument('--old_model', action='store_true')
+    parser.add_argument('--lr', type=float, default=1e-3)
+    parser.add_argument('--latent_size', type=int, default=256)
+    parser.add_argument('--hidden_size', type=int, default=384)
+    parser.add_argument('--dim', type=int, default=32)
     return parser.parse_args()
 
 
@@ -57,7 +61,8 @@ def evaluate(model, generator, label_fct, exact_loss=False, batch_size=64, sampl
                 out = model(*Xnorm).squeeze(-1)
                 out *= avg_norm.squeeze(-1).squeeze(-1)
             elif normalize == 'whiten':
-                Xnorm = whiten_split(*X)
+                #Xnorm = whiten_split(*X)
+                Xnorm, avg_norm = normalize_sets(*X)
                 out = model(*Xnorm).squeeze(-1)
             else:
                 out = model(*X).squeeze(-1)
@@ -98,7 +103,8 @@ def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(),
                 X, avg_norm = normalize_sets(*X)
             labels = label_fct(*X, **label_kwargs)
         if normalize == 'whiten':
-            X = whiten_split(*X)
+            #X = whiten_split(*X)
+            X, avg_norm = normalize_sets(*X)
         loss = criterion(model(*X).squeeze(-1), labels)
         loss.backward()
         optimizer.step()
@@ -139,12 +145,12 @@ if __name__ == '__main__':
 
     device = torch.device("cuda:0")
     
-    DIM=32
     sample_kwargs={}
     if args.equi:
-        sample_kwargs['dims'] = (24,40)
+        dim_range = math.ceil(args.dim/4)
+        sample_kwargs['dims'] = (min(2, args.dim-dim_range),args.dim+dim_range)
     else:
-        sample_kwargs['n'] = DIM
+        sample_kwargs['n'] = args.dim
 
     if args.target == 'w1':
         sample_kwargs['set_size'] = (10,150)
@@ -152,7 +158,6 @@ if __name__ == '__main__':
         label_kwargs={'scaling':0.98, 'blur':0.001}
         baselines={'sinkhorn_default':wasserstein}
         exact_loss=False
-        lr = 2e-3
         criterion=nn.MSELoss()
         mixture=True
     elif args.target == 'w2':
@@ -161,7 +166,6 @@ if __name__ == '__main__':
         label_kwargs={}
         baselines={'sinkhorn_default':wasserstein2}
         exact_loss=True
-        lr = 1e-3
         criterion=nn.MSELoss()
         mixture=False
     elif args.target == 'w1_exact':
@@ -170,7 +174,6 @@ if __name__ == '__main__':
         label_kwargs={}
         baselines={'sinkhorn_default':wasserstein2}
         exact_loss=True
-        lr = 1e-3
         criterion=nn.MSELoss()
         mixture=False
     elif args.target == 'kl':
@@ -179,18 +182,12 @@ if __name__ == '__main__':
         label_kwargs={}
         baselines={'knn':kl_knn}
         exact_loss=True
-        lr = 1e-5
         sample_kwargs['nu']=3
         sample_kwargs['mu0']=0
         sample_kwargs['s0']=0.2
         criterion=nn.L1Loss()
         mixture=True
         #batch_size = int(batch_size/4)
-        if args.equi:
-            sample_kwargs['dims'] = (2,4)
-        else:
-            DIM=2
-            sample_kwargs['n'] = 2
 
     if not args.old_model:
         if args.model == 'csab':
@@ -202,16 +199,11 @@ if __name__ == '__main__':
                 'output_size':1,
                 'num_heads':args.num_heads,
                 'num_inds':args.num_inds,
-                'dropout':args.dropout
+                'dropout':args.dropout,
+                'input_size':args.dim,
+                'latent_size':args.latent_size,
+                'hidden_size':args.hidden_size
             }
-            if args.equi:
-                model_kwargs['input_size'] = 1
-                model_kwargs['latent_size'] = 32
-                model_kwargs['hidden_size'] = 48
-            else:
-                model_kwargs['input_size'] = DIM
-                model_kwargs['latent_size'] = 256
-                model_kwargs['hidden_size'] = 384
             model=MultiSetTransformer(**model_kwargs).to(device)
         elif args.model == 'rn':
             model_kwargs={
@@ -220,18 +212,13 @@ if __name__ == '__main__':
                 'num_blocks':args.num_blocks,
                 'equi':args.equi, 
                 'output_size':1,
+                'input_size':args.dim,
+                'latent_size':args.latent_size,
+                'hidden_size':args.hidden_size
             }
-            if args.equi:
-                model_kwargs['input_size'] = 1
-                model_kwargs['latent_size'] = 32
-                model_kwargs['hidden_size'] = 48
-            else:
-                model_kwargs['input_size'] = DIM
-                model_kwargs['latent_size'] = 256
-                model_kwargs['hidden_size'] = 384
             model=MultiRNModel(**model_kwargs).to(device)
         elif args.model == 'pine':
-            model = PINE(DIM, 32, 16, 2, 384, 1).to(device)
+            model = PINE(args.dim, 32, 16, 2, 384, 1).to(device)
         else:
             raise NotImplementedError()
     else:
@@ -260,7 +247,7 @@ if __name__ == '__main__':
         raise NotImplementedError("nf or gmm")
 
     losses = train(model, generator, label_fct, baselines=baselines, checkpoint_dir=os.path.join(args.checkpoint_dir, args.checkpoint_name), \
-        exact_loss=exact_loss, criterion=criterion, steps=steps, lr=lr, batch_size=batch_size, \
+        exact_loss=exact_loss, criterion=criterion, steps=steps, lr=args.lr, batch_size=batch_size, \
         sample_kwargs=sample_kwargs, label_kwargs=label_kwargs, normalize=args.normalize)
 
     

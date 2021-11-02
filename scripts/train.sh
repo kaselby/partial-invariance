@@ -12,19 +12,30 @@
 run_name=$1
 target=$2
 data=$3
+num_inds=$4
+equi=$5
+is=$6
+ls=$7
+hs=$8
+
 
 if [ $target == "w1" ]
 then
-    argstring="--normalize scale --blur 0.001 --scaling 0.98"
+    argstring="--normalize scale --blur 0.001 --scaling 0.98 --lr 1e-3"
 elif [ $target == "w2" ]
 then
-    argstring="--normalize scale"
+    argstring="--normalize scale --lr 1e-3"
 elif [ $target == "w1_exact" ]
 then
-    argstring="--normalize scale"
+    argstring="--normalize scale --lr 1e-3"
 elif [ $target == "kl" ]
 then
-    argstring="--normalize none"
+    argstring="--normalize whiten --lr 1e-5"
 fi
 
-python3 train.py $1 --target $2 --data $3 --checkpoint_name $SLURM_JOB_ID $argstring --equi --num_inds $4
+if [ $equi -eq 1 ]
+then
+    argstring = "${argstring} --equi"
+fi
+
+python3 train.py $run_name --target $target --data $data --num_inds $num_inds --dim $is --latent_size $ls --hidden_size $hs --checkpoint_name $SLURM_JOB_ID $argstring 
