@@ -292,35 +292,36 @@ def train(model, dataset, steps, eval_dataset=None, batch_size=64, lr=1e-3, save
 
     return losses
 
-def evaluate(model, dataset, batch_size=64, append_missing=False):
-    all_logits = torch.zeros(len(dataset))
-    all_labels = torch.zeros(len(dataset))
+def evaluate(model, dataset, batch_size=32, append_missing=False):
+    with torch.no_grad():
+        all_logits = torch.zeros(len(dataset))
+        all_labels = torch.zeros(len(dataset))
 
-    data_loader=DataLoader(dataset, batch_size=batch_size, collate_fn=collate_batch_with_padding)
-    for i, (data, masks, labels) in enumerate(data_loader):
-        j_min = i * batch_size
-        j_max = min(len(dataset), (i + 1) * batch_size)
+        data_loader=DataLoader(dataset, batch_size=batch_size, collate_fn=collate_batch_with_padding)
+        for i, (data, masks, labels) in enumerate(data_loader):
+            j_min = i * batch_size
+            j_max = min(len(dataset), (i + 1) * batch_size)
 
-        if use_cuda:
-            data = [X.cuda() for X in data]
-            masks = [mask.cuda() for mask in masks]
+            if use_cuda:
+                data = [X.cuda() for X in data]
+                masks = [mask.cuda() for mask in masks]
 
-        out = model(*data, masks=masks)
+            out = model(*data, masks=masks)
 
-        all_logits[j_min:j_max] = out.squeeze(-1).cpu().detach()
-        all_labels[j_min:j_max] = labels.detach()
-    
-    if dataset.valid_indices is not None and append_missing:
-        _, missing_labels = dataset.get_invalid()
-        n_missing = len(missing_labels)
-        all_logits = torch.cat([all_logits, torch.zeros(n_missing)], dim=0)
-        all_labels = torch.cat([all_labels, torch.Tensor(missing_labels)], dim=0)
-    
-    def get_accuracy(labels, logits):
-        return ((labels*2 - 1) * logits > 0).float().sum() / logits.size(0)
+            all_logits[j_min:j_max] = out.squeeze(-1).cpu().detach()
+            all_labels[j_min:j_max] = labels.detach()
+        
+        if dataset.valid_indices is not None and append_missing:
+            _, missing_labels = dataset.get_invalid()
+            n_missing = len(missing_labels)
+            all_logits = torch.cat([all_logits, torch.zeros(n_missing)], dim=0)
+            all_labels = torch.cat([all_labels, torch.Tensor(missing_labels)], dim=0)
+        
+        def get_accuracy(labels, logits):
+            return ((labels*2 - 1) * logits > 0).float().sum() / logits.size(0)
 
-    accuracy = get_accuracy(all_labels, all_logits)
-    precision = average_precision_score(all_labels.numpy(), all_logits.numpy())
+        accuracy = get_accuracy(all_labels, all_logits)
+        precision = average_precision_score(all_labels.numpy(), all_logits.numpy())
 
     return accuracy, precision
     
