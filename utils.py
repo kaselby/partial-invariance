@@ -639,7 +639,7 @@ class CorrelatedGaussianGenerator():
         dists = self._build_dist(batch_size, corr, n)
         X, Y = dists.sample(n_samples).transpose(0,1).chunk(2, dim=-1)
         if self.return_params:
-            return (X, Y), corr
+            return (X, Y), (corr,)
         else:
             return X, Y
 
