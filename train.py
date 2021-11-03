@@ -264,7 +264,7 @@ if __name__ == '__main__':
         exact_loss=exact_loss, criterion=criterion, steps=steps, lr=args.lr, batch_size=batch_size, \
         sample_kwargs=sample_kwargs, label_kwargs=label_kwargs, normalize=args.normalize)
 
-    
-    torch.save(model._modules['module'], os.path.join(run_dir,"model.pt"))  
+    model_out = model._modules['module'] if torch.cuda.device_count() > 1 else model
+    torch.save(model_out, os.path.join(run_dir,"model.pt"))  
     torch.save({'losses':losses, 'args':args}, os.path.join(run_dir,"logs.pt"))   
 
