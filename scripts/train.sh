@@ -33,7 +33,7 @@ then
     argstring="--normalize whiten --lr 1e-3"
 fi
 
-if [ $model == 'pine' ]
+if [ $model == "pine" ]
 then
     argstring="${argstring} --model pine"
 fi
