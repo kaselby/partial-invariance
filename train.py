@@ -18,7 +18,7 @@ def parse_args():
     parser.add_argument('--target', type=str, default='w1')
     parser.add_argument('--model', type=str, default='csab', choices=['csab', 'rn', 'pine'])
     parser.add_argument('--data', type=str, default='gmm')
-    parser.add_argument('--normalize', type=str, choices=('none', 'scale', 'whiten'))
+    parser.add_argument('--normalize', type=str, choices=('none', 'scale-linear', 'scale-inv', 'whiten'))
     #parser.add_argument('--norm_in', action='store_true')
     #parser.add_argument('--norm_out', action='store_true')
     parser.add_argument('--scaleinv', action='store_true')
@@ -56,13 +56,16 @@ def evaluate(model, generator, label_fct, exact_loss=False, batch_size=64, sampl
             else:
                 X = generator(batch_size, **sample_kwargs)
                 labels = label_fct(*X, **label_kwargs)
-            if normalize == 'scale':
+            if normalize == 'scale-linear':
                 Xnorm, avg_norm = normalize_sets(*X)
                 out = model(*Xnorm).squeeze(-1)
                 out *= avg_norm.squeeze(-1).squeeze(-1)
-            elif normalize == 'whiten':
+            elif normalize == 'scale-inv':
                 #Xnorm = whiten_split(*X)
                 Xnorm, avg_norm = normalize_sets(*X)
+                out = model(*Xnorm).squeeze(-1)
+            elif normalize == 'whiten':
+                Xnorm = whiten_split(*X)
                 out = model(*Xnorm).squeeze(-1)
             else:
                 out = model(*X).squeeze(-1)
@@ -99,12 +102,14 @@ def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(),
             X = sample_fct(batch_size, **sample_kwargs)
             #if use_cuda:
                 #X = [x.cuda() for x in X]
-            if normalize == 'scale':
+            if normalize == 'scale-linear':
                 X, avg_norm = normalize_sets(*X)
             labels = label_fct(*X, **label_kwargs)
-        if normalize == 'whiten':
+        if normalize == 'scale-inv':
             #X = whiten_split(*X)
             X, avg_norm = normalize_sets(*X)
+        elif normalize == 'whiten':
+            X = whiten_split(*X)
         loss = criterion(model(*X).squeeze(-1), labels)
         loss.backward()
         optimizer.step()
@@ -188,6 +193,11 @@ if __name__ == '__main__':
         criterion=nn.L1Loss()
         mixture=True
         #batch_size = int(batch_size/4)
+    elif args.target == 'mi':
+        sample_kwargs['set_size'] = (100,150)
+        label_fct = mi_corr_gaussian
+        exact_loss=True
+        criterion=nn.L1Loss()
 
     if not args.old_model:
         if args.model == 'csab':
@@ -218,7 +228,7 @@ if __name__ == '__main__':
             }
             model=MultiRNModel(**model_kwargs).to(device)
         elif args.model == 'pine':
-            model = PINE(args.dim, 32, 16, 2, 384, 1).to(device)
+            model = PINE(args.dim, args.latent_size/4, 16, 2, args.hidden_size, 1).to(device)
         else:
             raise NotImplementedError()
     else:
