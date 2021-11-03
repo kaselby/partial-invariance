@@ -22,13 +22,17 @@ def parse_args():
 
     return parser.parse_args()
 
+def get_runs(run_name, basedir="runs"):
+    subfolders = [f.name for f in os.scandir(os.path.join(basedir, run_name)) if f.is_dir()]
+    return subfolders
+
 if __name__ == '__main__':
     args = parse_args()
     print("test")
 
     
 
-    sample_kwargs={'n':32, 'set_size':(10,150)}
+    sample_kwargs={'n':2, 'set_size':(100,150)}
     if args.target == 'wasserstein':
         baselines = {'sinkhorn_default':wasserstein, 'sinkhorn_exact': lambda X,Y: wasserstein(X,Y, blur=0.001,scaling=0.98)}
         label_fct=wasserstein_exact
@@ -47,10 +51,21 @@ if __name__ == '__main__':
         print("%s:"%name)
         seed = torch.randint(100, (1,)).item()
         for run_name in args.run_names:
-            model = torch.load(os.path.join("runs", run_name, "model.pt"))
-            model_loss = evaluate(model, generator, label_fct, 
-                sample_kwargs=sample_kwargs, steps=500, criterion=nn.L1Loss(), normalize=normalize, exact_loss=exact_loss, seed=seed)
-            print("%s Loss: %f" % (run_name, model_loss))
+            all_runs = get_runs(run_name, "runs")
+            if len(all_runs) > 0:
+                avg_loss=0
+                for run_num in all_runs:
+                    model = torch.load(os.path.join("runs", run_name, run_num, "model.pt"))
+                    model_loss = evaluate(model, generator, label_fct, 
+                        sample_kwargs=sample_kwargs, steps=500, criterion=nn.L1Loss(), normalize=normalize, exact_loss=exact_loss, seed=seed)
+                    avg_loss += model_loss
+                    print("%s-%s Loss: %f" % (run_name, run_num, model_loss))
+                print("%s Avg Loss: %f" % (run_name, avg_loss / len(all_runs)))
+            else:
+                model = torch.load(os.path.join("runs", run_name, "model.pt"))
+                model_loss = evaluate(model, generator, label_fct, 
+                    sample_kwargs=sample_kwargs, steps=500, criterion=nn.L1Loss(), normalize=normalize, exact_loss=exact_loss, seed=seed)
+                print("%s Loss: %f" % (run_name, model_loss))
         for baseline_name, baseline_fct in baselines.items():
             baseline_loss = evaluate(baseline_fct, generator, label_fct, 
                 sample_kwargs=sample_kwargs, steps=500, criterion=nn.L1Loss(), normalize=False, exact_loss=exact_loss, seed=seed)

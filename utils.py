@@ -620,8 +620,9 @@ class GaussianGenerator():
 
 
 class CorrelatedGaussianGenerator():
-    def __init__(self, return_params=False):
+    def __init__(self, return_params=False, variable_dim=False):
         self.return_params=return_params
+        self.variable_dim=variable_dim
         
     def _build_dist(self, batch_size, corr, n):
         mu = torch.zeros((batch_size, n*2))
@@ -645,7 +646,10 @@ class CorrelatedGaussianGenerator():
         else:
             return X, Y
 
-    def __call__(self, batch_size, **kwargs):
+    def __call__(self, batch_size, dims=(2,6), **kwargs):
+        if self.variable_dim:
+            n = torch.randint(*dims,(1,)).item()
+            kwargs['n'] = n
         return self._generate(batch_size, **kwargs)
 
 
