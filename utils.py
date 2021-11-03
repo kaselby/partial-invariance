@@ -620,8 +620,7 @@ class GaussianGenerator():
 
 
 class CorrelatedGaussianGenerator():
-    def __init__(self, corr, return_params=False):
-        self.corr = corr
+    def __init__(self, return_params=False):
         self.return_params=return_params
         
     def _build_dist(self, batch_size, corr, n):

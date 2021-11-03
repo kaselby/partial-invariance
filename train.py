@@ -197,6 +197,7 @@ if __name__ == '__main__':
         sample_kwargs['set_size'] = (100,150)
         label_fct = mi_corr_gaussian
         exact_loss=True
+        mixture=False
         criterion=nn.L1Loss()
 
     if not args.old_model:
@@ -253,6 +254,8 @@ if __name__ == '__main__':
         generator = GaussianGenerator(num_outputs=2, scaleinv=args.scaleinv, variable_dim=args.equi, return_params=exact_loss, mixture=mixture)
     elif args.data == 'nf':
         generator = NFGenerator(32, 2, num_outputs=2, use_maf=False, variable_dim=args.equi, return_params=exact_loss)
+    elif args.data == 'corr':
+        generator = CorrelatedGaussianGenerator(return_params=exact_loss)
     else:
         raise NotImplementedError("nf or gmm")
 
