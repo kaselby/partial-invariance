@@ -21,16 +21,16 @@ model=$9
 
 if [ $target == "w1" ]
 then
-    argstring="--normalize scale --blur 0.001 --scaling 0.98 --lr 1e-3"
+    argstring="--normalize scale-linear --blur 0.001 --scaling 0.98 --lr 1e-3"
 elif [ $target == "w2" ]
 then
-    argstring="--normalize scale --lr 1e-3"
+    argstring="--normalize scale-linear --lr 1e-3"
 elif [ $target == "w1_exact" ]
 then
-    argstring="--normalize scale --lr 1e-3"
+    argstring="--normalize scale-linear --lr 1e-3"
 elif [ $target == "kl" ]
 then
-    argstring="--normalize whiten --lr 1e-3"
+    argstring="--normalize scale-inv --lr 1e-3"
 fi
 
 if [ $model == "pine" ]
