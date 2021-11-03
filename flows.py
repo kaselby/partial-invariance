@@ -616,7 +616,7 @@ class BatchOfFlows(nn.Module):
             log_jacob += -a.sum(-1, keepdim=True)
         log_probs = (-0.5 * u.pow(2) - 0.5 * math.log(2 * math.pi)).sum(
             -1, keepdim=True)
-        return (log_probs + log_jacob).sum(-1, keepdim=True)
+        return (log_probs + log_jacob).sum(-1, keepdim=True).transpose(0,1)
         
 
 
