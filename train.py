@@ -196,6 +196,7 @@ if __name__ == '__main__':
     elif args.target == 'mi':
         sample_kwargs['set_size'] = (100,150)
         label_fct = mi_corr_gaussian
+        label_kwargs={}
         exact_loss=True
         mixture=False
         criterion=nn.L1Loss()
