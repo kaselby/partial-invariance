@@ -407,7 +407,7 @@ def mi_corr_gaussian(corr, d=None, X=None):
     assert (d is None) != (X is None)
     if X is not None:
         d = X.size(-1)
-    return -d/2 * math.log(1-corr**2)
+    return -d/2 * torch.log(1-torch.pow(corr, 2))
 
 
 
