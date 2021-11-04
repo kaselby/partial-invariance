@@ -230,7 +230,7 @@ if __name__ == '__main__':
             }
             model=MultiRNModel(**model_kwargs).to(device)
         elif args.model == 'pine':
-            model = PINE(args.dim, args.latent_size/4, 16, 2, args.hidden_size, 1).to(device)
+            model = PINE(args.dim, args.latent_size, 16, 2, args.hidden_size, 1).to(device)
         else:
             raise NotImplementedError()
     else:
