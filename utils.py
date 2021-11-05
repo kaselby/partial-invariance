@@ -424,7 +424,7 @@ def kraskov_mi1(X, Y, k=1):
     n_x = (Xdists <= eps.unsqueeze(-1)).float().sum(dim=-1)
     n_y = (Ydists <= eps.unsqueeze(-1)).float().sum(dim=-1)
 
-    out = torch.digamma(torch.Tensor([k])) + torch.digamma(torch.Tensor([N])) - (torch.digamma(n_x+1) + torch.digamma(n_y+1)).mean(dim=1)
+    out = torch.digamma(torch.Tensor([k], device=X.device)) + torch.digamma(torch.Tensor([N], device=X.device)) - (torch.digamma(n_x+1) + torch.digamma(n_y+1)).mean(dim=1)
     return out
 
 def kraskov_mi2(X, Y, k=1):
