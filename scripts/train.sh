@@ -30,7 +30,7 @@ then
     argstring="--normalize scale-linear --lr 1e-3"
 elif [ $target == "kl" ]
 then
-    argstring="--normalize scale-inv --lr 1e-3"
+    argstring="--normalize whiten --lr 1e-3"
 fi
 
 if [ $model == "pine" ]

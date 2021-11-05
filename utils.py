@@ -410,6 +410,42 @@ def mi_corr_gaussian(corr, d=None, X=None):
     return -d/2 * torch.log(1-torch.pow(corr, 2))
 
 
+def kraskov_mi1(X, Y, k=1):
+    assert X.size(1) == Y.size(1)
+    N = X.size(1)
+    d = X.size(-1)
+    mask = (torch.eye(N)).to(X.device)
+    mask[mask==1] = float('inf')
+    Xdists,_ = torch.sort(get_dists(X, X) + mask, dim=-1)
+    Ydists,_ = torch.sort(get_dists(Y, Y) + mask, dim=-1)
+    eps_x = Xdists[:,:,k]
+    eps_y = Ydists[:,:,k]
+    eps = torch.maximum(eps_x, eps_y)
+    n_x = (Xdists <= eps.unsqueeze(-1)).float().sum(dim=-1)
+    n_y = (Ydists <= eps.unsqueeze(-1)).float().sum(dim=-1)
+
+    out = torch.digamma(k) + torch.digamma(N) - (torch.digamma(n_x+1) + torch.digamma(n_y+1).mean(dim=1))
+    return out
+
+def kraskov_mi2(X, Y, k=1):
+    assert X.size(1) == Y.size(1)
+    N = X.size(1)
+    d = X.size(-1)
+    mask = (torch.eye(N)).to(X.device)
+    mask[mask==1] = float('inf')
+    Xdists,_ = torch.sort(get_dists(X, X) + mask, dim=-1)
+    Ydists,_ = torch.sort(get_dists(Y, Y) + mask, dim=-1)
+    eps_x = Xdists[:,:,k]
+    eps_y = Ydists[:,:,k]
+    eps = torch.maximum(eps_x, eps_y)
+    n_x = (Xdists <= eps.unsqueeze(-1)).float().sum(dim=-1)
+    n_y = (Ydists <= eps.unsqueeze(-1)).float().sum(dim=-1)
+
+    out = torch.digamma(k) + torch.digamma(N) - (torch.digamma(n_x) + torch.digamma(n_y).mean(dim=1)) - 1/k
+    return out
+
+
+
 
 class PrecisionLoss(nn.Module):
     def forward(self, scores, labels):
