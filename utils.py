@@ -414,14 +414,14 @@ def kraskov_mi1(X, Y, k=1):
     assert X.size(1) == Y.size(1)
     N = X.size(1)
     d = X.size(-1)
-mask = (torch.eye(N)).to(X.device)
-mask[mask==1] = float('inf')
-Xdists = get_dists(X, X) + mask
-Ydists = get_dists(Y, Y) + mask
-Zdists = torch.maximum(Xdists, Ydists)
-eps,_ = Zdists.topk(k, dim=-1, largest=False)
-n_x = (Xdists < eps).float().sum(dim=-1)
-n_y = (Ydists < eps).float().sum(dim=-1)
+    mask = (torch.eye(N)).to(X.device)
+    mask[mask==1] = float('inf')
+    Xdists = get_dists(X, X) + mask
+    Ydists = get_dists(Y, Y) + mask
+    Zdists = torch.maximum(Xdists, Ydists)
+    eps,_ = Zdists.topk(k, dim=-1, largest=False)
+    n_x = (Xdists < eps).float().sum(dim=-1)
+    n_y = (Ydists < eps).float().sum(dim=-1)
     out = torch.digamma(torch.tensor([k], device=X.device)) + torch.digamma(torch.tensor([N], device=X.device)) - (torch.digamma(n_x+1) + torch.digamma(n_y+1)).mean(dim=1)
     return out
 
