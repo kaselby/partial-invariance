@@ -256,7 +256,7 @@ if __name__ == '__main__':
     elif args.data == 'nf':
         generator = NFGenerator(32, 2, num_outputs=2, use_maf=False, variable_dim=args.equi, return_params=exact_loss)
     elif args.data == 'corr':
-        generator = CorrelatedGaussianGenerator(return_params=exact_loss)
+        generator = CorrelatedGaussianGenerator(return_params=exact_loss, variable_dim=args.equi)
     else:
         raise NotImplementedError("nf or gmm")
 
