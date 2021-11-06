@@ -199,7 +199,7 @@ if __name__ == '__main__':
         label_kwargs={}
         exact_loss=True
         mixture=False
-        criterion=nn.L1Loss()
+        criterion=nn.MSELoss()
 
     if not args.old_model:
         if args.model == 'csab':
