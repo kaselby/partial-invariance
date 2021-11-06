@@ -43,9 +43,18 @@ if __name__ == '__main__':
         label_fct=kl_mc
         exact_loss=True
         normalize='whiten'
+    elif args.target == 'mi':
+        baselines={'kraskov':kraskov_mi1}
+        label_fct=mi_corr_gaussian
+        exact_loss=True
+        normalize='none'
     else:
         raise NotImplementedError()
-    generators = {'gmm':GaussianGenerator(num_outputs=2, return_params=exact_loss), 'nf':NFGenerator(32, 3, num_outputs=2, return_params=exact_loss)}
+
+    if args.target != 'mi':
+        generators = {'gmm':GaussianGenerator(num_outputs=2, return_params=exact_loss), 'nf':NFGenerator(32, 3, num_outputs=2, return_params=exact_loss)}
+    else:
+        generators={'corr':CorrelatedGaussianGenerator(return_params=exact_loss)}
 
     for name,generator in generators.items():
         print("%s:"%name)
