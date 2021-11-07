@@ -31,6 +31,9 @@ then
 elif [ $target == "kl" ]
 then
     argstring="--normalize whiten --lr 1e-3"
+elif [ $target == "mi" ]
+then
+    argstring="--lr 1e-2"
 fi
 
 if [ $model == "pine" ]
