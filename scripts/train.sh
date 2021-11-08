@@ -17,23 +17,25 @@ equi=$5
 is=$6
 lts=$7
 hs=$8
-model=$9
+lr=$9
+model=${10}
+
 
 if [ $target == "w1" ]
 then
-    argstring="--normalize scale-linear --blur 0.001 --scaling 0.98 --lr 1e-3"
+    argstring="--normalize scale-linear --blur 0.001 --scaling 0.98"
 elif [ $target == "w2" ]
 then
-    argstring="--normalize scale-linear --lr 1e-3"
+    argstring="--normalize scale-linear"
 elif [ $target == "w1_exact" ]
 then
-    argstring="--normalize scale-linear --lr 1e-3"
+    argstring="--normalize scale-linear"
 elif [ $target == "kl" ]
 then
-    argstring="--normalize whiten --lr 1e-3"
+    argstring="--normalize whiten"
 elif [ $target == "mi" ]
 then
-    argstring="--lr 1e-2"
+    argstring=""
 fi
 
 if [ $model == "pine" ]
@@ -46,4 +48,4 @@ then
     argstring="${argstring} --equi"
 fi
 
-python3 train.py $run_name --target $target --data $data --num_inds $num_inds --dim $is --latent_size $lts --hidden_size $hs --checkpoint_name $SLURM_JOB_ID $argstring 
+python3 train.py $run_name --target $target --data $data --num_inds $num_inds --dim $is --latent_size $lts --hidden_size $hs --lr $lr --checkpoint_name $SLURM_JOB_ID $argstring 

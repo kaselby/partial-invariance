@@ -7,6 +7,7 @@ data='gmm'
 dim=2
 latent_size=16
 hidden_size=32
+lr="1e-3"
 
 run_name=$1
 
