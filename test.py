@@ -13,6 +13,7 @@ from utils import *
 from train import evaluate
 use_cuda=torch.cuda.is_available()
 
+RUN_DIR="final-runs"
 
 
 def parse_args():
@@ -22,11 +23,11 @@ def parse_args():
 
     return parser.parse_args()
 
-def get_runs(run_name, basedir="runs"):
+def get_runs(run_name, basedir=RUN_DIR):
     subfolders = [f.name for f in os.scandir(os.path.join(basedir, run_name)) if f.is_dir()]
     return subfolders
 
-RUN_DIR="final-runs"
+
 
 if __name__ == '__main__':
     args = parse_args()
