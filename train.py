@@ -38,6 +38,7 @@ def parse_args():
     parser.add_argument('--latent_size', type=int, default=256)
     parser.add_argument('--hidden_size', type=int, default=384)
     parser.add_argument('--dim', type=int, default=32)
+    parser.add_argument('--clip', type=int, default=-1)
     return parser.parse_args()
 
 
@@ -74,7 +75,7 @@ def evaluate(model, generator, label_fct, exact_loss=False, batch_size=64, sampl
     return sum(model_losses)/len(model_losses)
 
 def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(), batch_size=64, steps=3000, lr=1e-5, 
-    checkpoint_dir=None, save_every=1000, sample_kwargs={}, label_kwargs={}, normalize='none'):
+    checkpoint_dir=None, save_every=1000, sample_kwargs={}, label_kwargs={}, normalize='none', clip=-1):
     #model.train(True)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     losses = []
@@ -112,6 +113,8 @@ def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(),
             X = whiten_split(*X)
         loss = criterion(model(*X).squeeze(-1), labels)
         loss.backward()
+        if clip > 0:
+            torch.nn.utils.clip_grad_norm_(model.parameters(), clip)
         optimizer.step()
 
         losses.append(loss.item())
@@ -265,7 +268,7 @@ if __name__ == '__main__':
 
     losses = train(model, generator, label_fct, checkpoint_dir=os.path.join(args.checkpoint_dir, args.checkpoint_name), \
         exact_loss=exact_loss, criterion=criterion, steps=steps, lr=args.lr, batch_size=batch_size, \
-        sample_kwargs=sample_kwargs, label_kwargs=label_kwargs, normalize=args.normalize)
+        sample_kwargs=sample_kwargs, label_kwargs=label_kwargs, normalize=args.normalize, clip=args.clip)
 
     model_out = model._modules['module'] if torch.cuda.device_count() > 1 else model
     torch.save(model_out, os.path.join(run_dir,"model.pt"))  
