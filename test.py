@@ -66,7 +66,7 @@ if __name__ == '__main__':
         print("%s:"%name)
         seed = torch.randint(100, (1,)).item()
         for run_name in args.run_names:
-            all_runs = get_runs(run_name, "runs")
+            all_runs = get_runs(run_name, RUN_DIR)
             if len(all_runs) > 0:
                 avg_loss=0
                 for run_num in all_runs:
