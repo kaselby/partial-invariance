@@ -187,9 +187,10 @@ if __name__ == '__main__':
         label_kwargs={}
         baselines={'knn':kl_knn}
         exact_loss=True
-        sample_kwargs['nu']=3
-        sample_kwargs['mu0']=0
-        sample_kwargs['s0']=0.2
+        if args.data == 'gmm':
+            sample_kwargs['nu']=3
+            sample_kwargs['mu0']=0
+            sample_kwargs['s0']=0.2
         criterion=nn.L1Loss()
         mixture=True
         #batch_size = int(batch_size/4)

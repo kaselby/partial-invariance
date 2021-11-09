@@ -606,15 +606,15 @@ class GaussianGenerator():
         else:
             return samples.float().contiguous()
 
-    def _generate_mixture(self, batch_size, n, return_params=False, set_size=(100,150), component_range=(1,10), scale=None, nu=3, mu0=0, s0=1):
+    def _generate_mixture(self, batch_size, n, return_params=False, set_size=(100,150), component_range=(1,10), scale=None, nu=5, mu0=0, s0=0.3):
         n_samples = torch.randint(*set_size,(1,))
         n_components = torch.randint(*component_range,(1,)).item()
         mus= torch.rand(size=(batch_size, n_components, n))
         c = LKJCholesky(n, concentration=nu).sample((batch_size, n_components))
         while c.isnan().any():
             c = LKJCholesky(n).sample((batch_size, n_components))
-        #s = torch.diag_embed(LogNormal(mu0,s0).sample((batch_size, n_components, n)))
-        sigmas = c#torch.matmul(s, c)
+        s = torch.diag_embed(LogNormal(mu0,s0).sample((batch_size, n_components, n)))
+        sigmas = torch.matmul(s, c)
         if scale is not None:
             mus = mus * scale.unsqueeze(-1).unsqueeze(-1)
             sigmas = sigmas * scale.unsqueeze(-1).unsqueeze(-1)
@@ -819,4 +819,19 @@ def normalize_sets(*X):
     return [x / avg_norm for x in X], avg_norm
 
 
-    
+N=5000
+bs=256
+n_batches=math.ceil(N*1.0/bs)
+nu=3
+dims=[2,4,8,20,32]
+gen=GaussianGenerator(2,return_params=True)
+for dim in dims:
+    kls = torch.zeros(N)
+    for i in range(n_batches):
+        min_j = i*bs
+        max_j = min(N, (i+1)*bs)
+        (X,Y),(TX,TY) = gen(max_j-min_j,n=dim,nu=nu)
+        kls[min_j:max_j] = kl_mc(TX,TY,X=X)
+    kl_mean = kls.mean()
+    kl_sigma = (kls - kl_mean).pow(2).sum().sqrt()
+    print("d=%d, mean kl=%f, stdev kl=%f"%(dim, kl_mean, kl_sigma))
