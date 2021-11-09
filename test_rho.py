@@ -14,7 +14,7 @@ def parse_args():
 if __name__ == '__main__':
     args = parse_args()
 
-    model = torch.load(os.path.join(args.basedir, "mi", args.run_name))
+    model = torch.load(os.path.join(args.basedir, "mi", args.run_name, "model.pt"))
     generator = CorrelatedGaussianGenerator(return_params=True)
 
     N=100
