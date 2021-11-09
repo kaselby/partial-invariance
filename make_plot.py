@@ -11,10 +11,11 @@ import numpy as np
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('run_names', type=str, nargs='+')
+    parser.add_argument('--basedir', type=str, default="final-runs")
     args = parser.parse_args()
 
     for run_name in args.run_names:
-        filename = os.path.join("runs", run_name, "logs.pt")
+        filename = os.path.join(args.basedir, run_name, "logs.pt")
         logs = torch.load(filename)
         losses = logs['losses']
 
