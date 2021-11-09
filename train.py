@@ -39,6 +39,7 @@ def parse_args():
     parser.add_argument('--hidden_size', type=int, default=384)
     parser.add_argument('--dim', type=int, default=32)
     parser.add_argument('--clip', type=int, default=-1)
+    parser.add_argument('--basedir', type=str, default="final-runs")
     return parser.parse_args()
 
 
@@ -140,11 +141,9 @@ def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(),
     return losses
 
 
-RUN_DIR="final-runs"
-
 if __name__ == '__main__':
     args = parse_args()
-    run_dir = os.path.join(RUN_DIR, args.target, args.run_name)
+    run_dir = os.path.join(args.basedir, args.target, args.run_name)
     '''if os.path.exists(run_dir):
         if args.overwrite:
             shutil.rmtree(run_dir)
