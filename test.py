@@ -64,24 +64,25 @@ if __name__ == '__main__':
 
     basedir=os.path.join(RUN_DIR, args.target)
 
-    run_names = glob.glob(os.path.join(basedir, args.run_name+"_*"))
+    run_paths = glob.glob(os.path.join(basedir, args.run_name+"*"))
     for name,generator in generators.items():
         sample_kwargs = {**base_sample_kwargs, **data_kwargs[name]}
         print("%s:"%name)
         seed = torch.randint(100, (1,)).item()
-        for run_name in run_names:
-            all_runs = get_runs(run_name)
+        for run_path in run_paths:
+            run_name = run_path.split("/")[-1]
+            all_runs = get_runs(run_path)
             if len(all_runs) > 0:
                 avg_loss=0
                 for run_num in all_runs:
-                    model = torch.load(os.path.join(basedir, run_name, run_num, "model.pt"))
+                    model = torch.load(os.path.join(run_path, run_num, "model.pt"))
                     model_loss = evaluate(model, generator, label_fct, 
                         sample_kwargs=sample_kwargs, steps=500, criterion=nn.L1Loss(), normalize=normalize, exact_loss=exact_loss, seed=seed)
                     avg_loss += model_loss
                     print("%s-%s Loss: %f" % (run_name, run_num, model_loss))
                 print("%s Avg Loss: %f" % (run_name, avg_loss / len(all_runs)))
             else:
-                model = torch.load(os.path.join(basedir, run_name, "model.pt"))
+                model = torch.load(os.path.join(run_path, "model.pt"))
                 model_loss = evaluate(model, generator, label_fct, 
                     sample_kwargs=sample_kwargs, steps=500, criterion=nn.L1Loss(), normalize=normalize, exact_loss=exact_loss, seed=seed)
                 print("%s Loss: %f" % (run_name, model_loss))
