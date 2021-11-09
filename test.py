@@ -26,6 +26,8 @@ def get_runs(run_name, basedir="runs"):
     subfolders = [f.name for f in os.scandir(os.path.join(basedir, run_name)) if f.is_dir()]
     return subfolders
 
+RUN_DIR="final-runs"
+
 if __name__ == '__main__':
     args = parse_args()
     print("test")
@@ -67,14 +69,14 @@ if __name__ == '__main__':
             if len(all_runs) > 0:
                 avg_loss=0
                 for run_num in all_runs:
-                    model = torch.load(os.path.join("runs", run_name, run_num, "model.pt"))
+                    model = torch.load(os.path.join(RUN_DIR, args.target, run_name, run_num, "model.pt"))
                     model_loss = evaluate(model, generator, label_fct, 
                         sample_kwargs=sample_kwargs, steps=500, criterion=nn.L1Loss(), normalize=normalize, exact_loss=exact_loss, seed=seed)
                     avg_loss += model_loss
                     print("%s-%s Loss: %f" % (run_name, run_num, model_loss))
                 print("%s Avg Loss: %f" % (run_name, avg_loss / len(all_runs)))
             else:
-                model = torch.load(os.path.join("runs", run_name, "model.pt"))
+                model = torch.load(os.path.join(RUN_DIR, args.target, run_name, "model.pt"))
                 model_loss = evaluate(model, generator, label_fct, 
                     sample_kwargs=sample_kwargs, steps=500, criterion=nn.L1Loss(), normalize=normalize, exact_loss=exact_loss, seed=seed)
                 print("%s Loss: %f" % (run_name, model_loss))
