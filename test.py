@@ -8,6 +8,7 @@ import torch.nn as nn
 import fasttext
 import numpy as np
 import tqdm
+import glob
 
 from utils import *
 from train import evaluate
@@ -62,11 +63,14 @@ if __name__ == '__main__':
         data_kwargs={'corr':{}}
 
     basedir=os.path.join(RUN_DIR, args.target)
+
+    run_names = glob.glob(os.path.join(basedir, args.run_name+"_*"))
+
     for name,generator in generators.items():
         sample_kwargs = {**base_sample_kwargs, **data_kwargs[name]}
         print("%s:"%name)
         seed = torch.randint(100, (1,)).item()
-        for run_name in args.run_names:
+        for run_name in run_names:
             all_runs = get_runs(run_name, basedir)
             if len(all_runs) > 0:
                 avg_loss=0
