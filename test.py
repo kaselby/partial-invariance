@@ -21,6 +21,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('run_name', type=str)
     parser.add_argument('--target', type=str, default='wasserstein')
+    parser.add_argument('--n', type=int, default=2)
 
     return parser.parse_args()
 
@@ -32,11 +33,8 @@ def get_runs(run_name):
 
 if __name__ == '__main__':
     args = parse_args()
-    print("test")
 
-    
-
-    base_sample_kwargs={'n':2, 'set_size':(100,150)}
+    base_sample_kwargs={'n':args.n, 'set_size':(100,150)}
     if args.target == 'wasserstein':
         baselines = {'sinkhorn_default':wasserstein, 'sinkhorn_exact': lambda X,Y: wasserstein(X,Y, blur=0.001,scaling=0.98)}
         label_fct=wasserstein_exact
