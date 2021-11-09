@@ -4,9 +4,9 @@ import argparse
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('run_name', type=str, nargs='+')
-    parser.add_argument('basedir', type=str, default="final-runs")
-    parser.add_argument('n', type=int, default=2)
+    parser.add_argument('run_name', type=str)
+    parser.add_argument('--basedir', type=str, default="final-runs")
+    parser.add_argument('--n', type=int, default=2)
 
     return parser.parse_args()
 
