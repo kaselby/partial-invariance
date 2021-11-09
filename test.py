@@ -32,7 +32,7 @@ if __name__ == '__main__':
 
     
 
-    sample_kwargs={'n':2, 'set_size':(100,150)}
+    base_sample_kwargs={'n':2, 'set_size':(100,150)}
     if args.target == 'wasserstein':
         baselines = {'sinkhorn_default':wasserstein, 'sinkhorn_exact': lambda X,Y: wasserstein(X,Y, blur=0.001,scaling=0.98)}
         label_fct=wasserstein_exact
@@ -53,10 +53,13 @@ if __name__ == '__main__':
 
     if args.target != 'mi':
         generators = {'gmm':GaussianGenerator(num_outputs=2, return_params=exact_loss), 'nf':NFGenerator(32, 3, num_outputs=2, return_params=exact_loss)}
+        data_kwargs={'gmm':{'nu':5, 'mu0':0, 's0':0}, 'nf':{}}
     else:
         generators={'corr':CorrelatedGaussianGenerator(return_params=exact_loss)}
+        data_kwargs={'corr':{}}
 
     for name,generator in generators.items():
+        sample_kwargs = {**base_sample_kwargs, **data_kwargs[name]}
         print("%s:"%name)
         seed = torch.randint(100, (1,)).item()
         for run_name in args.run_names:
