@@ -20,6 +20,7 @@ hs=$8
 lr=$9
 clip=${10}
 model=${11}
+basedir=${12}
 
 
 if [ $target == "w1" ]
@@ -49,4 +50,4 @@ then
     argstring="${argstring} --equi"
 fi
 
-python3 train.py $run_name --target $target --data $data --num_inds $num_inds --dim $is --latent_size $lts --hidden_size $hs --lr $lr --clip $clip --checkpoint_name $SLURM_JOB_ID $argstring 
+python3 train.py $run_name --target $target --data $data --num_inds $num_inds --dim $is --latent_size $lts --hidden_size $hs --lr $lr --clip $clip --basedir $basedir --checkpoint_name $SLURM_JOB_ID $argstring 
