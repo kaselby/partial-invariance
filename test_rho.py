@@ -5,16 +5,16 @@ import argparse
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('run_name', type=str, nargs='+')
+    parser.add_argument('basedir', type=str, default="final-runs")
     parser.add_argument('n', type=int, default=2)
 
     return parser.parse_args()
 
-RUN_DIR="final-runs"
 
 if __name__ == '__main__':
     args = parse_args()
 
-    model = torch.load(os.path.join(RUN_DIR, "mi", args.run_name))
+    model = torch.load(os.path.join(args.base_dir, "mi", args.run_name))
     generator = CorrelatedGaussianGenerator(return_params=True)
 
     N=100
@@ -28,4 +28,4 @@ if __name__ == '__main__':
         mi_model[i] = model(*X).squeeze(-1).detach().cpu()
         mi_kraskov[i] = kraskov_mi1(*X)
 
-    torch.save({'rho':rho, 'true':mi_true, 'model':mi_model, 'kraskov':mi_kraskov})
+    torch.save({'rho':rho, 'true':mi_true, 'model':mi_model, 'kraskov':mi_kraskov}, os.path.join(args.base_dir, "mi", args.run_name, "rho.pt"))
