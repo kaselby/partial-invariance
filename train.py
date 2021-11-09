@@ -141,7 +141,7 @@ RUN_DIR="final-runs"
 
 if __name__ == '__main__':
     args = parse_args()
-    run_dir = os.path.join(RUN_DIR, args.run_name)
+    run_dir = os.path.join(RUN_DIR, args.target, args.run_name)
     '''if os.path.exists(run_dir):
         if args.overwrite:
             shutil.rmtree(run_dir)
