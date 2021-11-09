@@ -19,7 +19,7 @@ RUN_DIR="final-runs"
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('run_names', type=str, nargs='+')
+    parser.add_argument('run_name', type=str)
     parser.add_argument('--target', type=str, default='wasserstein')
 
     return parser.parse_args()
@@ -65,7 +65,6 @@ if __name__ == '__main__':
     basedir=os.path.join(RUN_DIR, args.target)
 
     run_names = glob.glob(os.path.join(basedir, args.run_name+"_*"))
-
     for name,generator in generators.items():
         sample_kwargs = {**base_sample_kwargs, **data_kwargs[name]}
         print("%s:"%name)
