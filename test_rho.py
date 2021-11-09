@@ -14,7 +14,7 @@ def parse_args():
 if __name__ == '__main__':
     args = parse_args()
 
-    model = torch.load(os.path.join(args.base_dir, "mi", args.run_name))
+    model = torch.load(os.path.join(args.basedir, "mi", args.run_name))
     generator = CorrelatedGaussianGenerator(return_params=True)
 
     N=100
@@ -28,4 +28,4 @@ if __name__ == '__main__':
         mi_model[i] = model(*X).squeeze(-1).detach().cpu()
         mi_kraskov[i] = kraskov_mi1(*X)
 
-    torch.save({'rho':rho, 'true':mi_true, 'model':mi_model, 'kraskov':mi_kraskov}, os.path.join(args.base_dir, "mi", args.run_name, "rho.pt"))
+    torch.save({'rho':rho, 'true':mi_true, 'model':mi_model, 'kraskov':mi_kraskov}, os.path.join(args.basedir, "mi", args.run_name, "rho.pt"))
