@@ -24,8 +24,8 @@ def parse_args():
 
     return parser.parse_args()
 
-def get_runs(run_name, basedir=RUN_DIR):
-    subfolders = [f.name for f in os.scandir(os.path.join(basedir, run_name)) if f.is_dir()]
+def get_runs(run_name):
+    subfolders = [f.name for f in os.scandir(run_name) if f.is_dir()]
     return subfolders
 
 
@@ -70,7 +70,7 @@ if __name__ == '__main__':
         print("%s:"%name)
         seed = torch.randint(100, (1,)).item()
         for run_name in run_names:
-            all_runs = get_runs(run_name, basedir)
+            all_runs = get_runs(run_name)
             if len(all_runs) > 0:
                 avg_loss=0
                 for run_num in all_runs:
