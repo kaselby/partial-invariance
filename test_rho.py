@@ -1,6 +1,7 @@
 from utils import *
 import os
 import argparse
+import glob
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -10,11 +11,13 @@ def parse_args():
 
     return parser.parse_args()
 
+def get_runs(run_name):
+    subfolders = [f.name for f in os.scandir(run_name) if f.is_dir()]
+    return subfolders
 
 if __name__ == '__main__':
     args = parse_args()
-
-    model = torch.load(os.path.join(args.basedir, "mi", args.run_name, "model.pt"))
+    
     generator = CorrelatedGaussianGenerator(return_params=True)
 
     N=100
@@ -28,8 +31,16 @@ if __name__ == '__main__':
     with torch.no_grad():
         for i in range(rho.size(0)):
             X, T = generator(N, n=args.n, corr=rho[i])
-            mi_model[i] = model(*X).squeeze(-1).mean()
             mi_kraskov[i] = kraskov_mi1(*X).mean()
+        modeldir = os.path.join(args.basedir, "mi", args.run_name)
+        all_runs = get_runs(modeldir)
+        for run_num in all_runs:
+            model = torch.load(os.path.join(modeldir, run_num, "model.pt"))
+            for i in range(rho.size(0)):
+                X, T = generator(N, n=args.n, corr=rho[i])
+                mi_model[i] += model(*X).squeeze(-1).mean()
+            mi_model /= len(all_runs)
+
 
     torch.save({'rho':rho.cpu(), 'true':mi_true.cpu(), 'model':mi_model.cpu(), 'kraskov':mi_kraskov.cpu()}, 
         os.path.join(args.basedir, "mi", args.run_name, "rho.pt"))
