@@ -668,11 +668,12 @@ class CorrelatedGaussianGenerator():
         cov = torch.cat([torch.cat([I, rhoI], dim=1), torch.cat([rhoI, I], dim=1)], dim=2)
         return MultivariateNormal(mu, covariance_matrix=cov)
 
-    def _generate(self, batch_size, n, set_size=(100,150)):
+    def _generate(self, batch_size, n, set_size=(100,150), corr=None):
         n_samples = torch.randint(*set_size,(1,))
-        corr = torch.rand((batch_size,))
-        if use_cuda:
-            corr = corr.cuda()
+        if corr is not None:
+            corr = torch.rand((batch_size,))
+            if use_cuda:
+                corr = corr.cuda()
         dists = self._build_dist(batch_size, corr, n)
         X, Y = dists.sample(n_samples).transpose(0,1).chunk(2, dim=-1)
         if self.return_params:
@@ -818,7 +819,7 @@ def normalize_sets(*X):
     avg_norm = torch.cat(X, dim=1).norm(dim=-1,keepdim=True).mean(dim=1,keepdim=True)
     return [x / avg_norm for x in X], avg_norm
 
-
+'''
 N=5000
 bs=256
 n_batches=math.ceil(N*1.0/bs)
@@ -835,3 +836,4 @@ for dim in dims:
     kl_mean = kls.mean()
     kl_sigma = (kls - kl_mean).pow(2).sum().sqrt()
     print("d=%d, mean kl=%f, stdev kl=%f"%(dim, kl_mean, kl_sigma))
+'''
