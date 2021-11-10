@@ -199,7 +199,7 @@ if __name__ == '__main__':
         mixture=True
         #batch_size = int(batch_size/4)
     elif args.target == 'mi':
-        sample_kwargs['set_size'] = (100,150)
+        sample_kwargs['set_size'] = (200,400)
         label_fct = mi_corr_gaussian
         label_kwargs={}
         exact_loss=True
