@@ -671,7 +671,7 @@ class CorrelatedGaussianGenerator():
     def _generate(self, batch_size, n, set_size=(100,150), corr=None):
         n_samples = torch.randint(*set_size,(1,))
         if corr is None:
-            corr = torch.rand((batch_size,))
+            corr = 0.999-1.998*(torch.rand((batch_size,)))
             if use_cuda:
                 corr = corr.cuda()
         dists = self._build_dist(batch_size, corr, n)
