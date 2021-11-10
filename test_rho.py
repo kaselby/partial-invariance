@@ -22,7 +22,7 @@ if __name__ == '__main__':
 
     N=100
     set_size=(100,150)
-    rho = torch.tensor([-0.99,-0.9,-0.7-0.5,-0.3,-0.1,0,0.1,0.3,0.5,0.7,0.9,0.99])
+    rho = torch.tensor([-0.99,-0.9,-0.7,-0.5,-0.3,-0.1,0,0.1,0.3,0.5,0.7,0.9,0.99])
     if use_cuda:
         rho = rho.cuda()
     mi_true = mi_corr_gaussian(rho, d=args.n)
