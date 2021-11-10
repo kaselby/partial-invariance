@@ -1,6 +1,7 @@
 import io
 import os
 import argparse
+from posixpath import basename
 import random
 
 import torch
@@ -62,8 +63,8 @@ if __name__ == '__main__':
         data_kwargs={'corr':{}}
 
     basedir=os.path.join(args.basedir, args.target)
-
     run_paths = glob.glob(os.path.join(basedir, args.run_name+"*"))
+    results={}
     for name,generator in generators.items():
         sample_kwargs = {**base_sample_kwargs, **data_kwargs[name]}
         print("%s:"%name)
@@ -71,21 +72,49 @@ if __name__ == '__main__':
         for run_path in run_paths:
             run_name = run_path.split("/")[-1]
             all_runs = get_runs(run_path)
+            if run_name not in results:
+                results[run_name] = {}
             if len(all_runs) > 0:
+                results[run_name][name]={'all_losses':[]}
                 avg_loss=0
                 for run_num in all_runs:
                     model = torch.load(os.path.join(run_path, run_num, "model.pt"))
-                    model_loss = evaluate(model, generator, label_fct, 
+                    model_loss_i = evaluate(model, generator, label_fct, 
                         sample_kwargs=sample_kwargs, steps=500, criterion=nn.L1Loss(), normalize=normalize, exact_loss=exact_loss, seed=seed)
-                    avg_loss += model_loss
-                    print("%s-%s Loss: %f" % (run_name, run_num, model_loss))
-                print("%s Avg Loss: %f" % (run_name, avg_loss / len(all_runs)))
+                    results[run_name][name]['all_losses'].append(model_loss_i)
+                    avg_loss += model_loss_i
+                    print("%s-%s Loss: %f" % (run_name, run_num, model_loss_i))
+                avg_loss /= len(all_runs)
+                print("%s Avg Loss: %f" % (run_name, avg_loss))
+                results[run_name][name]['avg_loss'] = avg_loss
             else:
                 model = torch.load(os.path.join(run_path, "model.pt"))
                 model_loss = evaluate(model, generator, label_fct, 
                     sample_kwargs=sample_kwargs, steps=500, criterion=nn.L1Loss(), normalize=normalize, exact_loss=exact_loss, seed=seed)
                 print("%s Loss: %f" % (run_name, model_loss))
+                results[run_name][name] = model_loss
         for baseline_name, baseline_fct in baselines.items():
+            if baseline_name not in results:
+                results[baseline_name] = {}
             baseline_loss = evaluate(baseline_fct, generator, label_fct, 
                 sample_kwargs=sample_kwargs, steps=500, criterion=nn.L1Loss(), normalize=False, exact_loss=exact_loss, seed=seed)
             print("%s Loss: %f" % (baseline_name, baseline_loss))
+            results[baseline_name][name] = baseline_loss
+    
+
+    outfile = os.path.join("eval", args.run_name + "_results.txt")
+    with open(outfile, 'w') as writer:
+        for name in generators.keys():
+            writer.write(name+":\n")
+            for baseline_name in baselines.keys():
+                writer.write("\t%s:%f" % (baseline_name, results[baseline_name][name]))
+            for run_path in run_paths:
+                run_name = run_path.split("/")[-1]
+                if results[run_name][name] is dict:
+                    all_losses, avg_loss = results[run_name][name]['all_losses'], results[run_name][name]['avg_loss']
+                    writer.write("\t%s:\n" % run_name)
+                    writer.write("\t\tAll Losses:", str(all_losses), "\n")
+                    writer.write("\t\tAvg Loss: %f\n"% avg_loss)
+                else:
+                    writer.write("\t%s:%f" % (run_name, results[run_name][name]))
+
