@@ -20,6 +20,7 @@ RUN_DIR="final-runs"
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('run_name', type=str)
+    parser.add_argument('--basedir', type=str, default='final-runs')
     parser.add_argument('--target', type=str, default='wasserstein')
     parser.add_argument('--n', type=int, default=2)
 
@@ -60,7 +61,7 @@ if __name__ == '__main__':
         generators={'corr':CorrelatedGaussianGenerator(return_params=exact_loss)}
         data_kwargs={'corr':{}}
 
-    basedir=os.path.join(RUN_DIR, args.target)
+    basedir=os.path.join(args.basedir, args.target)
 
     run_paths = glob.glob(os.path.join(basedir, args.run_name+"*"))
     for name,generator in generators.items():
