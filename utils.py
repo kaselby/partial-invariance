@@ -670,7 +670,7 @@ class CorrelatedGaussianGenerator():
 
     def _generate(self, batch_size, n, set_size=(100,150), corr=None):
         n_samples = torch.randint(*set_size,(1,))
-        if corr is not None:
+        if corr is None:
             corr = torch.rand((batch_size,))
             if use_cuda:
                 corr = corr.cuda()
