@@ -110,7 +110,7 @@ if __name__ == '__main__':
                 writer.write("\t%s:%f" % (baseline_name, results[baseline_name][name]))
             for run_path in run_paths:
                 run_name = run_path.split("/")[-1]
-                if results[run_name][name] is dict:
+                if type(results[run_name][name]) is dict:
                     all_losses, avg_loss = results[run_name][name]['all_losses'], results[run_name][name]['avg_loss']
                     writer.write("\t%s:\n" % run_name)
                     writer.write("\t\tAll Losses:", str(all_losses), "\n")
