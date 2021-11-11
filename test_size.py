@@ -37,9 +37,7 @@ def eval_all(sizes, sample_kwargs, *args, **kwargs):
 if __name__ == '__main__':
     args = parse_args()
     
-    sizes = torch.linspace(3,9,20).exp().round()
-
-    
+    sizes = torch.linspace(2,9,20).exp().round()
 
     sample_kwargs={'n':2}
     if args.target == 'wasserstein':
@@ -83,7 +81,7 @@ if __name__ == '__main__':
         results['model'] = model_losses
     for baseline_name, baseline_fct in baselines.items():
         baseline_losses = eval_all(sizes, sample_kwargs, baseline_fct, generator, label_fct, 
-            steps=500, criterion=nn.L1Loss(), normalize=False, exact_loss=exact_loss, seed=seed)
+            steps=200, criterion=nn.L1Loss(), normalize=False, exact_loss=exact_loss, seed=seed)
         results[baseline_name] = baseline_losses
 
     torch.save(results, os.path.join("runs", run_name, "ss_losses.pt"))
