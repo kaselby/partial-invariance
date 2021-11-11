@@ -18,11 +18,12 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('run_name', type=str, nargs='+')
     parser.add_argument('--target', type=str, default='wasserstein')
+    parser.add_argument('--basedir', type=str, default='final-runs')
 
     return parser.parse_args()
 
-def get_runs(run_name, basedir="runs"):
-    subfolders = [f.name for f in os.scandir(os.path.join(basedir, run_name)) if f.is_dir()]
+def get_runs(run_name):
+    subfolders = [f.name for f in os.scandir(run_name) if f.is_dir()]
     return subfolders
 
 def eval_all(sizes, sample_kwargs, *args, **kwargs):
@@ -65,17 +66,18 @@ if __name__ == '__main__':
 
     seed = torch.randint(100, (1,)).item()
     run_name = args.run_name
-    all_runs = get_runs(run_name, "runs")
+    basedir=os.path.join(args.basedir, args.target)
+    all_runs = get_runs(os.path.join(basedir, run_name))
     results={}
     if len(all_runs) > 0:
         avg_losses = torch.zeros_like(sizes)
         for run_num in all_runs:
-            model = torch.load(os.path.join("runs", run_name, run_num, "model.pt"))
+            model = torch.load(os.path.join(basedir, run_name, run_num, "model.pt"))
             avg_losses = avg_losses + eval_all(sizes, sample_kwargs, model, generator, label_fct, steps=200, 
                 criterion=nn.L1Loss(), normalize=normalize, exact_loss=exact_loss, seed=seed)
         results['model'] = avg_losses / len(all_runs)
     else:
-        model = torch.load(os.path.join("runs", run_name, "model.pt"))
+        model = torch.load(os.path.join(basedir, run_name, "model.pt"))
         model_losses = eval_all(sizes, sample_kwargs, model, generator, label_fct, 
             steps=500, criterion=nn.L1Loss(), normalize=normalize, exact_loss=exact_loss, seed=seed)
         results['model'] = model_losses
@@ -84,4 +86,4 @@ if __name__ == '__main__':
             steps=200, criterion=nn.L1Loss(), normalize=False, exact_loss=exact_loss, seed=seed)
         results[baseline_name] = baseline_losses
 
-    torch.save(results, os.path.join("runs", run_name, "ss_losses.pt"))
+    torch.save(results, os.path.join(basedir, run_name, "ss_losses.pt"))
