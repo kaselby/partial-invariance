@@ -16,7 +16,7 @@ use_cuda=torch.cuda.is_available()
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('run_name', type=str, nargs='+')
+    parser.add_argument('run_name', type=str)
     parser.add_argument('--target', type=str, default='wasserstein')
     parser.add_argument('--basedir', type=str, default='final-runs')
     parser.add_argument('--n', type=int, default=2)
