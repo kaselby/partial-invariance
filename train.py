@@ -138,7 +138,7 @@ def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(),
             steps=500, normalize=normalize, seed=seed)
     '''
 
-    return losses
+    return model, losses
 
 
 if __name__ == '__main__':
@@ -199,7 +199,7 @@ if __name__ == '__main__':
         mixture=True
         #batch_size = int(batch_size/4)
     elif args.target == 'mi':
-        sample_kwargs['set_size'] = (200,400)
+        sample_kwargs['set_size'] = (100,300)
         label_fct = mi_corr_gaussian
         label_kwargs={}
         exact_loss=True
@@ -265,7 +265,7 @@ if __name__ == '__main__':
     else:
         raise NotImplementedError("nf or gmm")
 
-    losses = train(model, generator, label_fct, checkpoint_dir=os.path.join(args.checkpoint_dir, args.checkpoint_name), \
+    model, losses = train(model, generator, label_fct, checkpoint_dir=os.path.join(args.checkpoint_dir, args.checkpoint_name), \
         exact_loss=exact_loss, criterion=criterion, steps=steps, lr=args.lr, batch_size=batch_size, \
         sample_kwargs=sample_kwargs, label_kwargs=label_kwargs, normalize=args.normalize, clip=args.clip)
 

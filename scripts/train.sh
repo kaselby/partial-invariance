@@ -37,7 +37,7 @@ then
     argstring="--normalize whiten"
 elif [ $target == "mi" ]
 then
-    argstring=""
+    argstring="--normalize none"
 fi
 
 if [ $model == "pine" ]
