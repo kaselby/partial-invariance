@@ -19,6 +19,7 @@ def parse_args():
     parser.add_argument('run_name', type=str, nargs='+')
     parser.add_argument('--target', type=str, default='wasserstein')
     parser.add_argument('--basedir', type=str, default='final-runs')
+    parser.add_argument('--n', type=int, default=2)
 
     return parser.parse_args()
 
@@ -40,7 +41,7 @@ if __name__ == '__main__':
     
     sizes = torch.linspace(2,9,20).exp().round()
 
-    sample_kwargs={'n':2}
+    sample_kwargs={'n':args.n}
     if args.target == 'wasserstein':
         baselines = {'sinkhorn_default':wasserstein, 'sinkhorn_exact': lambda X,Y: wasserstein(X,Y, blur=0.001,scaling=0.98)}
         label_fct=wasserstein_exact
