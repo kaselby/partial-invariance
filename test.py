@@ -113,7 +113,7 @@ if __name__ == '__main__':
                 if type(results[run_name][name]) is dict:
                     all_losses, avg_loss = results[run_name][name]['all_losses'], results[run_name][name]['avg_loss']
                     writer.write("\t%s:\n" % run_name)
-                    writer.write("\t\tAll Losses:", str(all_losses), "\n")
+                    writer.write("\t\tAll Losses:" + str(all_losses) + "\n")
                     writer.write("\t\tAvg Loss: %f\n"% avg_loss)
                 else:
                     writer.write("\t%s:%f" % (run_name, results[run_name][name]))
