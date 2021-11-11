@@ -30,7 +30,7 @@ def get_runs(run_name):
 def eval_all(sizes, sample_kwargs, *args, **kwargs):
     losses = torch.zeros_like(sizes)
     for i in range(sizes.size(0)):
-        sample_kwargs['set_size']=(sizes[i],sizes[i]+1)
+        sample_kwargs['set_size']=(sizes[i].item(),sizes[i].item()+1)
         losses[i] = evaluate(*args, sample_kwargs=sample_kwargs, **kwargs)
     return losses
 
