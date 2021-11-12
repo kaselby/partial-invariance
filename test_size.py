@@ -95,4 +95,4 @@ if __name__ == '__main__':
             steps=400, criterion=nn.L1Loss(), normalize=False, exact_loss=exact_loss, seed=seed, batch_size=16)
         results[baseline_name] = baseline_losses
 
-    torch.save(results, os.path.join(basedir, run_name, "ss_losses.pt"))
+    torch.save(results, os.path.join(basedir, args.run_name, "ss_losses.pt"))
