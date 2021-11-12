@@ -29,10 +29,10 @@ def get_runs(run_name):
     return subfolders
 
 def eval_all(sizes, sample_kwargs, *args, **kwargs):
-    losses = torch.zeros_like(sizes)
+    losses = torch.zeros_like(sizes).float()
     for i in range(sizes.size(0)):
         sample_kwargs['set_size']=(sizes[i].item(),sizes[i].item()+1)
-        losses[i] = evaluate(*args, sample_kwargs=sample_kwargs, **kwargs)
+        losses[i] = evaluate(*args, sample_kwargs=sample_kwargs, **kwargs).cpu()
     return losses
 
 
@@ -72,7 +72,7 @@ if __name__ == '__main__':
     run_name = args.run_name
     basedir=os.path.join(args.basedir, args.target)
     run_paths = glob.glob(os.path.join(basedir, args.run_name+"*"))
-    results={}
+    results={'sizes':sizes}
     for run_path in run_paths:
         run_name = run_path.split("/")[-1]
         all_runs = get_runs(os.path.join(basedir, run_name))
@@ -82,7 +82,7 @@ if __name__ == '__main__':
             avg_losses = torch.zeros_like(sizes)
             for run_num in all_runs:
                 model = torch.load(os.path.join(basedir, run_name, run_num, "model.pt"))
-                avg_losses = avg_losses + eval_all(sizes, sample_kwargs, model, generator, label_fct, steps=400, 
+                avg_losses += eval_all(sizes, sample_kwargs, model, generator, label_fct, steps=400, 
                     criterion=nn.L1Loss(), normalize=normalize, exact_loss=exact_loss, seed=seed, batch_size=16)
             results[run_name] = avg_losses / len(all_runs)
         else:
