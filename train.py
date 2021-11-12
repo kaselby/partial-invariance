@@ -157,7 +157,7 @@ if __name__ == '__main__':
     sample_kwargs={}
     if args.equi:
         dim_range = math.ceil(args.dim/8)
-        sample_kwargs['dims'] = (max(1,args.dim-dim_range),args.dim+dim_range)
+        sample_kwargs['dims'] = (max(2,args.dim-dim_range),args.dim+dim_range)
     else:
         sample_kwargs['n'] = args.dim
 
