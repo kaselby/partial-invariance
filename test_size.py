@@ -32,7 +32,7 @@ def eval_all(sizes, sample_kwargs, *args, **kwargs):
     losses = torch.zeros_like(sizes).float()
     for i in range(sizes.size(0)):
         sample_kwargs['set_size']=(sizes[i].item(),sizes[i].item()+1)
-        losses[i] = evaluate(*args, sample_kwargs=sample_kwargs, **kwargs).cpu()
+        losses[i] = evaluate(*args, sample_kwargs=sample_kwargs, **kwargs)
     return losses
 
 
