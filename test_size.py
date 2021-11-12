@@ -67,6 +67,8 @@ if __name__ == '__main__':
         generator = CorrelatedGaussianGenerator(return_params=exact_loss)
 
 
+    batch_size=8
+    steps=600
 
     seed = torch.randint(100, (1,)).item()
     run_name = args.run_name
@@ -82,17 +84,17 @@ if __name__ == '__main__':
             avg_losses = torch.zeros_like(sizes)
             for run_num in all_runs:
                 model = torch.load(os.path.join(basedir, run_name, run_num, "model.pt"))
-                avg_losses += eval_all(sizes, sample_kwargs, model, generator, label_fct, steps=400, 
-                    criterion=nn.L1Loss(), normalize=normalize, exact_loss=exact_loss, seed=seed, batch_size=16)
+                avg_losses += eval_all(sizes, sample_kwargs, model, generator, label_fct, steps=steps, 
+                    criterion=nn.L1Loss(), normalize=normalize, exact_loss=exact_loss, seed=seed, batch_size=batch_size)
             results[run_name] = avg_losses / len(all_runs)
         else:
             model = torch.load(os.path.join(basedir, run_name, "model.pt"))
             model_losses = eval_all(sizes, sample_kwargs, model, generator, label_fct, 
-                steps=400, criterion=nn.L1Loss(), normalize=normalize, exact_loss=exact_loss, seed=seed, batch_size=16)
+                steps=steps, criterion=nn.L1Loss(), normalize=normalize, exact_loss=exact_loss, seed=seed, batch_size=batch_size)
             results[run_name] = model_losses
     for baseline_name, baseline_fct in baselines.items():
         baseline_losses = eval_all(sizes, sample_kwargs, baseline_fct, generator, label_fct, 
-            steps=400, criterion=nn.L1Loss(), normalize=False, exact_loss=exact_loss, seed=seed, batch_size=16)
+            steps=steps, criterion=nn.L1Loss(), normalize=False, exact_loss=exact_loss, seed=seed, batch_size=batch_size)
         results[baseline_name] = baseline_losses
 
     torch.save(results, os.path.join(basedir, args.run_name, "ss_losses.pt"))
