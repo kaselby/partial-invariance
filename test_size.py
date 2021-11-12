@@ -40,7 +40,7 @@ def eval_all(sizes, sample_kwargs, *args, **kwargs):
 if __name__ == '__main__':
     args = parse_args()
     
-    sizes = torch.linspace(2.5,9,15).exp().round().int()
+    sizes = torch.linspace(2.5,8,15).exp().round().int()
 
     sample_kwargs={'n':args.n}
     if args.target == 'wasserstein':
@@ -82,17 +82,17 @@ if __name__ == '__main__':
             avg_losses = torch.zeros_like(sizes)
             for run_num in all_runs:
                 model = torch.load(os.path.join(basedir, run_name, run_num, "model.pt"))
-                avg_losses = avg_losses + eval_all(sizes, sample_kwargs, model, generator, label_fct, steps=200, 
-                    criterion=nn.L1Loss(), normalize=normalize, exact_loss=exact_loss, seed=seed)
+                avg_losses = avg_losses + eval_all(sizes, sample_kwargs, model, generator, label_fct, steps=400, 
+                    criterion=nn.L1Loss(), normalize=normalize, exact_loss=exact_loss, seed=seed, batch_size=16)
             results[run_name] = avg_losses / len(all_runs)
         else:
             model = torch.load(os.path.join(basedir, run_name, "model.pt"))
             model_losses = eval_all(sizes, sample_kwargs, model, generator, label_fct, 
-                steps=200, criterion=nn.L1Loss(), normalize=normalize, exact_loss=exact_loss, seed=seed)
+                steps=400, criterion=nn.L1Loss(), normalize=normalize, exact_loss=exact_loss, seed=seed, batch_size=16)
             results[run_name] = model_losses
     for baseline_name, baseline_fct in baselines.items():
         baseline_losses = eval_all(sizes, sample_kwargs, baseline_fct, generator, label_fct, 
-            steps=200, criterion=nn.L1Loss(), normalize=False, exact_loss=exact_loss, seed=seed)
+            steps=400, criterion=nn.L1Loss(), normalize=False, exact_loss=exact_loss, seed=seed, batch_size=16)
         results[baseline_name] = baseline_losses
 
     torch.save(results, os.path.join(basedir, run_name, "ss_losses.pt"))
