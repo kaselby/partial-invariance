@@ -257,7 +257,8 @@ if __name__ == '__main__':
     
 
     if args.data == 'gmm':
-        generator = GaussianGenerator(num_outputs=2, scaleinv=args.scaleinv, variable_dim=args.equi, return_params=exact_loss, mixture=mixture)
+        #generator = GaussianGenerator(num_outputs=2, scaleinv=args.scaleinv, variable_dim=args.equi, return_params=exact_loss, mixture=mixture)
+        generator = PairedGaussianGenerator(variable_dim=args.equi, return_params=exact_loss)
     elif args.data == 'nf':
         generator = NFGenerator(32, 2, num_outputs=2, use_maf=False, variable_dim=args.equi, return_params=exact_loss)
     elif args.data == 'corr':

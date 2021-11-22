@@ -553,6 +553,11 @@ def scale_gmm(mixture, scale):
     scaled_dist.component_distribution.scale_tril *= scale
     return scaled_dist
 
+from scipy.stats import invwishart
+def sample_invwishart(df, scale, n):
+    return invwishart.rvs(df, scale, size=n)
+
+
 class GaussianGenerator():
     def __init__(self, num_outputs=1, mixture=True, normalize=False, scaleinv=False, return_params=False, variable_dim=False):
         self.num_outputs = num_outputs
@@ -568,7 +573,7 @@ class GaussianGenerator():
         mus= torch.rand(size=(batch_size, n))
         c = LKJCholesky(n, concentration=nu).sample((batch_size,))
         while c.isnan().any():
-            c = LKJCholesky(n).sample((batch_size,))
+            c = LKJCholesky(n, concentration=nu).sample((batch_size,))
         #s = torch.diag_embed(LogNormal(mu0,s0).sample((batch_size, n)))
         sigmas = c#torch.matmul(s, c)
         if scale is not None:
@@ -612,7 +617,7 @@ class GaussianGenerator():
         mus= torch.rand(size=(batch_size, n_components, n))
         c = LKJCholesky(n, concentration=nu).sample((batch_size, n_components))
         while c.isnan().any():
-            c = LKJCholesky(n).sample((batch_size, n_components))
+            c = LKJCholesky(n, concentration=nu).sample((batch_size, n_components))
         s = torch.diag_embed(LogNormal(mu0,s0).sample((batch_size, n_components, n)))
         sigmas = torch.matmul(s, c)
         if scale is not None:
@@ -629,6 +634,8 @@ class GaussianGenerator():
             return samples.float().contiguous(), dist
         else:
             return samples.float().contiguous()
+        
+
     
     def __call__(self, batch_size, dims=(2,6), **kwargs):
         if self.variable_dim:
@@ -651,6 +658,48 @@ class GaussianGenerator():
             return outputs, dists
         else:
             return outputs
+
+class PairedGaussianGenerator():
+    def __init__(self, num_outputs=1, mixture=True, return_params=False, variable_dim=False):
+        self.num_outputs = num_outputs
+        self.return_params = return_params
+        self.variable_dim = variable_dim
+        self.mixture = mixture
+        self.device = torch.device('cpu') if not use_cuda else torch.device('cuda')
+
+    def _generate(self, batch_size, n, return_params=False, set_size=(100,150), component_range=(1,10), nu=1, mu0=0, s0=1):
+        n_samples = torch.randint(*set_size,(1,))
+        n_components = torch.randint(*component_range,(1,)).item()
+
+        c = LKJCholesky(n, concentration=nu).sample((batch_size,))
+        s = torch.diag_embed(LogNormal(mu0,s0).sample((batch_size, n)))
+        scale_chol = torch.matmul(s, c)
+        scale = scale_chol.matmul(scale_chol.transpose(1,2))
+
+        def _generate_set():
+            mus = MultivariateNormal(torch.zeros(n), scale_chol).sample(n_components).transpose(0,1)
+            sigmas = torch.tensor(invwishart.rvs(n+2, scale.numpy(), size=n_components))
+            mus, sigmas = mus.to(self.device), sigmas.to(self.device)
+            logits = Dirichlet(torch.ones(n_components).to(self.device)/n_components).sample((batch_size,))
+            base_dist = MultivariateNormal(mus, covariance_matrix=sigmas)
+            mixing_dist = Categorical(logits=logits)
+            dist = MixtureSameFamily(mixing_dist, base_dist)
+            samples = dist.sample(n_samples).transpose(0,1)
+            return dist, samples.float().contiguous()
+        
+        Xdist, X = _generate_set()
+        Ydist, Y = _generate_set()
+
+        if return_params:
+            return (X, Y), (Xdist, Ydist)
+        else:
+            return X, Y
+    
+    def __call__(self, batch_size, dims=(2,6), **kwargs):
+        if self.variable_dim:
+            n = torch.randint(*dims,(1,)).item()
+            kwargs['n'] = n
+        return self._generate(batch_size, **kwargs)
 
 
 class CorrelatedGaussianGenerator():
@@ -818,6 +867,51 @@ def whiten_split(X,Y):
 def normalize_sets(*X):
     avg_norm = torch.cat(X, dim=1).norm(dim=-1,keepdim=True).mean(dim=1,keepdim=True)
     return [x / avg_norm for x in X], avg_norm
+
+
+def generate_lkj(n, d,device=torch.device('cuda'), nu=1, mu=0, s=1):
+    mus= torch.rand(size=(n, d))
+    c = LKJCholesky(d, concentration=nu).sample((n,))
+    while c.isnan().any():
+        c = LKJCholesky(n, concentration=nu).sample((n,))
+    #s = torch.diag_embed(LogNormal(mu,s).sample((n, d)))
+    sigmas = c#torch.matmul(s, c)
+    mus = mus.to(device)
+    sigmas = sigmas.to(device)
+    dist = MultivariateNormal(mus, scale_tril=sigmas)
+    return dist
+
+def test_kl(n, d, **kwargs):
+    def generate(n, d,device=torch.device('cuda'), nu=1, mu=0, s=1):
+        mus= torch.rand(size=(n, d))
+        c = LKJCholesky(d, concentration=nu).sample((n,))
+        #while c.isnan().any():
+        #    c = LKJCholesky(n, concentration=nu).sample((n,))
+        #s = torch.diag_embed(LogNormal(mu,s).sample((n, d)))
+        sigmas = c#torch.matmul(s, c)
+        mus = mus.to(device)
+        sigmas = sigmas.to(device)
+        dist = MultivariateNormal(mus, scale_tril=sigmas)
+        return dist
+    X, Y = generate(n, d, **kwargs), generate(n, d, **kwargs)
+    t1,t2,t3,t4 = kl_nd_gaussian2(X,Y)
+    return (t1+t2+t3+t4), (t1,t2,t3,t4), (X,Y)
+
+
+def plot_dets(d, N=10000, nu=1.0):
+    X = LKJCholesky(d, concentration=nu).sample((N,))
+    Xdets=X.det()
+    C = X.matmul(X.transpose(1,2))
+    Cdets = C.det()
+    plt.figure("Cholesky")
+    plt.hist(Xdets,bins=50,density=True)
+    plt.figure("Corr")
+    plt.hist(Cdets,bins=50,density=True)
+    plt.show()
+
+
+
+
 
 '''
 N=5000
