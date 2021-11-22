@@ -667,7 +667,7 @@ class PairedGaussianGenerator():
         self.mixture = mixture
         self.device = torch.device('cpu') if not use_cuda else torch.device('cuda')
 
-    def _generate(self, batch_size, n, return_params=False, set_size=(100,150), component_range=(1,10), nu=1, mu0=0, s0=1):
+    def _generate(self, batch_size, n, set_size=(100,150), component_range=(1,10), nu=1, mu0=0, s0=1):
         n_samples = torch.randint(*set_size,(1,))
         n_components = torch.randint(*component_range,(1,)).item()
 
@@ -690,7 +690,7 @@ class PairedGaussianGenerator():
         Xdist, X = _generate_set()
         Ydist, Y = _generate_set()
 
-        if return_params:
+        if self.return_params:
             return (X, Y), (Xdist, Ydist)
         else:
             return X, Y
