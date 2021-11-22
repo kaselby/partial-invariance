@@ -57,7 +57,7 @@ if __name__ == '__main__':
 
     if args.target != 'mi':
         #generators = {'gmm':GaussianGenerator(num_outputs=2, return_params=exact_loss), 'nf':NFGenerator(32, 3, num_outputs=2, return_params=exact_loss)}
-        generators = {'gmm':PairedGaussianGenerator(variable_dim=args.equi, return_params=exact_loss), 'nf':NFGenerator(32, 3, num_outputs=2, return_params=exact_loss)}
+        generators = {'gmm':PairedGaussianGenerator(return_params=exact_loss), 'nf':NFGenerator(32, 3, num_outputs=2, return_params=exact_loss)}
         data_kwargs={'gmm':{'nu':5, 'mu0':0, 's0':0.3}, 'nf':{}}
     else:
         generators={'corr':CorrelatedGaussianGenerator(return_params=exact_loss)}
