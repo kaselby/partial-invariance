@@ -677,7 +677,7 @@ class PairedGaussianGenerator():
         scale = scale_chol.matmul(scale_chol.t())
 
         def _generate_set():
-            mus = MultivariateNormal(torch.zeros(n), scale_tril=scale_chol).sample((n_components,)).transpose(0,1)
+            mus = MultivariateNormal(torch.zeros(n), scale_tril=scale_chol).sample((batch_size, n_components))
             sigmas = torch.tensor(invwishart.rvs(n+2, scale.numpy(), size=batch_size*n_components)).view(batch_size, n_components, n, n)
             mus, sigmas = mus.to(self.device), sigmas.to(self.device)
             logits = Dirichlet(torch.ones(n_components).to(self.device)/n_components).sample((batch_size,))
