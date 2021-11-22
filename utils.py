@@ -671,14 +671,14 @@ class PairedGaussianGenerator():
         n_samples = torch.randint(*set_size,(1,))
         n_components = torch.randint(*component_range,(1,)).item()
 
-        c = LKJCholesky(n, concentration=nu).sample((batch_size,))
-        s = torch.diag_embed(LogNormal(mu0,s0).sample((batch_size, n)))
+        c = LKJCholesky(n, concentration=nu).sample()
+        s = torch.diag_embed(LogNormal(mu0,s0).sample((n,)))
         scale_chol = torch.matmul(s, c)
-        scale = scale_chol.matmul(scale_chol.transpose(1,2))
+        scale = scale_chol.matmul(scale_chol.t())
 
         def _generate_set():
             mus = MultivariateNormal(torch.zeros(n), scale_tril=scale_chol).sample((n_components,)).transpose(0,1)
-            sigmas = torch.tensor(invwishart.rvs(n+2, scale.numpy(), size=n_components))
+            sigmas = torch.tensor(invwishart.rvs(n+2, scale.numpy(), size=batch_size*n_components)).view(batch_size, n_components, n, n)
             mus, sigmas = mus.to(self.device), sigmas.to(self.device)
             logits = Dirichlet(torch.ones(n_components).to(self.device)/n_components).sample((batch_size,))
             base_dist = MultivariateNormal(mus, covariance_matrix=sigmas)
