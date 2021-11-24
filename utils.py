@@ -707,9 +707,9 @@ class PairedGaussianGenerator():
         #scale = scale_chol.matmul(scale_chol.t())
 
         def _generate_set():
-            df = torch.randint(n+100, n+300).numpy()
+            #df = torch.randint(n+100, n+300).numpy()
             mus = MultivariateNormal(torch.zeros(n), covariance_matrix=sigma0).sample((batch_size, n_components))
-            sigmas = torch.tensor(invwishart.rvs(df, sigma0.numpy(), size=batch_size*n_components)).view(batch_size, n_components, n, n).float()
+            sigmas = torch.tensor(invwishart.rvs(n+2, sigma0.numpy(), size=batch_size*n_components)).view(batch_size, n_components, n, n).float()
             mus, sigmas = mus.to(self.device), sigmas.to(self.device)
             logits = Dirichlet(torch.ones(n_components).to(self.device)/n_components).sample((batch_size,))
             base_dist = MultivariateNormal(mus, covariance_matrix=sigmas)
