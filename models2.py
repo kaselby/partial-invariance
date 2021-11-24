@@ -81,6 +81,33 @@ class EquiMHA(nn.Module):
         O = self.w_o(torch.cat((A.matmul(V_.view(*V_.size()[:-2], -1)).view(*Q_.size())).split(1, 0), 4).squeeze(0))
         return O
 
+class NNMHA(nn.Module):
+    def __init__(self, dim_Q, dim_K, dim_V, num_heads):
+        super(NNMHA, self).__init__()
+        self.dim_V = dim_V
+        self.num_heads = num_heads
+        self.w_q = nn.Linear(dim_Q, dim_V, bias=True)
+        self.w_k = nn.Linear(dim_K, dim_V, bias=True)
+        self.w_v = nn.Linear(dim_K, dim_V, bias=True)
+        self.w_o = nn.Linear(dim_V, dim_V, bias=True)
+
+    def forward(self, Q, K, neighbours):
+        N,M = Q.size(1),K.size(1)
+
+        Q_ = self.w_q(Q)
+        K_, V_ = self.w_k(K), self.w_v(K)
+
+        dim_split = self.dim_V // self.num_heads
+        Q_ = torch.stack(Q_.split(dim_split, 2), 0)
+        K_ = torch.stack(K_.split(dim_split, 2), 0)
+        V_ = torch.stack(V_.split(dim_split, 2), 0)
+
+        K_neighbours = torch.gather(K_.unsqueeze(2).expand(-1,-1, N,-1,-1), 1, neighbours.unsqueeze(-1).unsqueeze(0).expand(dim_split,-1,-1,-1,self.dim_V))
+        E = Q_.unsqueeze(3).matmul(K_neighbours.transpose(3,4)).squeeze(3)/math.sqrt(self.dim_V)
+        A = torch.softmax(E, 3)
+        O = self.w_o(torch.cat((A.matmul(V_)).split(1, 0), 3).squeeze(0))
+        return O
+
 class MAB(nn.Module):
     def __init__(self, input_size, latent_size, hidden_size, num_heads, attn_size=None, ln=False, equi=False, dropout=0.1):
         super(MAB, self).__init__()

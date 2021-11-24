@@ -196,7 +196,35 @@ def get_dists(X, Y=None, bs=32):
         dists[:,j_min:j_max] = all_dists_i
     return dists
 
-def knn(X, k, Y=None, bs=32):
+def knn_inds(X, k, Y=None, bs=32):
+    if Y is None:
+        Y = X
+        k += 1
+        exclude_0 = True
+    else:
+        exclude_0 = False
+    X = X if type(X) == torch.Tensor else torch.Tensor(X)
+    Y = Y if type(Y) == torch.Tensor else torch.Tensor(Y)
+    outer_bs = Y.size(0)
+    N = Y.size(1)
+    n_batches = int(math.ceil(N/bs))
+    inds = torch.zeros(outer_bs,N,k)
+    if torch.cuda.is_available():
+        X = X.to('cuda')
+        Y = Y.to('cuda')
+        inds=inds.to('cuda')
+    for i in range(n_batches):
+        j_min = i*bs
+        j_max = min(N, (i+1)*bs)
+        all_inds_i = (Y[:,j_min:j_max].unsqueeze(2) - X.unsqueeze(1)).norm(dim=-1)
+        topk_i = all_inds_i.topk(k, dim=-1, largest=False)[1]
+        if exclude_0:
+            inds[:,j_min:j_max, :] = topk_i[:,:,1:k+1]
+        else:
+            inds[:,j_min:j_max, :] = topk_i[:,:,:k]
+    return inds
+
+def knn_dist(X, k, Y=None, bs=32):
     if Y is None:
         Y = X
         k += 1
@@ -223,8 +251,8 @@ def kl_knn(X, Y, k=1, xi=1e-5):
     m = Y.size(1)
     d = X.size(-1)
 
-    nu = knn(X=Y, Y=X, k=k) + xi
-    eps = knn(X=X, k=k) + xi
+    nu = knn_dist(X=Y, Y=X, k=k) + xi
+    eps = knn_dist(X=X, k=k) + xi
 
     return d/n * torch.log(nu/eps).sum(dim=1) + math.log(m/(n-1))
 
@@ -257,8 +285,8 @@ def simplified_divergence1(X, Y, k=1, xi=1e-5):
     m = Y.size(1)
     d = X.size(-1)
 
-    nu = knn(X=Y, Y=X, k=k) + xi
-    eps = knn(X=X, k=k) + xi
+    nu = knn_dist(X=Y, Y=X, k=k) + xi
+    eps = knn_dist(X=X, k=k) + xi
 
     return 1/n * (torch.log(nu) + torch.log(eps)).sum(dim=1)
 
@@ -267,8 +295,8 @@ def simplified_divergence2(X, Y, k=1, xi=1e-5):
     m = Y.size(1)
     d = X.size(-1)
 
-    nu = knn(X=Y, Y=X, k=k) + xi
-    eps = knn(X=X, k=k) + xi
+    nu = knn_dist(X=Y, Y=X, k=k) + xi
+    eps = knn_dist(X=X, k=k) + xi
 
     return 1/n * (torch.log(nu) - torch.log(eps)).sum(dim=1)
 
@@ -277,8 +305,8 @@ def kl_knn_simple(X, Y, k=1, xi=1e-5):
     m = Y.size(1)
     d = X.size(-1)
 
-    nu = knn(X=Y, Y=X, k=k) + xi
-    eps = knn(X=X, k=k) + xi
+    nu = knn_dist(X=Y, Y=X, k=k) + xi
+    eps = knn_dist(X=X, k=k) + xi
 
     return torch.log(nu/eps).sum(dim=1)/n
 
@@ -346,19 +374,19 @@ def gaussian_nd_entropy(Sigma):
     return 1./2 * (d*math.log(2*math.pi) + d + torch.logdet(Sigma))
 
 def avg_nn_dist(X):
-    dists = knn(X, 1)
+    dists = knn_dist(X, 1)
     return dists.sum(dim=-1)/dists.size(-1)
 
 def avg_cross_nn_dist(X, Y):
-    dists = knn(X=Y, Y=X, k=1)
+    dists = knn_dist(X=Y, Y=X, k=1)
     return dists.sum(dim=-1)/dists.size(-1)
 
 def avg_log_nn_dist(X, xi=1e-5):
-    dists = knn(X, 1)
+    dists = knn_dist(X, 1)
     return torch.log(dists + xi).sum(dim=-1)/dists.size(-1)
 
 def avg_log_cross_nn_dist(X, Y, xi=1e-5):
-    dists = knn(X=Y, Y=X, k=1)
+    dists = knn_dist(X=Y, Y=X, k=1)
     return torch.log(dists+xi).sum(dim=-1)/dists.size(-1)
 
 def wasserstein_exact(X, Y):
@@ -671,14 +699,17 @@ class PairedGaussianGenerator():
         n_samples = torch.randint(*set_size,(1,))
         n_components = torch.randint(*component_range,(1,)).item()
 
-        c = LKJCholesky(n, concentration=nu).sample()
-        s = torch.diag_embed(LogNormal(mu0,s0).sample((n,)))
-        scale_chol = torch.matmul(s, c)
-        scale = scale_chol.matmul(scale_chol.t())
+        scale = 1#torch.exp(torch.rand()*12-4)
+        sigma0 = torch.tensor(invwishart.rvs(n+2, np.eye(n)*scale))
+        #c = LKJCholesky(n, concentration=nu).sample()
+        #s = torch.diag_embed(LogNormal(mu0,s0).sample((n,)))
+        #scale_chol = torch.matmul(s, c)
+        #scale = scale_chol.matmul(scale_chol.t())
 
         def _generate_set():
-            mus = MultivariateNormal(torch.zeros(n), scale_tril=scale_chol).sample((batch_size, n_components))
-            sigmas = torch.tensor(invwishart.rvs(n+2, scale.numpy(), size=batch_size*n_components)).view(batch_size, n_components, n, n).float()
+            df = torch.randint(n+100, n+300).numpy()
+            mus = MultivariateNormal(torch.zeros(n), covariance_matrix=sigma0).sample((batch_size, n_components))
+            sigmas = torch.tensor(invwishart.rvs(df, sigma0.numpy(), size=batch_size*n_components)).view(batch_size, n_components, n, n).float()
             mus, sigmas = mus.to(self.device), sigmas.to(self.device)
             logits = Dirichlet(torch.ones(n_components).to(self.device)/n_components).sample((batch_size,))
             base_dist = MultivariateNormal(mus, covariance_matrix=sigmas)
@@ -910,7 +941,26 @@ def plot_dets(d, N=10000, nu=1.0):
     plt.show()
 
 
+def test_gen(d,N=100, **kwargs):
+    (X,Y), (TX,TY) = PairedGaussianGenerator(return_params=True)(N, n=d)
+    kl = kl_mc(TX, TY, X=X)
+    return kl.mean()
 
+
+def test(n, bs):
+    nu,mu0,s0=1,0,1
+    n_components = torch.randint(1,10,(1,)).item()
+    c = LKJCholesky(n, concentration=nu).sample()
+    s = torch.diag_embed(LogNormal(mu0,s0).sample((n,)))
+    scale_chol = torch.matmul(s, c)
+    scale = scale_chol.matmul(scale_chol.t())
+    mus = MultivariateNormal(torch.zeros(n), scale_tril=scale_chol).sample((bs, n_components))
+    sigmas = torch.tensor(invwishart.rvs(n+2, scale.numpy(), size=bs*n_components)).view(bs, n_components, n, n).float()
+    try:
+        base_dist = MultivariateNormal(mus, covariance_matrix=sigmas)
+    except:
+        print("Error")
+    return sigmas
 
 
 '''
@@ -931,3 +981,9 @@ for dim in dims:
     kl_sigma = (kls - kl_mean).pow(2).sum().sqrt()
     print("d=%d, mean kl=%f, stdev kl=%f"%(dim, kl_mean, kl_sigma))
 '''
+
+from scipy.special import digamma
+import numpy as np
+
+def mult_digamma(z, p):
+    return digamma(z+ (1-np.arange(p))/2).sum()
