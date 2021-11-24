@@ -695,7 +695,7 @@ class PairedGaussianGenerator():
         self.mixture = mixture
         self.device = torch.device('cpu') if not use_cuda else torch.device('cuda')
 
-    def _generate(self, batch_size, n, set_size=(100,150), component_range=(1,10), nu=1, mu0=0, s0=1):
+    def _generate(self, batch_size, n, set_size=(100,150), component_range=(1,10), nu=1, mu0=0, s0=1, ddf=2):
         n_samples = torch.randint(*set_size,(1,))
         n_components = torch.randint(*component_range,(1,)).item()
 
@@ -706,7 +706,7 @@ class PairedGaussianGenerator():
 
         def _generate_set():
             mus = MultivariateNormal(torch.zeros(n), scale_tril=scale_chol).sample((batch_size, n_components))
-            sigmas = torch.tensor(invwishart.rvs(n+2, scale.numpy(), size=batch_size*n_components)).view(batch_size, n_components, n, n).float()
+            sigmas = torch.tensor(invwishart.rvs(n+ddf, scale.numpy(), size=batch_size*n_components)).view(batch_size, n_components, n, n).float()
             mus, sigmas = mus.to(self.device), sigmas.to(self.device)
             logits = Dirichlet(torch.ones(n_components).to(self.device)/n_components).sample((batch_size,))
             base_dist = MultivariateNormal(mus, covariance_matrix=sigmas)
