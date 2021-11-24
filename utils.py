@@ -700,7 +700,7 @@ class PairedGaussianGenerator():
         n_components = torch.randint(*component_range,(1,)).item()
 
         scale = 1#torch.exp(torch.rand()*12-4)
-        sigma0 = torch.tensor(invwishart.rvs(n+2, np.eye(n)*scale))
+        sigma0 = torch.tensor(invwishart.rvs(n+2, np.eye(n)*scale)).float()
         #c = LKJCholesky(n, concentration=nu).sample()
         #s = torch.diag_embed(LogNormal(mu0,s0).sample((n,)))
         #scale_chol = torch.matmul(s, c)
