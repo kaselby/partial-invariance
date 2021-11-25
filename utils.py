@@ -226,8 +226,8 @@ def knn_inds(X, k, Y=None, bs=32):
 def cross_knn_inds(X, Y, k):
     N_XX = knn_inds(X, k)
     N_YY = knn_inds(Y, k)
-    N_XY = knn_inds(X, k, Y)
-    N_YX = knn_inds(Y, k, X)
+    N_XY = knn_inds(Y, k, X)
+    N_YX = knn_inds(X, k, Y)
     return N_XX, N_XY, N_YX, N_YY
 
 def knn_dist(X, k, Y=None, bs=32):
