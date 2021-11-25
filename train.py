@@ -1,6 +1,7 @@
 from models2 import MultiSetTransformer, PINE
 from models import MultiSetTransformer1, EquiMultiSetTransformer1
 from utils import *
+from generators import *
 import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
