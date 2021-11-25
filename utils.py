@@ -199,7 +199,6 @@ def get_dists(X, Y=None, bs=32):
 def knn_inds(X, k, Y=None, bs=32):
     if Y is None:
         Y = X
-        k += 1
         exclude_0 = True
     else:
         exclude_0 = False
@@ -217,7 +216,7 @@ def knn_inds(X, k, Y=None, bs=32):
         j_min = i*bs
         j_max = min(N, (i+1)*bs)
         all_inds_i = (Y[:,j_min:j_max].unsqueeze(2) - X.unsqueeze(1)).norm(dim=-1)
-        topk_i = all_inds_i.topk(k, dim=-1, largest=False)[1]
+        topk_i = all_inds_i.topk(k+1, dim=-1, largest=False)[1]
         if exclude_0:
             inds[:,j_min:j_max, :] = topk_i[:,:,1:k+1]
         else:
