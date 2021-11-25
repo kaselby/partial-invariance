@@ -88,7 +88,7 @@ class MHA(nn.Module):
         K_ = torch.stack(K_.split(dim_split, 2), 0)
         V_ = torch.stack(V_.split(dim_split, 2), 0)
 
-        K_neighbours = torch.gather(K_.unsqueeze(2).expand(-1,-1, N,-1,-1), 3, neighbours.unsqueeze(-1).unsqueeze(0).expand(dim_split,-1,-1,-1,self.latent_size))
+        K_neighbours = torch.gather(K_.unsqueeze(2).expand(-1,-1, N,-1,-1), 3, neighbours.unsqueeze(-1).unsqueeze(0).expand(self.num_heads,-1,-1,-1,dim_split))
         E = Q_.unsqueeze(3).matmul(K_neighbours.transpose(3,4)).squeeze(3)/math.sqrt(self.dim_V)
         A = torch.softmax(E, 3)
         O = self.w_o(torch.cat((A.matmul(V_)).split(1, 0), 3).squeeze(0))
@@ -108,7 +108,7 @@ class MHA(nn.Module):
         K_ = torch.stack(K.split(dim_split, 3), 0)
         V_ = torch.stack(V.split(dim_split, 3), 0)
 
-        K_neighbours = torch.gather(K_.transpose(2,3).unsqueeze(3).expand(-1,-1,-1,N,-1,-1), 4, neighbours.view(1, bs, 1, N, k, 1).expand(dim_split,-1,d,-1,-1,self.latent_size))
+        K_neighbours = torch.gather(K_.transpose(2,3).unsqueeze(3).expand(-1,-1,-1,N,-1,-1), 4, neighbours.view(1, bs, 1, N, k, 1).expand(self.num_heads,-1,d,-1,-1,dim_split))
         E = Q_.transpose(2,3).unsqueeze(4).matmul(K_neighbours.transpose(4,5)).squeeze(4).sum(dim=2) / math.sqrt(self.latent_size)
         A = torch.softmax(E, 3)
         O = self.w_o(torch.cat((A.matmul(V_.view(*V_.size()[:-2], -1)).view(*Q_.size())).split(1, 0), 4).squeeze(0))
