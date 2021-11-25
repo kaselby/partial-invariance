@@ -89,7 +89,7 @@ class MHA(nn.Module):
         V_ = torch.stack(V_.split(dim_split, 2), 0)
 
         K_neighbours = torch.gather(K_.unsqueeze(2).expand(-1,-1, N,-1,-1), 3, neighbours.unsqueeze(-1).unsqueeze(0).expand(self.num_heads,-1,-1,-1,dim_split))
-        E = Q_.unsqueeze(3).matmul(K_neighbours.transpose(3,4)).squeeze(3)/math.sqrt(self.dim_V)
+        E = Q_.unsqueeze(3).matmul(K_neighbours.transpose(3,4)).squeeze(3)/math.sqrt(self.latent_size)
         A = torch.softmax(E, 3)
         O = self.w_o(torch.cat((A.matmul(V_)).split(1, 0), 3).squeeze(0))
         return O
