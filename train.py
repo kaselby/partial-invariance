@@ -41,6 +41,8 @@ def parse_args():
     parser.add_argument('--dim', type=int, default=32)
     parser.add_argument('--clip', type=int, default=-1)
     parser.add_argument('--basedir', type=str, default="final-runs")
+    parser.add_argument('--nn', action='store_true')
+    parser.add_argument('--k_neighbours', type=int, default=5)
     return parser.parse_args()
 
 
@@ -221,6 +223,8 @@ if __name__ == '__main__':
                 'input_size':args.dim,
                 'latent_size':args.latent_size,
                 'hidden_size':args.hidden_size
+                'nn_attn':args.nn
+                'k_neighbours':args.k_neighbours
             }
             model=MultiSetTransformer(**model_kwargs).to(device)
         elif args.model == 'rn':
