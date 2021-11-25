@@ -207,7 +207,7 @@ def knn_inds(X, k, Y=None, bs=32):
     outer_bs = Y.size(0)
     N = Y.size(1)
     n_batches = int(math.ceil(N/bs))
-    inds = torch.zeros(outer_bs,N,k)
+    inds = torch.zeros(outer_bs,N,k, dtype=torch.int64)
     if torch.cuda.is_available():
         X = X.to('cuda')
         Y = Y.to('cuda')
