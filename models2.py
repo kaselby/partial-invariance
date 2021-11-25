@@ -30,7 +30,7 @@ def generate_masks(X_lengths, Y_lengths):
     return mask_xx, mask_xy, mask_yx, mask_yy
 
 class MHA(nn.Module):
-    def __init__(self, dim_Q, dim_K, dim_V, num_heads, bias=None, equi=False, nn=False):
+    def __init__(self, dim_Q, dim_K, dim_V, num_heads, bias=None, equi=False, nn_attn=False):
         super(MHA, self).__init__()
         if bias is None:
             bias = not equi
@@ -41,7 +41,7 @@ class MHA(nn.Module):
         self.w_v = nn.Linear(dim_K, dim_V, bias=bias)
         self.w_o = nn.Linear(dim_V, dim_V, bias=bias)
         self.equi = equi
-        self.nn = nn
+        self.nn_attn = nn_attn
 
     def _mha(self, Q, K, mask=None):
         Q_ = self.w_q(Q)
@@ -116,22 +116,22 @@ class MHA(nn.Module):
 
     def forward(self, *args, **kwargs):
         if self.equi:
-            if self.nn:
+            if self.nn_attn:
                 return self._nn_equi_mha(*args, **kwargs)
             else:
                 return self._equi_mha(*args, **kwargs)
         else:
-            if self.nn:
+            if self.nn_attn:
                 return self._nn_mha(*args, **kwargs)
             else:
                 return self._mha(*args, **kwargs)
 
 
 class MAB(nn.Module):
-    def __init__(self, input_size, latent_size, hidden_size, num_heads, attn_size=None, ln=False, equi=False, nn=nn, dropout=0.1):
+    def __init__(self, input_size, latent_size, hidden_size, num_heads, attn_size=None, ln=False, equi=False, nn_attn=False, dropout=0.1):
         super(MAB, self).__init__()
         attn_size = attn_size if attn_size is not None else input_size
-        self.attn = MHA(input_size, attn_size, latent_size, num_heads, equi=equi, nn=nn)
+        self.attn = MHA(input_size, attn_size, latent_size, num_heads, equi=equi, nn_attn=nn_attn)
         if dropout > 0:
             self.dropout = nn.Dropout(dropout)
         self.fc = nn.Sequential(nn.Linear(latent_size, hidden_size), nn.ReLU(), nn.Linear(hidden_size, latent_size))
@@ -170,16 +170,16 @@ class ISAB(nn.Module):
 
 
 class CSAB(nn.Module):
-    def __init__(self, input_size, latent_size, hidden_size, num_heads, remove_diag=False, nn=False, **kwargs):
+    def __init__(self, input_size, latent_size, hidden_size, num_heads, remove_diag=False, nn_attn=False, **kwargs):
         super(CSAB, self).__init__()
-        self.MAB_XX = MAB(input_size, latent_size, hidden_size, num_heads, nn=nn, **kwargs)
-        self.MAB_YY = MAB(input_size, latent_size, hidden_size, num_heads, nn=nn, **kwargs)
-        self.MAB_XY = MAB(input_size, latent_size, hidden_size, num_heads, nn=nn, **kwargs)
-        self.MAB_YX = MAB(input_size, latent_size, hidden_size, num_heads, nn=nn, **kwargs)
+        self.MAB_XX = MAB(input_size, latent_size, hidden_size, num_heads, nn_attn=nn_attn, **kwargs)
+        self.MAB_YY = MAB(input_size, latent_size, hidden_size, num_heads, nn_attn=nn_attn, **kwargs)
+        self.MAB_XY = MAB(input_size, latent_size, hidden_size, num_heads, nn_attn=nn_attn, **kwargs)
+        self.MAB_YX = MAB(input_size, latent_size, hidden_size, num_heads, nn_attn=nn_attn, **kwargs)
         self.fc_X = nn.Linear(latent_size * 2, latent_size)
         self.fc_Y = nn.Linear(latent_size * 2, latent_size)
         self.remove_diag = remove_diag
-        self.nn = nn
+        self.nn_attn = nn_attn
 
     def _get_masks(self, N, M, masks):
         if self.remove_diag:
@@ -204,7 +204,7 @@ class CSAB(nn.Module):
 
     def forward(self, inputs, masks=None, neighbours=None):
         X, Y = inputs
-        if self.nn:
+        if self.nn_attn:
             assert neighbours is not None and masks is None
             N_XX, N_XY, N_YX, N_YY = neighbours
             XX = self.MAB_XX(X, X, neighbours=N_XX)
@@ -298,7 +298,7 @@ class SetTransformer(nn.Module):
         return self.dec(ZX).squeeze(-1)
 
 class MultiSetTransformer(nn.Module):
-    def __init__(self, input_size, latent_size, hidden_size, output_size, num_heads=4, num_blocks=2, remove_diag=False, ln=False, equi=False, nn=False, k_neighbours=5, dropout=0.1, num_inds=-1):
+    def __init__(self, input_size, latent_size, hidden_size, output_size, num_heads=4, num_blocks=2, remove_diag=False, ln=False, equi=False, nn_attn=False, k_neighbours=5, dropout=0.1, num_inds=-1):
         super(MultiSetTransformer, self).__init__()
         if equi:
             input_size = 1
@@ -306,7 +306,7 @@ class MultiSetTransformer(nn.Module):
         if num_inds > 0:
             self.enc = EncoderStack(*[ICSAB(latent_size, latent_size, hidden_size, num_heads, num_inds, ln=ln, remove_diag=remove_diag, equi=equi, dropout=dropout) for i in range(num_blocks)])
         else:
-            self.enc = EncoderStack(*[CSAB(latent_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, equi=equi, nn=nn, dropout=dropout) for i in range(num_blocks)])
+            self.enc = EncoderStack(*[CSAB(latent_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, equi=equi, nn_attn=nn_attn, dropout=dropout) for i in range(num_blocks)])
         self.pool_x = PMA(latent_size, hidden_size, num_heads, 1, ln=ln)
         self.pool_y = PMA(latent_size, hidden_size, num_heads, 1, ln=ln)
         self.dec = nn.Sequential(
