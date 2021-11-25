@@ -321,7 +321,7 @@ class MultiSetTransformer(nn.Module):
                 nn.Linear(2*latent_size, output_size),)
         self.remove_diag = remove_diag
         self.equi=equi
-        self.nn = nn
+        self.nn_attn = nn_attn
         self.k_neighbours = k_neighbours
 
     def forward(self, X, Y, masks=None):
@@ -330,7 +330,7 @@ class MultiSetTransformer(nn.Module):
         else:
             Xproj, Yproj = self.proj(X), self.proj(Y)
             
-        if self.nn:
+        if self.nn_attn:
             neighbours = cross_knn_inds(X, Y, self.k_neighbours)
             ZX, ZY = self.enc((Xproj, Yproj), neighbours=neighbours)
         else:
