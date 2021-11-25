@@ -127,8 +127,7 @@ def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(),
             checkpoint_path = os.path.join(checkpoint_dir, "checkpoint.pt")
             if os.path.exists(checkpoint_path):
                 os.remove(checkpoint_path)
-            model_out = model._modules['module'] if torch.cuda.device_count() > 1 else model
-            torch.save({'model':model_out,'optimizer':optimizer, 'step': i, 'losses':losses}, checkpoint_path)
+            torch.save({'model':model,'optimizer':optimizer, 'step': i, 'losses':losses}, checkpoint_path)
 
     seed = torch.randint(100, (1,)).item()
     '''
