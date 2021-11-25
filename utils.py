@@ -224,6 +224,13 @@ def knn_inds(X, k, Y=None, bs=32):
             inds[:,j_min:j_max, :] = topk_i[:,:,:k]
     return inds
 
+def cross_knn_inds(X, Y, k):
+    N_XX = knn_inds(X, k)
+    N_YY = knn_inds(Y, k)
+    N_XY = knn_inds(X, k, Y)
+    N_YX = knn_inds(Y, k, X)
+    return N_XX, N_XY, N_YX, N_YY
+
 def knn_dist(X, k, Y=None, bs=32):
     if Y is None:
         Y = X
@@ -959,6 +966,9 @@ def test(n, bs):
         print("Error")
     return sigmas
 
+def test_paired(n, bs, **kwargs):
+    (X,Y),(TX,TY)=PairedGaussianGenerator(return_params=True)(bs, n=n, **kwargs)
+    return kl_mc(TX, TY, X=X)
 
 '''
 N=5000

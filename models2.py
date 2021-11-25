@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import math
 
+from utils import cross_knn_inds
+
 use_cuda=torch.cuda.is_available()
 
 def masked_softmax(x, mask, dim=-1, eps=1e-8):
@@ -28,43 +30,37 @@ def generate_masks(X_lengths, Y_lengths):
     return mask_xx, mask_xy, mask_yx, mask_yy
 
 class MHA(nn.Module):
-    def __init__(self, dim_Q, dim_K, dim_V, num_heads):
+    def __init__(self, dim_Q, dim_K, dim_V, num_heads, bias=None, equi=False, nn=False):
         super(MHA, self).__init__()
-        self.dim_V = dim_V
+        if bias is None:
+            bias = not equi
+        self.latent_size = dim_V
         self.num_heads = num_heads
-        self.w_q = nn.Linear(dim_Q, dim_V, bias=True)
-        self.w_k = nn.Linear(dim_K, dim_V, bias=True)
-        self.w_v = nn.Linear(dim_K, dim_V, bias=True)
-        self.w_o = nn.Linear(dim_V, dim_V, bias=True)
+        self.w_q = nn.Linear(dim_Q, dim_V, bias=bias)
+        self.w_k = nn.Linear(dim_K, dim_V, bias=bias)
+        self.w_v = nn.Linear(dim_K, dim_V, bias=bias)
+        self.w_o = nn.Linear(dim_V, dim_V, bias=bias)
+        self.equi = equi
+        self.nn = nn
 
-    def forward(self, Q, K, mask=None):
+    def _mha(self, Q, K, mask=None):
         Q_ = self.w_q(Q)
         K_, V_ = self.w_k(K), self.w_v(K)
 
-        dim_split = self.dim_V // self.num_heads
+        dim_split = self.latent_size // self.num_heads
         Q_ = torch.stack(Q_.split(dim_split, 2), 0)
         K_ = torch.stack(K_.split(dim_split, 2), 0)
         V_ = torch.stack(V_.split(dim_split, 2), 0)
 
-        E = Q_.matmul(K_.transpose(2,3))/math.sqrt(self.dim_V)
+        E = Q_.matmul(K_.transpose(2,3))/math.sqrt(self.latent_size)
         if mask is not None:
             A = masked_softmax(E, mask.unsqueeze(0).expand_as(E), dim=3)
         else:
             A = torch.softmax(E, 3)
         O = self.w_o(torch.cat((A.matmul(V_)).split(1, 0), 3).squeeze(0))
         return O
-
-class EquiMHA(nn.Module):
-    def __init__(self, dim_Q, dim_K, dim_V, num_heads):
-        super(EquiMHA, self).__init__()
-        self.latent_size=dim_V
-        self.num_heads = num_heads
-        self.w_q = nn.Linear(dim_Q, dim_V, bias=False)
-        self.w_k = nn.Linear(dim_K, dim_V, bias=False)
-        self.w_v = nn.Linear(dim_K, dim_V, bias=False)
-        self.w_o = nn.Linear(dim_V, dim_V, bias=False)
     
-    def forward(self, Q, K, mask=None):
+    def _equi_mha(self, Q, K, mask=None):
         Q = self.w_q(Q)
         K, V = self.w_k(K), self.w_v(K)
 
@@ -81,17 +77,7 @@ class EquiMHA(nn.Module):
         O = self.w_o(torch.cat((A.matmul(V_.view(*V_.size()[:-2], -1)).view(*Q_.size())).split(1, 0), 4).squeeze(0))
         return O
 
-class NNMHA(nn.Module):
-    def __init__(self, dim_Q, dim_K, dim_V, num_heads):
-        super(NNMHA, self).__init__()
-        self.dim_V = dim_V
-        self.num_heads = num_heads
-        self.w_q = nn.Linear(dim_Q, dim_V, bias=True)
-        self.w_k = nn.Linear(dim_K, dim_V, bias=True)
-        self.w_v = nn.Linear(dim_K, dim_V, bias=True)
-        self.w_o = nn.Linear(dim_V, dim_V, bias=True)
-
-    def forward(self, Q, K, neighbours):
+    def _nn_mha(self, Q, K, neighbours):
         N,M = Q.size(1),K.size(1)
 
         Q_ = self.w_q(Q)
@@ -102,20 +88,50 @@ class NNMHA(nn.Module):
         K_ = torch.stack(K_.split(dim_split, 2), 0)
         V_ = torch.stack(V_.split(dim_split, 2), 0)
 
-        K_neighbours = torch.gather(K_.unsqueeze(2).expand(-1,-1, N,-1,-1), 1, neighbours.unsqueeze(-1).unsqueeze(0).expand(dim_split,-1,-1,-1,self.dim_V))
+        K_neighbours = torch.gather(K_.unsqueeze(2).expand(-1,-1, N,-1,-1), 3, neighbours.unsqueeze(-1).unsqueeze(0).expand(dim_split,-1,-1,-1,self.dim_V))
         E = Q_.unsqueeze(3).matmul(K_neighbours.transpose(3,4)).squeeze(3)/math.sqrt(self.dim_V)
         A = torch.softmax(E, 3)
         O = self.w_o(torch.cat((A.matmul(V_)).split(1, 0), 3).squeeze(0))
         return O
 
+    def _nn_equi_mha(self, Q, K, neighbours):
+        N,M = Q.size(1),K.size(1)
+        bs = Q.size(0)
+        k = neighbours.size(-1)
+        d = Q.size(2)
+
+        Q = self.w_q(Q)
+        K, V = self.w_k(K), self.w_v(K)
+
+        dim_split = self.latent_size // self.num_heads
+        Q_ = torch.stack(Q.split(dim_split, 3), 0)
+        K_ = torch.stack(K.split(dim_split, 3), 0)
+        V_ = torch.stack(V.split(dim_split, 3), 0)
+
+        K_neighbours = torch.gather(K_.transpose(2,3).unsqueeze(3).expand(-1,-1,-1,N,-1,-1), 4, neighbours.view(1, bs, 1, N, k, 1).expand(dim_split,-1,d,-1,-1,self.latent_size))
+        E = Q_.transpose(2,3).unsqueeze(4).matmul(K_neighbours.transpose(4,5)).squeeze(4).sum(dim=2) / math.sqrt(self.latent_size)
+        A = torch.softmax(E, 3)
+        O = self.w_o(torch.cat((A.matmul(V_.view(*V_.size()[:-2], -1)).view(*Q_.size())).split(1, 0), 4).squeeze(0))
+        return O
+
+    def forward(self, *args, **kwargs):
+        if self.equi:
+            if self.nn:
+                return self._nn_equi_mha(*args, **kwargs)
+            else:
+                return self._equi_mha(*args, **kwargs)
+        else:
+            if self.nn:
+                return self._nn_mha(*args, **kwargs)
+            else:
+                return self._mha(*args, **kwargs)
+
+
 class MAB(nn.Module):
-    def __init__(self, input_size, latent_size, hidden_size, num_heads, attn_size=None, ln=False, equi=False, dropout=0.1):
+    def __init__(self, input_size, latent_size, hidden_size, num_heads, attn_size=None, ln=False, equi=False, nn=nn, dropout=0.1):
         super(MAB, self).__init__()
         attn_size = attn_size if attn_size is not None else input_size
-        if equi:
-            self.attn = EquiMHA(input_size, attn_size, latent_size, num_heads)
-        else:
-            self.attn = MHA(input_size, attn_size, latent_size, num_heads)
+        self.attn = MHA(input_size, attn_size, latent_size, num_heads, equi=equi, nn=nn)
         if dropout > 0:
             self.dropout = nn.Dropout(dropout)
         self.fc = nn.Sequential(nn.Linear(latent_size, hidden_size), nn.ReLU(), nn.Linear(hidden_size, latent_size))
@@ -123,8 +139,8 @@ class MAB(nn.Module):
             self.ln0 = nn.LayerNorm(latent_size)
             self.ln1 = nn.LayerNorm(latent_size)
 
-    def forward(self, Q, K, mask=None):
-        X = Q + self.attn(Q, K, mask=mask)
+    def forward(self, Q, K, **kwargs):
+        X = Q + self.attn(Q, K, **kwargs)
         X = X if getattr(self, 'dropout', None) is None else self.dropout(X)
         X = X if getattr(self, 'ln0', None) is None else self.ln0(X)
         X = X + self.fc(X)
@@ -133,9 +149,9 @@ class MAB(nn.Module):
         return X
 
 class SAB(nn.Module):
-    def __init__(self, input_size, latent_size, hidden_size, num_heads, ln=False, remove_diag=False, equi=False):
+    def __init__(self, input_size, latent_size, hidden_size, num_heads, ln=False, remove_diag=False, equi=False, nn=False):
         super(SAB, self).__init__()
-        self.mab = MAB(input_size, latent_size, hidden_size, num_heads, ln=False, remove_diag=False, equi=False)
+        self.mab = MAB(input_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, equi=equi, nn=nn)
 
     def forward(self, X, mask=None):
         return self.mab(X, X, mask=mask)
@@ -154,15 +170,16 @@ class ISAB(nn.Module):
 
 
 class CSAB(nn.Module):
-    def __init__(self, input_size, latent_size, hidden_size, num_heads, remove_diag=False, **kwargs):
+    def __init__(self, input_size, latent_size, hidden_size, num_heads, remove_diag=False, nn=False, **kwargs):
         super(CSAB, self).__init__()
-        self.MAB_XX = MAB(input_size, latent_size, hidden_size, num_heads, **kwargs)
-        self.MAB_YY = MAB(input_size, latent_size, hidden_size, num_heads, **kwargs)
-        self.MAB_XY = MAB(input_size, latent_size, hidden_size, num_heads, **kwargs)
-        self.MAB_YX = MAB(input_size, latent_size, hidden_size, num_heads, **kwargs)
+        self.MAB_XX = MAB(input_size, latent_size, hidden_size, num_heads, nn=nn, **kwargs)
+        self.MAB_YY = MAB(input_size, latent_size, hidden_size, num_heads, nn=nn, **kwargs)
+        self.MAB_XY = MAB(input_size, latent_size, hidden_size, num_heads, nn=nn, **kwargs)
+        self.MAB_YX = MAB(input_size, latent_size, hidden_size, num_heads, nn=nn, **kwargs)
         self.fc_X = nn.Linear(latent_size * 2, latent_size)
         self.fc_Y = nn.Linear(latent_size * 2, latent_size)
         self.remove_diag = remove_diag
+        self.nn = nn
 
     def _get_masks(self, N, M, masks):
         if self.remove_diag:
@@ -185,13 +202,21 @@ class CSAB(nn.Module):
                 mask_xx, mask_xy, mask_yx, mask_yy = None,None,None,None
         return mask_xx, mask_xy, mask_yx, mask_yy
 
-    def forward(self, inputs, masks=None):
+    def forward(self, inputs, masks=None, neighbours=None):
         X, Y = inputs
-        mask_xx, mask_xy, mask_yx, mask_yy = self._get_masks(X.size(1), Y.size(1), masks)
-        XX = self.MAB_XX(X, X, mask=mask_xx)
-        XY = self.MAB_XY(X, Y, mask=mask_xy)
-        YX = self.MAB_YX(Y, X, mask=mask_yx)
-        YY = self.MAB_YY(Y, Y, mask=mask_yy)
+        if self.nn:
+            assert neighbours is not None and masks is None
+            N_XX, N_XY, N_YX, N_YY = neighbours
+            XX = self.MAB_XX(X, X, neighbours=N_XX)
+            XY = self.MAB_XY(X, Y, neighbours=N_XY)
+            YX = self.MAB_YX(Y, X, neighbours=N_YX)
+            YY = self.MAB_YY(Y, Y, neighbours=N_YY)
+        else:
+            mask_xx, mask_xy, mask_yx, mask_yy = self._get_masks(X.size(1), Y.size(1), masks)
+            XX = self.MAB_XX(X, X, mask=mask_xx)
+            XY = self.MAB_XY(X, Y, mask=mask_xy)
+            YX = self.MAB_YX(Y, X, mask=mask_yx)
+            YY = self.MAB_YY(Y, Y, mask=mask_yy)
         X_out = X + self.fc_X(torch.cat([XX, XY], dim=-1))
         Y_out = Y + self.fc_Y(torch.cat([YY, YX], dim=-1))
         return (X_out, Y_out)
@@ -273,7 +298,7 @@ class SetTransformer(nn.Module):
         return self.dec(ZX).squeeze(-1)
 
 class MultiSetTransformer(nn.Module):
-    def __init__(self, input_size, latent_size, hidden_size, output_size, num_heads=4, num_blocks=2, remove_diag=False, ln=False, equi=False, dropout=0.1, num_inds=-1):
+    def __init__(self, input_size, latent_size, hidden_size, output_size, num_heads=4, num_blocks=2, remove_diag=False, ln=False, equi=False, nn=False, k_neighbours=5, dropout=0.1, num_inds=-1):
         super(MultiSetTransformer, self).__init__()
         if equi:
             input_size = 1
@@ -281,7 +306,7 @@ class MultiSetTransformer(nn.Module):
         if num_inds > 0:
             self.enc = EncoderStack(*[ICSAB(latent_size, latent_size, hidden_size, num_heads, num_inds, ln=ln, remove_diag=remove_diag, equi=equi, dropout=dropout) for i in range(num_blocks)])
         else:
-            self.enc = EncoderStack(*[CSAB(latent_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, equi=equi, dropout=dropout) for i in range(num_blocks)])
+            self.enc = EncoderStack(*[CSAB(latent_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, equi=equi, nn=nn, dropout=dropout) for i in range(num_blocks)])
         self.pool_x = PMA(latent_size, hidden_size, num_heads, 1, ln=ln)
         self.pool_y = PMA(latent_size, hidden_size, num_heads, 1, ln=ln)
         self.dec = nn.Sequential(
@@ -290,13 +315,21 @@ class MultiSetTransformer(nn.Module):
                 nn.Linear(2*latent_size, output_size),)
         self.remove_diag = remove_diag
         self.equi=equi
+        self.nn = nn
+        self.k_neighbours = k_neighbours
 
     def forward(self, X, Y, masks=None):
         if self.equi:
             Xproj, Yproj = self.proj(X.unsqueeze(-1)), self.proj(Y.unsqueeze(-1))
         else:
             Xproj, Yproj = self.proj(X), self.proj(Y)
-        ZX, ZY = self.enc((Xproj, Yproj), masks=masks)
+            
+        if self.nn:
+            neighbours = cross_knn_inds(X, Y, self.k_neighbours)
+            ZX, ZY = self.enc((Xproj, Yproj), neighbours=neighbours)
+        else:
+            ZX, ZY = self.enc((Xproj, Yproj), masks=masks)
+
         if self.equi:
             ZX = ZX.max(dim=2)[0]
             ZY = ZY.max(dim=2)[0]
