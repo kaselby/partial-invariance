@@ -222,8 +222,8 @@ if __name__ == '__main__':
                 'dropout':args.dropout,
                 'input_size':args.dim,
                 'latent_size':args.latent_size,
-                'hidden_size':args.hidden_size
-                'nn_attn':args.nn
+                'hidden_size':args.hidden_size,
+                'nn_attn':args.nn,
                 'k_neighbours':args.k_neighbours
             }
             model=MultiSetTransformer(**model_kwargs).to(device)
