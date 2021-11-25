@@ -92,8 +92,9 @@ class MHA(nn.Module):
         V_neighbours = torch.gather(V_.unsqueeze(2).expand(-1,-1, N,-1,-1), 3, neighbours.unsqueeze(-1).unsqueeze(0).expand(self.num_heads,-1,-1,-1,dim_split))
         E = Q_.unsqueeze(3).matmul(K_neighbours.transpose(3,4)).squeeze(3)/math.sqrt(self.latent_size)
         A = torch.softmax(E, 3)
+        AV = A.unsqueeze(3).matmul(V_neighbours).squeeze(3)
 
-        O = self.w_o(torch.cat((A.matmul(V_neighbours)).split(1, 0), 3).squeeze(0))
+        O = self.w_o(torch.cat((AV).split(1, 0), 3).squeeze(0))
         return O
 
     def _nn_equi_mha(self, Q, K, neighbours):
