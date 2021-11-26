@@ -19,17 +19,18 @@ model4 = MultiSetTransformer(n, 16, 32, 1, equi=True, nn_attn=True).cuda()
 models = [model1, model2, model3, model4]
 baseline = kl_knn
 
-def test(generator, fct, bs=64, **kwargs):
+def test(generator, fct, bs=32, **kwargs):
     X = generator(bs, **kwargs)
     out = fct(*X)
 
 results={}
 for size in sizes:
+    print("Size: ", size)
     results[size]={'baseline':0, 'models':[]}
     for model in models:
-        t_model = timeit.timeit(lambda: test(generator, model, n=n, set_size=(size, int(size*1.5))), number=1000)
+        t_model = timeit.timeit(lambda: test(generator, model, n=n, set_size=(size, int(size*1.5))), number=500)
         results[size]['models'].append(t_model)
-    t_baseline = timeit.timeit(lambda: test(generator, baseline, n=n, set_size=(size, int(size*1.5))), number=1000)
+    t_baseline = timeit.timeit(lambda: test(generator, baseline, n=n, set_size=(size, int(size*1.5))), number=500)
     results[size]['baseline'] = t_baseline
 
 
