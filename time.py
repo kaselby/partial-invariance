@@ -24,7 +24,8 @@ def test(generator, fct, bs=32, **kwargs):
     out = fct(*X)
 
 results={}
-for size in sizes:
+for s in sizes:
+    size = s.item()
     print("Size: ", size)
     results[size]={'baseline':0, 'models':[]}
     for model in models:
@@ -34,7 +35,8 @@ for size in sizes:
     results[size]['baseline'] = t_baseline
 
 
-for size in sizes:
+for s in sizes:
+    size = s.item()
     print("%d:\n" % size)
     print("\tbaseline: %f\n" % results[size]['baseline'])
     for i,model in enumerate(models):
