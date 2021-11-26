@@ -12,10 +12,10 @@ sizes = torch.linspace(2.5,8,15).exp().round().int()
 
 generator=GaussianGenerator(num_outputs=2)
 #model = torch.load(os.path.join("runs", run_name, "model.pt"))
-model1 = MultiSetTransformer(n, n*2, n*4, 1, equi=False, nn_attn=False)
-model2 = MultiSetTransformer(n, n*2, n*4, 1, equi=False, nn_attn=True)
-model3 = MultiSetTransformer(n, 16, 32, 1, equi=True, nn_attn=False)
-model4 = MultiSetTransformer(n, 16, 32, 1, equi=True, nn_attn=True)
+model1 = MultiSetTransformer(n, n*2, n*4, 1, equi=False, nn_attn=False).cuda()
+model2 = MultiSetTransformer(n, n*2, n*4, 1, equi=False, nn_attn=True).cuda()
+model3 = MultiSetTransformer(n, 16, 32, 1, equi=True, nn_attn=False).cuda()
+model4 = MultiSetTransformer(n, 16, 32, 1, equi=True, nn_attn=True).cuda()
 models = [model1, model2, model3, model4]
 baseline = kl_knn
 
