@@ -27,9 +27,9 @@ results={}
 for size in sizes:
     results[size]={'baseline':0, 'models':[]}
     for model in models:
-        t_model = timeit.timeit(lambda: test(generator, model, n=n, set_size=(size, int(size*1.5)), number=1000)
+        t_model = timeit.timeit(lambda: test(generator, model, n=n, set_size=(size, int(size*1.5)), number=1000))
         results[size]['models'].append(t_model)
-    t_baseline = timeit.timeit(lambda: test(generator, baseline, n=n, set_size=(size, int(size*1.5)), number=1000)
+    t_baseline = timeit.timeit(lambda: test(generator, baseline, n=n, set_size=(size, int(size*1.5)), number=1000))
     results[size]['baseline'] = t_baseline
 
 
