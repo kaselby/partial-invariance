@@ -9,7 +9,7 @@ import torch
 
 n=16
 N=300
-sizes = torch.linspace(2.5,8,10).exp().round().int()
+sizes = torch.linspace(2.5,7,8).exp().round().int()
 
 generator=GaussianGenerator(num_outputs=2)
 #model = torch.load(os.path.join("runs", run_name, "model.pt"))
