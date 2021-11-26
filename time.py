@@ -8,7 +8,7 @@ import torch
 #run_name="w_24-40_gmm"
 
 n=16
-sizes = torch.linspace(2.5,8,15).exp().round().int()
+sizes = torch.linspace(2.5,8,10).exp().round().int()
 
 generator=GaussianGenerator(num_outputs=2)
 #model = torch.load(os.path.join("runs", run_name, "model.pt"))
@@ -26,7 +26,7 @@ def test(generator, fct, bs=32, **kwargs):
 results={}
 for s in sizes:
     size = s.item()
-    print("Size: ", size)
+    #print("Size: ", size)
     results[size]={'baseline':0, 'models':[]}
     for model in models:
         t_model = timeit.timeit(lambda: test(generator, model, n=n, set_size=(size, int(size*1.5))), number=500)
@@ -34,12 +34,10 @@ for s in sizes:
     t_baseline = timeit.timeit(lambda: test(generator, baseline, n=n, set_size=(size, int(size*1.5))), number=500)
     results[size]['baseline'] = t_baseline
 
-
-for s in sizes:
-    size = s.item()
     print("%d:\n" % size)
     print("\tbaseline: %f\n" % results[size]['baseline'])
     for i,model in enumerate(models):
         print("\model %d: %f\n" % (i, results[size]['models'][i]))
 
+    
         
