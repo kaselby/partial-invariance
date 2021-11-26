@@ -22,8 +22,9 @@ models = {
 baseline = kl_knn
 
 def test(generator, fct, bs=32, **kwargs):
-    X = generator(bs, **kwargs)
-    out = fct(*X)
+    with torch.no_grad():
+        X = generator(bs, **kwargs)
+        out = fct(*X)
 
 results={}
 for s in sizes:
