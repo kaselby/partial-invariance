@@ -83,10 +83,10 @@ class ConvEncoder(nn.Module):
     def __init__(self, img_size, output_size):
         super().__init__()
         layers = [
-            ConvLayer(1, 16, 5, 2),
             ConvBlock(1, 16, pool='max'),
             ConvBlock(16, 32, pool='max'),
-            ConvBlock(32, 64, n_conv=3, pool='none')
+            ConvBlock(32, 64, pool='max'),
+            ConvBlock(64, 128, n_conv=3, pool='none')
         ]
         out_size = self._get_output_size(layers, img_size)
         self.conv = nn.Sequential(*blocks, nn.AvgPool2D(out_size))
@@ -178,11 +178,11 @@ def parse_args():
     parser.add_argument('--num_blocks', type=int, default=2)
     parser.add_argument('--num_heads', type=int, default=4)
     parser.add_argument('--batch_size', type=int, default=64)
-    parser.add_argument('--steps', type=int, default=100000)
+    parser.add_argument('--steps', type=int, default=20000)
     parser.add_argument('--dropout', type=float, default=0)
     parser.add_argument('--lr', type=float, default=1e-3)
-    parser.add_argument('--latent_size', type=int, default=256)
-    parser.add_argument('--hidden_size', type=int, default=384)
+    parser.add_argument('--latent_size', type=int, default=128)
+    parser.add_argument('--hidden_size', type=int, default=256)
     parser.add_argument('--basedir', type=str, default="final-runs")
     parser.add_argument('--data_dir', type=str, default='./data')
     return parser.parse_args()
