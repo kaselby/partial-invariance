@@ -262,10 +262,10 @@ class ImageCooccurenceGenerator():
         X, Y, targets = [], [], []
         for j in range(batch_size):
             mindex = j * (n_samples[0] + n_samples[1]).item()
-            X = [self.dataset[i] for i in indices[mindex:mindex + n_samples[0].item()]]
-            Y = [self.dataset[i] for i in indices[mindex + n_samples[0].item(): mindex + (n_samples[0] + n_samples[1]).item()]]
-            Xdata, Xlabels = zip(*X)
-            Ydata, Ylabels = zip(*Y)
+            X_j = [self.dataset[i] for i in indices[mindex:mindex + n_samples[0].item()]]
+            Y_j = [self.dataset[i] for i in indices[mindex + n_samples[0].item(): mindex + (n_samples[0] + n_samples[1]).item()]]
+            Xdata, Xlabels = zip(*X_j)
+            Ydata, Ylabels = zip(*Y_j)
             target = len(set(Xlabels) & set(Ylabels))
             X.append(torch.stack(Xdata, 0))
             Y.append(torch.stack(Ydata, 0))
