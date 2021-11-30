@@ -223,7 +223,7 @@ if __name__ == '__main__':
         steps = int(steps/n_gpus)    
 
     optimizer = torch.optim.Adam(model.parameters(), args.lr)
-    checkpoint_dir = os.path.join(args.checkpoint_dir, args.checkpoint_name)
+    checkpoint_dir = os.path.join(args.checkpoint_dir, args.checkpoint_name) if args.checkpoint_name is not None else None
     model, (losses, accs, test_acc) = train(model, optimizer, train_dataset, test_dataset, args.steps, args.batch_size, checkpoint_dir=checkpoint_dir)
 
     print("Test Accuracy:", test_acc)
