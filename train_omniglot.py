@@ -110,11 +110,10 @@ def load_datasets(root_folder="./data"):
     )
 
     test_dataset = torchvision.datasets.Omniglot(
-        root=root_folder, download=True, transform=torchvision.transforms.ToTensor(), background=True
+        root=root_folder, download=True, transform=torchvision.transforms.ToTensor(), background=False
     )
 
     return ImageCooccurenceGenerator(train_dataset), ImageCooccurenceGenerator(test_dataset)
-)
 
 def train(model, optimizer, train_dataset, test_dataset, steps, batch_size=64, eval_every=500, save_every=2000, eval_steps=100, checkpoint_dir=None, data_kwargs={}):
     train_losses = []
