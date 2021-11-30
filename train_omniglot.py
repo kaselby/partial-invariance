@@ -4,8 +4,9 @@ import torch.nn as nn
 from torch.utils.data import IterableDataset
 
 import os
+import argparse
 
-from models2 import MultiSetTransformer
+from models2 import MultiSetTransformer, PINE, MultiSetModel
 
 '''
 class ImageCooccurenceDataset(IterableDataset):
