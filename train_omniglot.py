@@ -6,6 +6,7 @@ from torch.utils.data import IterableDataset
 import os
 import argparse
 import math
+import tqdm
 
 from models2 import MultiSetTransformer, PINE, MultiSetModel
 from generators import ImageCooccurenceGenerator
@@ -143,7 +144,7 @@ def train(model, optimizer, train_dataset, test_dataset, steps, batch_size=64, e
                 model, optimizer, initial_step, losses, eval_accs = load_dict['model'], load_dict['optimizer'], load_dict['step'], load_dict['losses'], load_dict['accs']
     
     loss_fct = nn.MSELoss()
-    for i in range(steps):
+    for i in tqdm.tqdm(range(steps)):
         optimizer.zero_grad()
 
         (X,Y), target = train_dataset(batch_size, **data_kwargs)
