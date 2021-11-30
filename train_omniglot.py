@@ -224,7 +224,7 @@ if __name__ == '__main__':
         set_model = PINE(args.latent_size, args.latent_size/4, 16, 2, args.hidden_size, 1)
     else:
         raise NotImplementedError("Model type not recognized.")
-    model = MultiSetModel(set_model, encoders=conv_encoder)
+    model = MultiSetImageModel(conv_encoder, set_model)
 
     if torch.cuda.device_count() > 1:
         n_gpus = torch.cuda.device_count()
