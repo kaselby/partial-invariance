@@ -135,7 +135,7 @@ def train(model, optimizer, train_dataset, test_dataset, steps, batch_size=64, e
     for i in range(steps):
         optimizer.zero_grad()
 
-        (X,Y), target = train_dataset(batch_size, data_kwargs)
+        (X,Y), target = train_dataset(batch_size, **data_kwargs)
 
         out = model(X,Y)
         loss = loss_fct(out.squeeze(-1), target)
