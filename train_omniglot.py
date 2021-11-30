@@ -65,9 +65,9 @@ class ConvBlock(nn.Module):
             layers.append(ConvLayer(out_filters, out_filters, 3))
 
         if pool == 'max':
-            layers.append(MaxPool2d(2,2))
+            layers.append(nn.MaxPool2d(2,2))
         elif pool == 'avg':
-            layers.append(AvgPool2d(2,2))
+            layers.append(nn.AvgPool2d(2,2))
         else:
             pool = 'none'
         self.pool = pool
