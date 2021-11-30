@@ -45,8 +45,8 @@ class ConvLayer(nn.Module):
         self.kernel_size = kernel_size
         self.stride = stride
         self.net = nn.Sequential(
-            nn.Conv2D(in_filters, out_filters, kernel_size, stride=stride),
-            nn.BatchNorm2D(out_filters),
+            nn.Conv2d(in_filters, out_filters, kernel_size, stride=stride),
+            nn.BatchNorm2d(out_filters),
             nn.ReLU()
         )
 
@@ -65,9 +65,9 @@ class ConvBlock(nn.Module):
             layers.append(ConvLayer(out_filters, out_filters, 3))
 
         if pool == 'max':
-            layers.append(MaxPool2D(2,2))
+            layers.append(MaxPool2d(2,2))
         elif pool == 'avg':
-            layers.append(AvgPool2D(2,2))
+            layers.append(AvgPool2d(2,2))
         else:
             pool = 'none'
         self.pool = pool
@@ -91,7 +91,7 @@ class ConvEncoder(nn.Module):
             ConvBlock(64, 128, n_conv=3, pool='none')
         ]
         out_size = self._get_output_size(layers, img_size)
-        self.conv = nn.Sequential(*blocks, nn.AvgPool2D(out_size))
+        self.conv = nn.Sequential(*blocks, nn.AvgPool2d(out_size))
         self.fc = nn.Linear(64, output_size)
 
     def _get_output_size(self, layers, input_size):
