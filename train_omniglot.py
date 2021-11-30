@@ -5,6 +5,7 @@ from torch.utils.data import IterableDataset
 
 import os
 import argparse
+import math
 
 from models2 import MultiSetTransformer, PINE, MultiSetModel
 from generators import ImageCooccurenceGenerator
