@@ -103,9 +103,6 @@ class ConvEncoder(nn.Module):
         fc_out = self.fc(conv_out.view(*inputs.size()[:-3], -1))
         return fc_out
 
-def make_image_model(img_size, latent_size, hidden_size, output_size=1, model_type='csab', **kwargs):
-
-            
 
 def load_datasets(root_folder="./data"):
     train_dataset = torchvision.datasets.Omniglot(
@@ -187,6 +184,8 @@ def parse_args():
     parser.add_argument('--data_dir', type=str, default='./data')
     return parser.parse_args()
 
+IMG_SIZE=105
+
 if __name__ == '__main__':
     args = parse_args()
 
@@ -198,7 +197,7 @@ if __name__ == '__main__':
 
     train_dataset, test_dataset = load_datasets(args.data_dir)
 
-    conv_encoder = ConvEncoder(img_size, args.latent_size)
+    conv_encoder = ConvEncoder(IMG_SIZE, args.latent_size)
     if model_type == 'csab':
         model_kwargs={
             'ln':True,
