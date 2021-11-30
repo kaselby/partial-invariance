@@ -227,6 +227,8 @@ if __name__ == '__main__':
         raise NotImplementedError("Model type not recognized.")
     model = MultiSetImageModel(conv_encoder, set_model)
 
+    batch_size = args.batch_size
+    steps = args.steps
     if torch.cuda.device_count() > 1:
         n_gpus = torch.cuda.device_count()
         print("Let's use", n_gpus, "GPUs!")
@@ -236,7 +238,7 @@ if __name__ == '__main__':
 
     optimizer = torch.optim.Adam(model.parameters(), args.lr)
     checkpoint_dir = os.path.join(args.checkpoint_dir, args.checkpoint_name) if args.checkpoint_name is not None else None
-    model, (losses, accs, test_acc) = train(model, optimizer, train_dataset, test_dataset, args.steps, args.batch_size, checkpoint_dir=checkpoint_dir)
+    model, (losses, accs, test_acc) = train(model, optimizer, train_dataset, test_dataset, steps, batch_size, checkpoint_dir=checkpoint_dir)
 
     print("Test Accuracy:", test_acc)
 
