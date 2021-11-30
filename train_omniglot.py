@@ -200,7 +200,7 @@ if __name__ == '__main__':
     train_dataset, test_dataset = load_datasets(args.data_dir)
 
     conv_encoder = ConvEncoder(IMG_SIZE, args.latent_size)
-    if model_type == 'csab':
+    if args.model == 'csab':
         model_kwargs={
             'ln':True,
             'remove_diag':False,
@@ -209,8 +209,10 @@ if __name__ == '__main__':
             'dropout':args.dropout,
         }
         set_model = MultiSetTransformer(args.latent_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
-    elif model_type == 'pine':
+    elif args.model == 'pine':
         set_model = PINE(args.latent_size, args.latent_size/4, 16, 2, args.hidden_size, 1)
+    else:
+        raise NotImplementedError("Model type not recognized.")
     model = MultiSetModel(set_model, encoders=conv_encoder)
 
     if torch.cuda.device_count() > 1:
