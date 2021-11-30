@@ -249,3 +249,36 @@ class NFGenerator():
             return outputs, dists
         else:
             return outputs
+
+
+class ImageCooccurenceGenerator():
+    def __init__(self, dataset):
+        self.dataset = dataset
+        self.image_size = dataset[0][0].size()[1:]
+
+    def _generate(self, batch_size, set_size=(50,75)):
+        indices = torch.randperm(len(self.dataset))
+        n_samples = torch.randint(*set_size, (2,))
+        X, Y, targets = [], [], []
+        for j in range(batch_size):
+            mindex = j * (n_samples[0] + n_samples[1]).item()
+            X = [self.dataset[i] for i in indices[mindex:mindex + n_samples[0].item()]]
+            Y = [self.dataset[i] for i in indices[mindex + n_samples[0].item(): mindex + (n_samples[0] + n_samples[1]).item()]]
+            Xdata, Xlabels = zip(*X)
+            Ydata, Ylabels = zip(*Y)
+            target = len(set(Xlabels) & set(Ylabels))
+            X.append(torch.stack(Xdata, 0))
+            Y.append(torch.stack(Ydata, 0))
+            targets.append(target)
+        return (torch.stack(X, 0), torch.stack(Y, 0)), torch.tensor(targets)
+        
+
+    def __call__(self, *args, **kwargs):
+        return self._generate(*args, **kwargs)
+
+
+
+class CorrespondenceGenerator():
+    def __init__(self, set1, set2):
+        self.set1 = set1
+        self.set2 = set2

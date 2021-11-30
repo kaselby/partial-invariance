@@ -304,11 +304,13 @@ class SetTransformer(nn.Module):
         return self.dec(ZX).squeeze(-1)
 
 class MultiSetTransformer(nn.Module):
-    def __init__(self, input_size, latent_size, hidden_size, output_size, num_heads=4, num_blocks=2, remove_diag=False, ln=False, equi=False, nn_attn=False, k_neighbours=5, dropout=0.1, num_inds=-1):
+    def __init__(self, input_size, latent_size, hidden_size, output_size, num_heads=4, num_blocks=2, remove_diag=False, ln=False, equi=False, 
+            nn_attn=False, k_neighbours=5, dropout=0.1, num_inds=-1):
         super(MultiSetTransformer, self).__init__()
         if equi:
             input_size = 1
-        self.proj = nn.Linear(input_size, latent_size)
+        if input_size != latent_size:
+            self.proj = nn.Linear(input_size, latent_size)
         if num_inds > 0:
             self.enc = EncoderStack(*[ICSAB(latent_size, latent_size, hidden_size, num_heads, num_inds, ln=ln, remove_diag=remove_diag, equi=equi, dropout=dropout) for i in range(num_blocks)])
         else:
@@ -325,16 +327,18 @@ class MultiSetTransformer(nn.Module):
         self.k_neighbours = k_neighbours
 
     def forward(self, X, Y, masks=None):
+        ZX, ZY = X, Y
+
         if self.equi:
-            Xproj, Yproj = self.proj(X.unsqueeze(-1)), self.proj(Y.unsqueeze(-1))
-        else:
-            Xproj, Yproj = self.proj(X), self.proj(Y)
+            ZX, ZY = ZX.unsqueeze(-1), ZY.unsqueeze(-1)
+        if self.proj is not None:
+            ZX, ZY = self.proj(ZX), self.proj(ZY)
             
         if self.nn_attn:
             neighbours = cross_knn_inds(X, Y, self.k_neighbours)
-            ZX, ZY = self.enc((Xproj, Yproj), neighbours=neighbours)
+            ZX, ZY = self.enc((ZX, ZY), neighbours=neighbours)
         else:
-            ZX, ZY = self.enc((Xproj, Yproj), masks=masks)
+            ZX, ZY = self.enc((ZX, ZY), masks=masks)
 
         if self.equi:
             ZX = ZX.max(dim=2)[0]
@@ -568,3 +572,26 @@ class MultiRNModel(nn.Module):
         out = self.dec(torch.cat([ZX, ZY], dim=-1))
         return out.squeeze(-1)
 
+
+
+
+class MultiSetModel(nn.Module):
+    def __init__(self, set_model, encoders=None):
+        super().__init__()
+        self.set_model = set_model
+
+        if encoders is None:
+            self.X_encoder, self.Y_encoder = None, None
+        elif isinstance(encoders, (list, tuple)):
+            self.X_encoder, self.Y_encoder = encoders
+        else:
+            self.X_encoder, self.Y_encoder = encoders, encoders
+    
+    def forward(self, X, Y, **kwargs):
+        ZX, ZY = X, Y
+        if self.X_encoder is not None:
+            ZX = self.X_encoder(ZX)
+        if self.Y_encoder is not None:
+            ZY = self.Y_encoder(ZY)
+        
+        return self.set_model(ZX, ZY, **kwargs)
