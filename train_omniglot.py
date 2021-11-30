@@ -106,6 +106,17 @@ class ConvEncoder(nn.Module):
         fc_out = self.fc(conv_out.view(*inputs.size()[:-3], -1))
         return fc_out
 
+class MultiSetImageModel(nn.Module):
+    def __init__(self, encoder, set_model):
+        super().__init__()
+        self.set_model = set_model
+        self.encoder = encoder
+    
+    def forward(self, X, Y, **kwargs):
+        ZX = self.encoder(X.view(-1, X.size()[-3:])).view(X.size()[:-3], ZX.size()[-3:])
+        ZY = self.encoder(Y.view(-1, Y.size()-3:)).view(Y.size()[:-3], ZY.size()[-3:])
+        return self.set_model(ZX, ZY, **kwargs)
+
 
 def load_datasets(root_folder="./data"):
     train_dataset = torchvision.datasets.Omniglot(
