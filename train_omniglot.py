@@ -38,7 +38,7 @@ class ImageCooccurenceDataset(IterableDataset):
 '''
 
 class ConvLayer(nn.Module):
-    def __init__(self, in_filters, out_filters, kernel_size=3, stride=1)
+    def __init__(self, in_filters, out_filters, kernel_size=3, stride=1):
         super().__init__()
         self.kernel_size = kernel_size
         self.stride = stride
