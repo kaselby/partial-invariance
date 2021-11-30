@@ -7,6 +7,7 @@ import os
 import argparse
 
 from models2 import MultiSetTransformer, PINE, MultiSetModel
+from generators import ImageCooccurenceGenerator
 
 '''
 class ImageCooccurenceDataset(IterableDataset):
