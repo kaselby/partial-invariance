@@ -63,7 +63,7 @@ class ConvBlock(nn.Module):
         super().__init__()
         self.n_conv = n_conv
         layers = [ConvLayer(in_filters, out_filters, 3)]
-        for i in range(n_conv):
+        for i in range(n_conv-1):
             layers.append(ConvLayer(out_filters, out_filters, 3))
 
         if pool == 'max':
