@@ -161,7 +161,7 @@ def train(model, optimizer, train_dataset, test_dataset, steps, batch_size=64, e
             eval_accs.append(acc)
             print("Step: %d\tAccuracy:%f" % (i, acc))
 
-        if i % save_every == 0 and checkpoint_dir is not None:
+        if checkpoint_dir is not None and i % save_every == 0 and i > 0:
             checkpoint_path = os.path.join(checkpoint_dir, "checkpoint.pt")
             if os.path.exists(checkpoint_path):
                 os.remove(checkpoint_path)
