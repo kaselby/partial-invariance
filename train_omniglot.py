@@ -194,6 +194,7 @@ def parse_args():
     parser.add_argument('--lr', type=float, default=1e-3)
     parser.add_argument('--latent_size', type=int, default=128)
     parser.add_argument('--hidden_size', type=int, default=256)
+    parser.add_argument('--set_size', type=int, nargs=2, default=[6,10])
     parser.add_argument('--basedir', type=str, default="final-runs")
     parser.add_argument('--data_dir', type=str, default='./data')
     return parser.parse_args()
@@ -219,6 +220,7 @@ if __name__ == '__main__':
             'num_blocks':args.num_blocks,
             'num_heads':args.num_heads,
             'dropout':args.dropout,
+            'equi':False
         }
         set_model = MultiSetTransformer(args.latent_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
     elif args.model == 'pine':
@@ -238,7 +240,8 @@ if __name__ == '__main__':
 
     optimizer = torch.optim.Adam(model.parameters(), args.lr)
     checkpoint_dir = os.path.join(args.checkpoint_dir, args.checkpoint_name) if args.checkpoint_name is not None else None
-    model, (losses, accs, test_acc) = train(model, optimizer, train_dataset, test_dataset, steps, batch_size, checkpoint_dir=checkpoint_dir)
+    data_kwargs = {'set_size':args.set_size}
+    model, (losses, accs, test_acc) = train(model, optimizer, train_dataset, test_dataset, steps, batch_size, checkpoint_dir=checkpoint_dir, data_kwargs=data_kwargs)
 
     print("Test Accuracy:", test_acc)
 
