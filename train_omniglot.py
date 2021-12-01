@@ -116,8 +116,8 @@ class MultiSetImageModel(nn.Module):
     def forward(self, X, Y, **kwargs):
         ZX = self.encoder(X.view(-1, *X.size()[-3:]))
         ZY = self.encoder(Y.view(-1, *Y.size()[-3:]))
-        ZX = ZX.view(*X.size()[:-3], *ZX.size()[-3:])
-        ZY = ZY.view(*Y.size()[:-3], *ZY.size()[-3:])
+        ZX = ZX.view(*X.size()[:-3], ZX.size(-1))
+        ZY = ZY.view(*Y.size()[:-3], ZY.size(-1))
         return self.set_model(ZX, ZY, **kwargs)
 
 

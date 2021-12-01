@@ -280,6 +280,26 @@ class ImageCooccurenceGenerator():
 
 
 class CorrespondenceGenerator():
-    def __init__(self, set1, set2):
-        self.set1 = set1
-        self.set2 = set2
+    def __init__(self, dataset1, dataset2, p=0.5, device=torch.device('cpu')):
+        self.dataset1 = dataset1
+        self.dataset2 = dataset2
+        self.p=p
+        self.device=device
+
+    def _generate_single(self, set_size=(25, 50)):
+        aligned = (torch.rand(1) < self.p).item()
+        n_samples = torch.randint(*set_size, (1,)).item()
+        indices = torch.randperm(len(self.dataset1))
+        X = [self.dataset1[i] for i in indices[:n_samples]]
+        if aligned:
+            Y = [self.dataset2[i] for i in indices[:n_samples]]
+        else:
+            Y = [self.dataset2[i] for i in indices[n_samples:n_samples*2]]
+        return torch.stack(X, 0), torch.stack(Y, 0), aligned
+    
+    def _generate(self, batch_size, set_size=(25,50)):
+        X, Y, label = zip(*[self._generate_single(set_size=set_size) for _ in range(batch_size)])
+        X = torch.stack(X,0).to(self.device)
+        Y = torch.stack(Y,0).to(self.device)
+        label = torch.tensor(label).to(self.device)
+        return (X, Y), label
