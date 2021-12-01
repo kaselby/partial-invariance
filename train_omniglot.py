@@ -119,7 +119,7 @@ class MultiSetImageModel(nn.Module):
         return self.set_model(ZX, ZY, **kwargs)
 
 
-def load_datasets(root_folder="./data"):
+def load_datasets(root_folder="./data", device=torch.device('cpu')):
     train_dataset = torchvision.datasets.Omniglot(
         root=root_folder, download=True, transform=torchvision.transforms.ToTensor(), background=True
     )
@@ -128,7 +128,7 @@ def load_datasets(root_folder="./data"):
         root=root_folder, download=True, transform=torchvision.transforms.ToTensor(), background=False
     )
 
-    return ImageCooccurenceGenerator(train_dataset), ImageCooccurenceGenerator(test_dataset)
+    return ImageCooccurenceGenerator(train_dataset, device), ImageCooccurenceGenerator(test_dataset, device)
 
 def train(model, optimizer, train_dataset, test_dataset, steps, batch_size=64, eval_every=500, save_every=2000, eval_steps=100, checkpoint_dir=None, data_kwargs={}):
     train_losses = []
@@ -209,7 +209,7 @@ if __name__ == '__main__':
 
     device = torch.device("cuda:0")
 
-    train_dataset, test_dataset = load_datasets(args.data_dir)
+    train_dataset, test_dataset = load_datasets(args.data_dir, device)
 
     conv_encoder = ConvEncoder(IMG_SIZE, args.latent_size)
     if args.model == 'csab':
@@ -225,7 +225,7 @@ if __name__ == '__main__':
         set_model = PINE(args.latent_size, args.latent_size/4, 16, 2, args.hidden_size, 1)
     else:
         raise NotImplementedError("Model type not recognized.")
-    model = MultiSetImageModel(conv_encoder, set_model)
+    model = MultiSetImageModel(conv_encoder, set_model).to(device)
 
     batch_size = args.batch_size
     steps = args.steps

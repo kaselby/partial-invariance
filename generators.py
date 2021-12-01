@@ -252,8 +252,9 @@ class NFGenerator():
 
 
 class ImageCooccurenceGenerator():
-    def __init__(self, dataset):
+    def __init__(self, dataset, device):
         self.dataset = dataset
+        self.device=device
         self.image_size = dataset[0][0].size()[1:]
 
     def _generate(self, batch_size, set_size=(50,75)):
@@ -270,7 +271,7 @@ class ImageCooccurenceGenerator():
             X.append(torch.stack(Xdata, 0))
             Y.append(torch.stack(Ydata, 0))
             targets.append(target)
-        return (torch.stack(X, 0), torch.stack(Y, 0)), torch.tensor(targets)
+        return (torch.stack(X, 0).to(self.device), torch.stack(Y, 0)).to(self.device), torch.tensor(targets).to(self.device)
         
 
     def __call__(self, *args, **kwargs):
