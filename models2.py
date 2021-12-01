@@ -309,8 +309,8 @@ class MultiSetTransformer(nn.Module):
         super(MultiSetTransformer, self).__init__()
         if equi:
             input_size = 1
-        if input_size != latent_size:
-            self.proj = nn.Linear(input_size, latent_size)
+        self.proj = None if input_size == latent_size else nn.Linear(input_size, latent_size) 
+            
         if num_inds > 0:
             self.enc = EncoderStack(*[ICSAB(latent_size, latent_size, hidden_size, num_heads, num_inds, ln=ln, remove_diag=remove_diag, equi=equi, dropout=dropout) for i in range(num_blocks)])
         else:
