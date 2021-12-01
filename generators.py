@@ -271,7 +271,7 @@ class ImageCooccurenceGenerator():
             X.append(torch.stack(Xdata, 0))
             Y.append(torch.stack(Ydata, 0))
             targets.append(target)
-        return (torch.stack(X, 0).to(self.device), torch.stack(Y, 0)).to(self.device), torch.tensor(targets).to(self.device)
+        return (torch.stack(X, 0).to(self.device), torch.stack(Y, 0).to(self.device)), torch.tensor(targets).to(self.device)
         
 
     def __call__(self, *args, **kwargs):
