@@ -306,10 +306,11 @@ class CorrespondenceGenerator():
 
 
 class CaptionGenerator():
-    def __init__(self, dataset, img_encoder, text_encoder, tokenizer, p=0.5, device=torch.device('cpu')):
+    def __init__(self, dataset, tokenizer, p=0.5, device=torch.device('cpu')):
+        self.N = len(dataset)
         self.img_dataset, self.text_dataset = self._split_dataset(dataset)
-        self.img_encoder = img_encoder
-        self.text_encoder = text_encoder
+        #self.img_encoder = img_encoder
+        #self.text_encoder = text_encoder
         self.tokenizer = tokenizer
         self.p = p
         self.device = device
@@ -319,7 +320,7 @@ class CaptionGenerator():
         for img, captions in dataset:
             imgs.append(img)
             captions.append(text[0])
-
+        return imgs, text
     
     def _build_text_batch(self, indices):
         bs = len(indices)
@@ -329,6 +330,7 @@ class CaptionGenerator():
         for batch_element in batch:
             flattened_seqs += batch_element
         tokenized_seqs = tokenizer(batch, padding=True, truncation=True, return_tensors='pt')
+        tokenized_seqs = {k:v.to(self.device) for k,v in tokenized_seqs.items()}
 
         return {'set_size':ss, 'batch_size': bs, 'inputs': tokenized_seqs}
         #with torch.no_grad():
@@ -339,11 +341,33 @@ class CaptionGenerator():
     def _build_img_batch(self, indices):
         bs = len(indices)
         ss = len(indices[0])
-        batch = torch.stack([torch.stack([self.img_dataset[i] for i in indices_j], 0) for indices_j in indices], 0)
-        encoded_batch = self.img_encoder(batch.view(-1, *batch.size()[-3:]))
-        return encoded_batch.view(bs, ss, -1)
+        batch = torch.stack([torch.stack([self.img_dataset[i] for i in indices_j], 0) for indices_j in indices], 0).to(self.device)
+        return batch
+        #encoded_batch = self.img_encoder(batch.view(-1, *batch.size()[-3:]))
+        #return encoded_batch.view(bs, ss, -1)
         
 
     def _generate(self, batch_size, set_size=(25,50)):
-        aligned = (torch.rand(1) < self.p).item()
+        aligned = (torch.rand(batch_size) < self.p).to(self.device)
         n_samples = torch.randint(*set_size, (1,)).item()
+
+        indices = torch.randperm(self.N))
+        X, Y = [], []
+        for i in range(batch_size):
+            mindex = n_samples * 2 * i
+            indices = torch.randperm(self.N))
+            X.append(indices[mindex:mindex+n_samples])
+            if aligned[i].item():
+                Y.append(indices[mindex:mindex+n_samples])
+            else:
+                Y.append(indices[mindex+n_samples:mindex+n_samples*2])
+
+        X = self._build_img_batch(X)
+        Y = self._build_text_batch(Y)
+        return (X, Y), aligned
+    
+    def forward(self, *args, **kwargs):
+        return self._generate(*args, **kwargs)
+            
+            
+
