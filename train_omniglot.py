@@ -133,7 +133,7 @@ def load_datasets(root_folder="./data", device=torch.device('cpu')):
     return ImageCooccurenceGenerator(train_dataset, device), ImageCooccurenceGenerator(test_dataset, device)
 
 def train(model, optimizer, train_dataset, test_dataset, steps, batch_size=64, eval_every=500, save_every=2000, eval_steps=100, checkpoint_dir=None, data_kwargs={}):
-    train_losses = []
+    losses = []
     eval_accs = []
     initial_step=1
     if checkpoint_dir is not None:
@@ -146,6 +146,7 @@ def train(model, optimizer, train_dataset, test_dataset, steps, batch_size=64, e
                 model, optimizer, initial_step, losses, eval_accs = load_dict['model'], load_dict['optimizer'], load_dict['step'], load_dict['losses'], load_dict['accs']
     
     loss_fct = nn.MSELoss()
+    avg_loss=0
     for i in tqdm.tqdm(range(steps)):
         optimizer.zero_grad()
 
@@ -156,10 +157,14 @@ def train(model, optimizer, train_dataset, test_dataset, steps, batch_size=64, e
         loss.backward()
         optimizer.step()
 
+        losses.append(loss.item())
+        avg_loss += loss.item()
+
         if i % eval_every == 0:
             acc = evaluate(model, train_dataset, eval_steps, batch_size, data_kwargs)
             eval_accs.append(acc)
-            print("Step: %d\tAccuracy:%f" % (i, acc))
+            print("Step: %d\tAccuracy:%f\tTraining Loss: %f" % (i, acc, avg_loss/eval_every))
+            avg_loss=0
 
         if checkpoint_dir is not None and i % save_every == 0 and i > 0:
             checkpoint_path = os.path.join(checkpoint_dir, "checkpoint.pt")

@@ -303,3 +303,39 @@ class CorrespondenceGenerator():
         Y = torch.stack(Y,0).to(self.device)
         label = torch.tensor(label).to(self.device)
         return (X, Y), label
+
+
+class CaptionGenerator():
+    def __init__(self, dataset, img_encoder, text_encoder, tokenizer, p=0.5, device=torch.device('cpu')):
+        self.img_dataset, self.text_dataset = self._split_dataset(dataset)
+        self.img_encoder = img_encoder
+        self.text_encoder = text_encoder
+        self.tokenizer = tokenizer
+        self.p = p
+        self.device = device
+    
+    def _split_dataset(self, dataset):
+        imgs, text = [], []
+        for img, captions in dataset:
+            imgs.append(img)
+            captions.append(text[0])
+
+    
+    def _build_text_batch(self, batch):
+        bs = len(batch)
+        ss = len(batch[0])
+        flattened_seqs = []
+        for batch_element in batch:
+            flattened_seqs += batch_element
+        tokenized_seqs = tokenizer(batch, padding=True, truncation=True, return_tensors='pt')
+        with torch.no_grad():
+            encoded_seqs = self.text_encoder(tokenized_seqs)
+
+        return encoded_seqs[:,0].view(ss, bs, -1).transpose(0,1)
+
+    def _build_img_batch(self, batch):
+        
+
+    def _generate(self, batch_size, set_size=(25,50)):
+        aligned = (torch.rand(1) < self.p).item()
+        n_samples = torch.randint(*set_size, (1,)).item()
