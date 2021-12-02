@@ -321,20 +321,28 @@ class CaptionGenerator():
             captions.append(text[0])
 
     
-    def _build_text_batch(self, batch):
-        bs = len(batch)
-        ss = len(batch[0])
+    def _build_text_batch(self, indices):
+        bs = len(indices)
+        ss = len(indices[0])
+        batch = [[self.text_dataset[i] for i in indices_j] for indices_j in indices]
         flattened_seqs = []
         for batch_element in batch:
             flattened_seqs += batch_element
         tokenized_seqs = tokenizer(batch, padding=True, truncation=True, return_tensors='pt')
-        with torch.no_grad():
-            encoded_seqs = self.text_encoder(tokenized_seqs)
 
-        return encoded_seqs[:,0].view(ss, bs, -1).transpose(0,1)
+        return {'set_size':ss, 'batch_size': bs, 'inputs': tokenized_seqs}
+        #with torch.no_grad():
+        #    encoded_seqs = self.text_encoder(tokenized_seqs)
 
-    def _build_img_batch(self, batch):
-        pass
+        #return encoded_seqs[:,0].view(ss, bs, -1).transpose(0,1)
+
+    def _build_img_batch(self, indices):
+        bs = len(indices)
+        ss = len(indices[0])
+        batch = torch.stack([torch.stack([self.img_dataset[i] for i in indices_j], 0) for indices_j in indices], 0)
+        encoded_batch = self.img_encoder(batch.view(-1, *batch.size()[-3:]))
+        return encoded_batch.view(bs, ss, -1)
+        
 
     def _generate(self, batch_size, set_size=(25,50)):
         aligned = (torch.rand(1) < self.p).item()

@@ -574,24 +574,46 @@ class MultiRNModel(nn.Module):
 
 
 
+class ImageEncoderWrapper(nn.Module):
+    def __init__(self, encoder, output_size):
+        super().__init__()
+        self.encoder = encoder
+        self.output_size = output_size
+
+    def forward(self, inputs):
+        bs, ss = inputs.size(0), inputs.size(1)
+        encoded_batch = self.encoder(inputs.view(-1, *batch.size()[-3:]))
+        return encoded_batch.view(bs, ss, -1)
+
+
+class BertEncoderWrapper(nn.Module):
+    def __init__(self, bert):
+        self.bert = bert
+        self.output_size = bert.config.hidden_size
+
+    def forward(self, inputs):
+        ss, bs, bert_inputs = inputs['set_size'], inputs['batch_size'], inputs['inputs']
+        encoded_seqs = self.text_encoder(**bert_inputs)
+        return encoded_seqs[:,0].view(ss, bs, -1).transpose(0,1)
+
 
 class MultiSetModel(nn.Module):
-    def __init__(self, set_model, encoders=None):
+    def __init__(self, set_model, x_encoder, y_encoder):
         super().__init__()
         self.set_model = set_model
+        self.x_encoder = x_encoder
+        self.y_encoder = y_encoder
+        self.latent_size = set_model.input_size
+        self.x_proj = nn.Linear(x_encoder.output_size, self.latent_size) if x_encoder.output_size != self.latent_size else None
+        self.y_proj = nn.Linear(y_encoder.output_size, self.latent_size) if y_encoder.output_size != self.latent_size else None
 
-        if encoders is None:
-            self.X_encoder, self.Y_encoder = None, None
-        elif isinstance(encoders, (list, tuple)):
-            self.X_encoder, self.Y_encoder = encoders
-        else:
-            self.X_encoder, self.Y_encoder = encoders, encoders
-    
     def forward(self, X, Y, **kwargs):
         ZX, ZY = X, Y
-        if self.X_encoder is not None:
-            ZX = self.X_encoder(ZX)
-        if self.Y_encoder is not None:
-            ZY = self.Y_encoder(ZY)
+        if self.X_proj is not None:
+            ZX = self.X_proj(ZX)
+        if self.Y_proj is not None:
+            ZY = self.Y_proj(ZY)
+        ZX = self.x_encoder(ZX)
+        ZY = self.y_encoder(ZY)
         
         return self.set_model(ZX, ZY, **kwargs)

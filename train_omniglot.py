@@ -174,7 +174,7 @@ def train(model, optimizer, train_dataset, test_dataset, steps, batch_size=64, e
     
     test_acc = evaluate(model, test_dataset, eval_steps, batch_size, data_kwargs)
     
-    return model, (losses, accs, test_acc)
+    return model, (losses, eval_accs, test_acc)
 
 def evaluate(model, eval_dataset, steps, batch_size=64, data_kwargs={}):
     n_correct = 0
@@ -182,7 +182,7 @@ def evaluate(model, eval_dataset, steps, batch_size=64, data_kwargs={}):
         for i in range(steps):
             (X,Y), target = eval_dataset(batch_size, **data_kwargs)
             out = model(X,Y).squeeze(-1)
-            n_correct += (out == target).sum().item()
+            n_correct += (out.round() == target.int()).sum().item()
     
     return n_correct / (batch_size * steps)
 
