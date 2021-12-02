@@ -334,7 +334,7 @@ class CaptionGenerator():
         return encoded_seqs[:,0].view(ss, bs, -1).transpose(0,1)
 
     def _build_img_batch(self, batch):
-        
+        pass
 
     def _generate(self, batch_size, set_size=(25,50)):
         aligned = (torch.rand(1) < self.p).item()
