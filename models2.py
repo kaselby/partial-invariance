@@ -309,6 +309,7 @@ class MultiSetTransformer(nn.Module):
         super(MultiSetTransformer, self).__init__()
         if equi:
             input_size = 1
+        self.input_size = input_size
         self.proj = None if input_size == latent_size else nn.Linear(input_size, latent_size) 
             
         if num_inds > 0:
