@@ -308,7 +308,7 @@ class CorrespondenceGenerator():
 class CaptionGenerator():
     def __init__(self, dataset, tokenizer, p=0.5, device=torch.device('cpu')):
         self.N = len(dataset)
-        self.img_dataset, self.text_dataset = self._split_dataset(dataset)
+        self.dataset = dataset
         #self.img_encoder = img_encoder
         #self.text_encoder = text_encoder
         self.tokenizer = tokenizer
@@ -322,12 +322,12 @@ class CaptionGenerator():
             text.append(captions[0])
         return imgs, text
     
-    def _build_text_batch(self, indices):
-        bs = len(indices)
-        ss = len(indices[0])
-        batch = [[self.text_dataset[i] for i in indices_j] for indices_j in indices]
+    def _build_text_batch(self, captions):
+        bs = len(captions)
+        ss = len(captions[0])
+        #batch = [[self.text_dataset[i] for i in indices_j] for indices_j in indices]
         flattened_seqs = []
-        for batch_element in batch:
+        for batch_element in captions:
             flattened_seqs += batch_element
         tokenized_seqs = tokenizer(batch, padding=True, truncation=True, return_tensors='pt')
         tokenized_seqs = {k:v.to(self.device) for k,v in tokenized_seqs.items()}
@@ -338,10 +338,10 @@ class CaptionGenerator():
 
         #return encoded_seqs[:,0].view(ss, bs, -1).transpose(0,1)
 
-    def _build_img_batch(self, indices):
-        bs = len(indices)
-        ss = len(indices[0])
-        batch = torch.stack([torch.stack([self.img_dataset[i] for i in indices_j], 0) for indices_j in indices], 0).to(self.device)
+    def _build_img_batch(self, imgs):
+        bs = len(imgs)
+        ss = len(imgs[0])
+        batch = torch.stack([torch.stack(batch_j, 0) for batch_j in imgs], 0).to(self.device)
         return batch
         #encoded_batch = self.img_encoder(batch.view(-1, *batch.size()[-3:]))
         #return encoded_batch.view(bs, ss, -1)
@@ -355,11 +355,13 @@ class CaptionGenerator():
         X, Y = [], []
         for i in range(batch_size):
             mindex = n_samples * 2 * i
-            X.append(indices[mindex:mindex+n_samples])
+            imgs, captions = zip(*[self.dataset[i] for i in indices[mindex:mindex+n_samples]])
+            X.append(imgs)
             if aligned[i].item():
-                Y.append(indices[mindex:mindex+n_samples])
+                Y.append(captions)
             else:
-                Y.append(indices[mindex+n_samples:mindex+n_samples*2])
+                _, captions2 = zip(*[self.dataset[i] for i in indices[mindex+n_samples:mindex+n_samples*2]])
+                Y.append(captions2)
 
         X = self._build_img_batch(X)
         Y = self._build_text_batch(Y)
