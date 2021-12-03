@@ -62,6 +62,8 @@ class ConvBlock(nn.Module):
     def __init__(self, in_filters, out_filters, n_conv=2, pool='max'):
         super().__init__()
         self.n_conv = n_conv
+        self.in_filters = in_filters
+        self.out_filters = out_filters
         layers = [ConvLayer(in_filters, out_filters, 3)]
         for i in range(n_conv-1):
             layers.append(ConvLayer(out_filters, out_filters, 3))
@@ -107,7 +109,7 @@ class ConvEncoder(nn.Module):
         super().__init__()
         out_size = self._get_output_size(layers, img_size)
         self.conv = nn.Sequential(*layers, nn.AvgPool2d(out_size))
-        self.fc = nn.Linear(layers[-1].out_channels, output_size)
+        self.fc = nn.Linear(layers[-1].out_filters, output_size)
 
     def _get_output_size(self, layers, input_size):
         x = input_size
