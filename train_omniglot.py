@@ -316,7 +316,7 @@ if __name__ == '__main__':
     optimizer = torch.optim.Adam(model.parameters(), args.lr)
     checkpoint_dir = os.path.join(args.checkpoint_dir, args.checkpoint_name) if args.checkpoint_name is not None else None
     data_kwargs = {'set_size':args.set_size}
-    model, (losses, accs, test_acc) = train(model, optimizer, train_dataset, test_dataset, steps, batch_size, checkpoint_dir=checkpoint_dir, data_kwargs=data_kwargs)
+    model, (losses, accs, test_acc) = train(model, optimizer, train_generator, test_generator, steps, batch_size, checkpoint_dir=checkpoint_dir, data_kwargs=data_kwargs)
 
     print("Test Accuracy:", test_acc)
 
