@@ -107,7 +107,7 @@ class ConvEncoder(nn.Module):
         super().__init__()
         out_size = self._get_output_size(layers, img_size)
         self.conv = nn.Sequential(*layers, nn.AvgPool2d(out_size))
-        self.fc = nn.Linear(128, output_size)
+        self.fc = nn.Linear(layers[-1].out_channels, output_size)
 
     def _get_output_size(self, layers, input_size):
         x = input_size
