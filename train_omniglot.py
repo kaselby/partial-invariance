@@ -84,14 +84,27 @@ class ConvBlock(nn.Module):
         return self.net(inputs)
 
 class ConvEncoder(nn.Module):
-    def __init__(self, img_size, output_size):
-        super().__init__()
+    @classmethod
+    def make_omniglot_model(cls, output_size):
         layers = [
             ConvBlock(1, 16, pool='max'),
             ConvBlock(16, 32, pool='max'),
             ConvBlock(32, 64, pool='max'),
             ConvBlock(64, 128, n_conv=3, pool='none')
         ]
+        return cls(layers, 105, output_size)
+    
+    @classmethod
+    def make_mnist_model(cls, output_size):
+        layers = [
+            ConvBlock(1, 16, n_conv=1, pool='max'),
+            ConvBlock(16, 32, n_conv=1, pool='max'),
+            ConvBlock(32, 64, n_conv=1, pool='none'),
+        ]
+        return cls(layers, 28, output_size)
+
+    def __init__(self, layers, img_size, output_size):
+        super().__init__()
         out_size = self._get_output_size(layers, img_size)
         self.conv = nn.Sequential(*layers, nn.AvgPool2d(out_size))
         self.fc = nn.Linear(128, output_size)
@@ -218,8 +231,6 @@ def parse_args():
     parser.add_argument('--dataset', type=str, choices=['mnist', 'omniglot'], default='mnist')
     return parser.parse_args()
 
-IMG_SIZE=105
-
 if __name__ == '__main__':
     args = parse_args()
 
@@ -231,10 +242,11 @@ if __name__ == '__main__':
 
     if args.dataset == "mnist":
         train_dataset, test_dataset = load_mnist(args.data_dir, device)
+        conv_encoder = ConvEncoder.make_mnist_model(args.latent_size)
     else:
         train_dataset, test_dataset = load_omniglot(args.data_dir, device)
+        conv_encoder = ConvEncoder.make_omniglot_model(args.latent_size)
 
-    conv_encoder = ConvEncoder(IMG_SIZE, args.latent_size)
     if args.model == 'csab':
         model_kwargs={
             'ln':True,
