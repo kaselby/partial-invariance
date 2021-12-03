@@ -99,8 +99,7 @@ class ConvEncoder(nn.Module):
     @classmethod
     def make_mnist_model(cls, output_size):
         layers = [
-            ConvBlock(1, 16, n_conv=1, pool='max'),
-            ConvBlock(16, 32, n_conv=1, pool='max'),
+            ConvBlock(1, 32, n_conv=1, pool='max'),
             ConvBlock(32, 64, n_conv=1, pool='none'),
         ]
         return cls(layers, 28, output_size)
@@ -148,12 +147,17 @@ def load_omniglot(root_folder="./data", device=torch.device('cpu')):
     return ImageCooccurenceGenerator(train_dataset, device), ImageCooccurenceGenerator(test_dataset, device)
 
 def load_mnist(root_folder="./data", device=torch.device('cpu')):
+    transform=torchvision.transforms.Compose([
+        torchvision.transforms.ToTensor(),
+        torchvision.transforms.Normalize((0.1307,), (0.3081,))
+    ])
+
     train_dataset = torchvision.datasets.MNIST(
-        root=root_folder, download=True, transform=torchvision.transforms.ToTensor(), train=True
+        root=root_folder, download=True, transform=transform, train=True
     )
 
     test_dataset = torchvision.datasets.MNIST(
-        root=root_folder, download=True, transform=torchvision.transforms.ToTensor(), train=False
+        root=root_folder, download=True, transform=transform, train=False
     )
 
     return ImageCooccurenceGenerator(train_dataset, device), ImageCooccurenceGenerator(test_dataset, device)
