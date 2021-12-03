@@ -222,10 +222,12 @@ def evaluate(model, eval_dataset, steps, batch_size=64, data_kwargs={}):
     return n_correct / (batch_size * steps)
 
 
-def pretrain(encoder, n_classes, dataset, epochs, lr, batch_size):
+def pretrain(encoder, n_classes, dataset, epochs, lr, batch_size, val_split=0.1):
     model = nn.Sequential(encoder, nn.Linear(encoder.output_size, n_classes))
-    optimizer = optim.Adam(model.parameters(), lr=lr)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     criterion = nn.CrossEntropyLoss()
+
+    
 
     for i in range(epochs):
         loader = DataLoader(dataset, shuffle=True, batch_size=batch_size)
@@ -236,6 +238,7 @@ def pretrain(encoder, n_classes, dataset, epochs, lr, batch_size):
             loss = criterion(out, targets)
             loss.backward()
             optimizer.step()
+        
     
     return encoder
 
