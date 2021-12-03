@@ -1,7 +1,7 @@
 import torchvision
 import torch
 import torch.nn as nn
-from torch.utils.data import IterableDataset
+from torch.utils.data import IterableDataset, DataLoader
 
 import os
 import argparse
@@ -106,8 +106,9 @@ class ConvEncoder(nn.Module):
 
     def __init__(self, layers, img_size, output_size):
         super().__init__()
-        out_size = self._get_output_size(layers, img_size)
-        self.conv = nn.Sequential(*layers, nn.AvgPool2d(out_size))
+        self.output_size = output_size
+        conv_out_size = self._get_output_size(layers, img_size)
+        self.conv = nn.Sequential(*layers, nn.AvgPool2d(conv_out_size))
         self.fc = nn.Linear(layers[-1].out_filters, output_size)
 
     def _get_output_size(self, layers, input_size):
@@ -135,7 +136,7 @@ class MultiSetImageModel(nn.Module):
         return self.set_model(ZX, ZY, **kwargs)
 
 
-def load_omniglot(root_folder="./data", device=torch.device('cpu')):
+def load_omniglot(root_folder="./data"):
     train_dataset = torchvision.datasets.Omniglot(
         root=root_folder, download=True, transform=torchvision.transforms.ToTensor(), background=True
     )
@@ -144,9 +145,9 @@ def load_omniglot(root_folder="./data", device=torch.device('cpu')):
         root=root_folder, download=True, transform=torchvision.transforms.ToTensor(), background=False
     )
 
-    return ImageCooccurenceGenerator(train_dataset, device), ImageCooccurenceGenerator(test_dataset, device)
+    return train_dataset, test_dataset
 
-def load_mnist(root_folder="./data", device=torch.device('cpu')):
+def load_mnist(root_folder="./data"):
     transform=torchvision.transforms.Compose([
         torchvision.transforms.ToTensor(),
         torchvision.transforms.Normalize((0.1307,), (0.3081,))
@@ -160,7 +161,7 @@ def load_mnist(root_folder="./data", device=torch.device('cpu')):
         root=root_folder, download=True, transform=transform, train=False
     )
 
-    return ImageCooccurenceGenerator(train_dataset, device), ImageCooccurenceGenerator(test_dataset, device)
+    return train_dataset, test_dataset
 
 def train(model, optimizer, train_dataset, test_dataset, steps, batch_size=64, eval_every=500, save_every=2000, eval_steps=100, checkpoint_dir=None, data_kwargs={}):
     losses = []
@@ -217,6 +218,25 @@ def evaluate(model, eval_dataset, steps, batch_size=64, data_kwargs={}):
     return n_correct / (batch_size * steps)
 
 
+def pretrain(encoder, n_classes, dataset, epochs, lr, batch_size):
+    model = nn.Sequential(encoder, nn.Linear(encoder.output_size, n_classes))
+    optimizer = optim.Adam(model.parameters(), lr=lr)
+    criterion = nn.CrossEntropyLoss()
+
+    for i in range(epochs):
+        loader = DataLoader(dataset, shuffle=True, batch_size=batch_size)
+        for batch, targets in loader:
+            optimizer.zero_grad()
+
+            out = model(batch.cuda())
+            loss = criterion(out, targets)
+            loss.backward()
+            optimizer.step()
+    
+    return encoder
+
+
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('run_name', type=str)
@@ -235,6 +255,7 @@ def parse_args():
     parser.add_argument('--basedir', type=str, default="final-runs")
     parser.add_argument('--data_dir', type=str, default='./data')
     parser.add_argument('--dataset', type=str, choices=['mnist', 'omniglot'], default='mnist')
+    parser.add_argument('--pretrain_epochs', type=int, default=0)
     return parser.parse_args()
 
 if __name__ == '__main__':
@@ -247,11 +268,21 @@ if __name__ == '__main__':
     device = torch.device("cuda:0")
 
     if args.dataset == "mnist":
-        train_dataset, test_dataset = load_mnist(args.data_dir, device)
+        train_dataset, test_dataset = load_mnist(args.data_dir)
         conv_encoder = ConvEncoder.make_mnist_model(args.latent_size)
+        n_classes=10
     else:
-        train_dataset, test_dataset = load_omniglot(args.data_dir, device)
+        train_dataset, test_dataset = load_omniglot(args.data_dir)
         conv_encoder = ConvEncoder.make_omniglot_model(args.latent_size)
+        n_classes=1623
+    train_generator = ImageCooccurenceGenerator(train_dataset, device)
+    test_generator = ImageCooccurenceGenerator(test_dataset, device)
+
+    if args.pretrain_epochs > 0:
+        pretrain_lr = 1e-3
+        pretrain_bs = 64
+        print("Beginning Pretraining...")
+        conv_encoder = pretrain(conv_encoder.cuda(), n_classes, train_dataset, args.pretrain_epochs, pretrain_lr, pretrain_bs)        
 
     if args.model == 'csab':
         model_kwargs={
@@ -276,7 +307,7 @@ if __name__ == '__main__':
         print("Let's use", n_gpus, "GPUs!")
         model = nn.DataParallel(model)
         batch_size *= n_gpus
-        steps = int(steps/n_gpus)    
+        steps = int(steps/n_gpus)
 
     optimizer = torch.optim.Adam(model.parameters(), args.lr)
     checkpoint_dir = os.path.join(args.checkpoint_dir, args.checkpoint_name) if args.checkpoint_name is not None else None
