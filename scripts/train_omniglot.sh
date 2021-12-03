@@ -10,4 +10,4 @@
 #SBATCH --exclude=gpu109
 
 
-python3 train_omniglot.py $1 --checkpoint_name $SLURM_JOB_ID
+python3 train_omniglot.py $1 --checkpoint_name $SLURM_JOB_ID --dataset $2
