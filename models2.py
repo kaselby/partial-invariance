@@ -588,6 +588,7 @@ class ImageEncoderWrapper(nn.Module):
 
 class BertEncoderWrapper(nn.Module):
     def __init__(self, bert):
+        super().__init__()
         self.bert = bert
         self.output_size = bert.config.hidden_size
 
