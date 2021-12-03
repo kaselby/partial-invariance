@@ -14,7 +14,7 @@ import tqdm
 import json
 
 from models2 import MultiSetTransformer, PINE, MultiSetModel, BertEncoderWrapper, ImageEncoderWrapper
-from generators import ImageCooccurenceGenerator
+from generators import CaptionGenerator
 
 
 
