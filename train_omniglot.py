@@ -237,7 +237,7 @@ def pretrain(encoder, n_classes, dataset, epochs, lr, batch_size, device, val_sp
             optimizer.zero_grad()
 
             out = model(batch.to(device))
-            loss = criterion(out, targets)
+            loss = criterion(out, targets.to(device))
             loss.backward()
             optimizer.step()
 
