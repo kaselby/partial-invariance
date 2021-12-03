@@ -134,11 +134,11 @@ def load_omniglot(root_folder="./data", device=torch.device('cpu')):
 
 def load_mnist(root_folder="./data", device=torch.device('cpu')):
     train_dataset = torchvision.datasets.MNIST(
-        root=root_folder, download=True, transform=torchvision.transforms.ToTensor(), background=True
+        root=root_folder, download=True, transform=torchvision.transforms.ToTensor(), train=True
     )
 
     test_dataset = torchvision.datasets.MNIST(
-        root=root_folder, download=True, transform=torchvision.transforms.ToTensor(), background=False
+        root=root_folder, download=True, transform=torchvision.transforms.ToTensor(), train=False
     )
 
     return ImageCooccurenceGenerator(train_dataset, device), ImageCooccurenceGenerator(test_dataset, device)
