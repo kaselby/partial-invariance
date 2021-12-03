@@ -319,7 +319,7 @@ class CaptionGenerator():
         imgs, text = [], []
         for img, captions in dataset:
             imgs.append(img)
-            captions.append(text[0])
+            text.append(captions[0])
         return imgs, text
     
     def _build_text_batch(self, indices):
