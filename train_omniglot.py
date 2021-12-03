@@ -222,8 +222,8 @@ def evaluate(model, eval_dataset, steps, batch_size=64, data_kwargs={}):
     return n_correct / (batch_size * steps)
 
 
-def pretrain(encoder, n_classes, dataset, epochs, lr, batch_size, val_split=0.1):
-    model = nn.Sequential(encoder, nn.Linear(encoder.output_size, n_classes))
+def pretrain(encoder, n_classes, dataset, epochs, lr, batch_size, device, val_split=0.1):
+    model = nn.Sequential(encoder, nn.Linear(encoder.output_size, n_classes)).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     criterion = nn.CrossEntropyLoss()
 
@@ -236,7 +236,7 @@ def pretrain(encoder, n_classes, dataset, epochs, lr, batch_size, val_split=0.1)
         for batch, targets in loader:
             optimizer.zero_grad()
 
-            out = model(batch.cuda())
+            out = model(batch.to(device))
             loss = criterion(out, targets)
             loss.backward()
             optimizer.step()
@@ -301,7 +301,7 @@ if __name__ == '__main__':
         pretrain_lr = 1e-3
         pretrain_bs = 64
         print("Beginning Pretraining...")
-        conv_encoder = pretrain(conv_encoder.cuda(), n_classes, train_dataset, args.pretrain_epochs, pretrain_lr, pretrain_bs)        
+        conv_encoder = pretrain(conv_encoder, n_classes, train_dataset, args.pretrain_epochs, pretrain_lr, pretrain_bs, device)        
 
     if args.model == 'csab':
         model_kwargs={
