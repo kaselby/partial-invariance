@@ -351,7 +351,7 @@ class CaptionGenerator():
         aligned = (torch.rand(batch_size) < self.p).to(self.device)
         n_samples = torch.randint(*set_size, (1,)).item()
 
-        indices = torch.randperm(self.N))
+        indices = torch.randperm(self.N)
         X, Y = [], []
         for i in range(batch_size):
             mindex = n_samples * 2 * i

@@ -18,23 +18,6 @@ from generators import ImageCooccurenceGenerator
 
 
 
-class MultiSetCaptionModel(nn.Module):
-    def __init__(self, set_model, img_encoder, text_encoder, img_output_size, text_output_size):
-        super().__init__()
-        self.set_model = set_model
-        self.img_encoder = encoder
-        self.text_encoder = text_encoder
-        self.latent_size = self.set_model.input_size
-        self.img_proj = nn.Linear(img_output_size, self.latent_size)
-        self.text_proj = nn.Linear(text_output_size, self.latent_size)
-    
-    def forward(self, X, Y, **kwargs):
-        ZX = self.encoder(X.view(-1, *X.size()[-3:]))
-        ZX = ZX.view(*X.size()[:-3], ZX.size(-1))
-        ZY = self.text_encoder(Y)
-        return self.set_model(ZX, ZY, **kwargs)
-
-
 def load_caption_data(imgdir, anndir, tokenizer):
     transforms = T.Compose([T.Resize(256), T.CenterCrop(224), T.ToTensor(), T.Normalize(mean=[0.485, 0.456, 0.406],
                                  std=[0.229, 0.224, 0.225])])
@@ -43,8 +26,6 @@ def load_caption_data(imgdir, anndir, tokenizer):
     val_dataset = CocoCaptions(root=imgdir, annFile=os.path.join(anndir, "captions_val2014.json"), transform=transforms)
 
     return train_dataset, val_dataset
-
-
 
 
 
