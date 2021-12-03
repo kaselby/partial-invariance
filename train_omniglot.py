@@ -121,12 +121,23 @@ class MultiSetImageModel(nn.Module):
         return self.set_model(ZX, ZY, **kwargs)
 
 
-def load_datasets(root_folder="./data", device=torch.device('cpu')):
+def load_omniglot(root_folder="./data", device=torch.device('cpu')):
     train_dataset = torchvision.datasets.Omniglot(
         root=root_folder, download=True, transform=torchvision.transforms.ToTensor(), background=True
     )
 
     test_dataset = torchvision.datasets.Omniglot(
+        root=root_folder, download=True, transform=torchvision.transforms.ToTensor(), background=False
+    )
+
+    return ImageCooccurenceGenerator(train_dataset, device), ImageCooccurenceGenerator(test_dataset, device)
+
+def load_mnist(root_folder="./data", device=torch.device('cpu')):
+    train_dataset = torchvision.datasets.MNIST(
+        root=root_folder, download=True, transform=torchvision.transforms.ToTensor(), background=True
+    )
+
+    test_dataset = torchvision.datasets.MNIST(
         root=root_folder, download=True, transform=torchvision.transforms.ToTensor(), background=False
     )
 
@@ -204,6 +215,7 @@ def parse_args():
     parser.add_argument('--set_size', type=int, nargs=2, default=[6,10])
     parser.add_argument('--basedir', type=str, default="final-runs")
     parser.add_argument('--data_dir', type=str, default='./data')
+    parser.add_argument('--dataset', type=str, choices=['mnist', 'omniglot'], default='mnist')
     return parser.parse_args()
 
 IMG_SIZE=105
@@ -217,7 +229,10 @@ if __name__ == '__main__':
 
     device = torch.device("cuda:0")
 
-    train_dataset, test_dataset = load_datasets(args.data_dir, device)
+    if args.dataset == "mnist":
+        train_dataset, test_dataset = load_mnist(args.data_dir, device)
+    else:
+        train_dataset, test_dataset = load_omniglot(args.data_dir, device)
 
     conv_encoder = ConvEncoder(IMG_SIZE, args.latent_size)
     if args.model == 'csab':
