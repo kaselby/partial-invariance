@@ -38,7 +38,10 @@ def make_model(set_model):
     vgg.classifier = nn.Sequential(*list(vgg.classifier.children())[:-3])
     img_encoder = ImageEncoderWrapper(vgg, 4096)
 
-    #disable gradient on these
+    for param in img_encoder.parameters():
+        param.requires_grad = False
+    for param in bert_encoder.parameters():
+        param.requires_grad = False
     
     #set_model = MultiSetTransformer(*args, **kwargs)
     return MultiSetModel(set_model, img_encoder, bert_encoder)
@@ -111,7 +114,7 @@ def parse_args():
     parser.add_argument('--lr', type=float, default=1e-3)
     parser.add_argument('--latent_size', type=int, default=128)
     parser.add_argument('--hidden_size', type=int, default=256)
-    parser.add_argument('--set_size', type=int, nargs=2, default=[6,10])
+    parser.add_argument('--set_size', type=int, nargs=2, default=[10,15])
     parser.add_argument('--basedir', type=str, default="final-runs")
     parser.add_argument('--data_dir', type=str, default='./coco')
     return parser.parse_args()
