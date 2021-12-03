@@ -22,8 +22,8 @@ def load_caption_data(imgdir, anndir):
     transforms = T.Compose([T.Resize(256), T.CenterCrop(224), T.ToTensor(), T.Normalize(mean=[0.485, 0.456, 0.406],
                                  std=[0.229, 0.224, 0.225])])
     
-    train_dataset = CocoCaptions(root=imgdir, annFile=os.path.join(anndir, "captions_train2014.json"), transform=transforms)
-    val_dataset = CocoCaptions(root=imgdir, annFile=os.path.join(anndir, "captions_val2014.json"), transform=transforms)
+    train_dataset = CocoCaptions(root=os.path.join(imgdir, "train2014"), annFile=os.path.join(anndir, "captions_train2014.json"), transform=transforms)
+    val_dataset = CocoCaptions(root=os.path.join(imgdir, "val2014"), annFile=os.path.join(anndir, "captions_val2014.json"), transform=transforms)
 
     return train_dataset, val_dataset
 
