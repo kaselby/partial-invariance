@@ -167,7 +167,10 @@ def load_mnist(root_folder="./data"):
 
     return train_dataset, test_dataset
 
-def train(model, optimizer, train_dataset, test_dataset, steps, batch_size=64, eval_every=500, save_every=2000, eval_steps=100, checkpoint_dir=None, data_kwargs={}):
+def poisson_loss(outputs, targets):
+    return -1 * outputs * (torch.log(targets) - 1)
+
+def train(model, optimizer, train_dataset, test_dataset, steps, poisson=False, batch_size=64, eval_every=500, save_every=2000, eval_steps=100, checkpoint_dir=None, data_kwargs={}):
     losses = []
     eval_accs = []
     initial_step=1
@@ -180,7 +183,7 @@ def train(model, optimizer, train_dataset, test_dataset, steps, batch_size=64, e
                 load_dict = torch.load(checkpoint_path)
                 model, optimizer, initial_step, losses, eval_accs = load_dict['model'], load_dict['optimizer'], load_dict['step'], load_dict['losses'], load_dict['accs']
     
-    loss_fct = nn.MSELoss()
+    loss_fct = nn.MSELoss() if not poisson else poisson_loss
     avg_loss=0
     for i in tqdm.tqdm(range(steps)):
         optimizer.zero_grad()
@@ -196,7 +199,7 @@ def train(model, optimizer, train_dataset, test_dataset, steps, batch_size=64, e
         avg_loss += loss.item()
 
         if i % eval_every == 0 and i > 0:
-            acc = evaluate(model, train_dataset, eval_steps, batch_size, data_kwargs)
+            acc = evaluate(model, train_dataset, eval_steps, poisson, batch_size, data_kwargs)
             eval_accs.append(acc)
             print("Step: %d\tAccuracy:%f\tTraining Loss: %f" % (i, acc, avg_loss/eval_every))
             avg_loss=0
@@ -207,18 +210,20 @@ def train(model, optimizer, train_dataset, test_dataset, steps, batch_size=64, e
                 os.remove(checkpoint_path)
             torch.save({'model':model,'optimizer':optimizer, 'step': i, 'losses':losses, 'accs': eval_accs}, checkpoint_path)
     
-    test_acc = evaluate(model, test_dataset, eval_steps, batch_size, data_kwargs)
+    test_acc = evaluate(model, test_dataset, eval_steps, poisson, batch_size, data_kwargs)
     
     return model, (losses, eval_accs, test_acc)
 
-def evaluate(model, eval_dataset, steps, batch_size=64, data_kwargs={}):
+def evaluate(model, eval_dataset, steps, poisson=False, batch_size=64, data_kwargs={}):
     n_correct = 0
     with torch.no_grad():
         for i in range(steps):
             (X,Y), target = eval_dataset(batch_size, **data_kwargs)
             out = model(X,Y).squeeze(-1)
-            n_correct += torch.eq(out.round(), target.int()).sum().item()
-    
+            if poisson:
+                n_correct += torch.logical_or(torch.eq(out.ceil(), target.int()), torch.eq(out.ceil()-1, target.int())).sum().item()
+            else:
+                n_correct += torch.eq(out.round(), target.int()).sum().item()
     return n_correct / (batch_size * steps)
 
 
