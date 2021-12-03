@@ -280,6 +280,7 @@ def parse_args():
     parser.add_argument('--data_dir', type=str, default='./data')
     parser.add_argument('--dataset', type=str, choices=['mnist', 'omniglot'], default='mnist')
     parser.add_argument('--pretrain_epochs', type=int, default=0)
+    parser.add_argument('--poisson', action='store_true')
     return parser.parse_args()
 
 if __name__ == '__main__':
