@@ -100,16 +100,20 @@ class ConvEncoder(nn.Module):
     def make_mnist_model(cls, output_size):
         layers = [
             ConvBlock(1, 32, n_conv=1, pool='max'),
-            ConvBlock(32, 64, n_conv=1, pool='none'),
+            ConvBlock(32, 64, n_conv=1, pool='max'),
         ]
         return cls(layers, 28, output_size)
 
-    def __init__(self, layers, img_size, output_size):
+    def __init__(self, layers, img_size, output_size, avg_pool=False):
         super().__init__()
         self.output_size = output_size
         conv_out_size = self._get_output_size(layers, img_size)
-        self.conv = nn.Sequential(*layers, nn.AvgPool2d(conv_out_size))
-        self.fc = nn.Linear(layers[-1].out_filters, output_size)
+        if avg_pool:
+            self.conv = nn.Sequential(*layers, nn.AvgPool2d(conv_out_size))
+            self.fc = nn.Linear(layers[-1].out_filters, output_size)
+        else:
+            self.conv = nn.Sequential(*layers)
+            self.fc = nn.Linear(layers[-1].out_filters * conv_out_size * conv_out_size, output_size)
 
     def _get_output_size(self, layers, input_size):
         x = input_size
