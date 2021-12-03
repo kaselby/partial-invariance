@@ -227,10 +227,12 @@ def pretrain(encoder, n_classes, dataset, epochs, lr, batch_size, val_split=0.1)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     criterion = nn.CrossEntropyLoss()
 
-    
+    n_val = int(len(dataset) * val_split)
+    train_dataset, val_dataset = torch.utils.data.random_split(dataset, [len(dataset)-n_val, n_val])
 
     for i in range(epochs):
-        loader = DataLoader(dataset, shuffle=True, batch_size=batch_size)
+        loader = DataLoader(train_dataset, shuffle=True, batch_size=batch_size)
+        avg_loss = 0
         for batch, targets in loader:
             optimizer.zero_grad()
 
@@ -238,8 +240,18 @@ def pretrain(encoder, n_classes, dataset, epochs, lr, batch_size, val_split=0.1)
             loss = criterion(out, targets)
             loss.backward()
             optimizer.step()
+
+            avg_loss += loss.item()
+        avg_loss /= len(train_dataset)/batch_size
+        eval_loader = DataLoader(val_dataset, shuffle=True, batch_size=batch_size)
+        acc = 0
+        for batch, targets in loader:
+            with torch.no_grad():
+                out = model(batch.cuda())
+                acc += out.argmax(dim=-1).eq(targets).sum()
+        acc /= len(val_dataset)
+        print("Epoch: %d\tTraining Loss: %f\t Eval Acc: %f" % (i, avg_loss, acc))
         
-    
     return encoder
 
 
