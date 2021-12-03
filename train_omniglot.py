@@ -248,7 +248,7 @@ def pretrain(encoder, n_classes, dataset, epochs, lr, batch_size, device, val_sp
         for batch, targets in loader:
             with torch.no_grad():
                 out = model(batch.cuda())
-                acc += out.argmax(dim=-1).eq(targets.cuda()).sum()
+                acc += out.argmax(dim=-1).eq(targets.cuda()).sum().item()
         acc /= len(val_dataset)
         print("Epoch: %d\tTraining Loss: %f\t Eval Acc: %f" % (i, avg_loss, acc))
         
