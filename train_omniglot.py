@@ -168,7 +168,7 @@ def load_mnist(root_folder="./data"):
     return train_dataset, test_dataset
 
 def poisson_loss(outputs, targets):
-    return -1 * outputs * (torch.log(targets) - 1)
+    return -1 * (targets * torch.log(outputs) - outputs).mean()
 
 def train(model, optimizer, train_dataset, test_dataset, steps, poisson=False, batch_size=64, eval_every=500, save_every=2000, eval_steps=100, checkpoint_dir=None, data_kwargs={}):
     losses = []
