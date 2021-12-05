@@ -219,7 +219,7 @@ def evaluate(model, eval_generator, steps, poisson=False, batch_size=64, data_kw
     with torch.no_grad():
         for i in range(steps):
             (X,Y), target = eval_generator(batch_size, **data_kwargs)
-            out = model(X,Y).squeeze(-1)
+            out = torch.exp(model(X,Y).squeeze(-1))
             if poisson:
                 n_correct += torch.logical_or(torch.eq(out.ceil(), target.int()), torch.eq(out.ceil()-1, target.int())).sum().item()
             else:
