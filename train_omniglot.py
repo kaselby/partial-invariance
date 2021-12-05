@@ -299,7 +299,7 @@ if __name__ == '__main__':
         conv_encoder = ConvEncoder.make_omniglot_model(args.latent_size)
         n_classes=1623
     n_val = int(len(trainval_dataset) * args.val_split)
-    train_dataset, val_dataset = torch.utils.data.random_split(trainval_dataset, [len(dataset)-n_val, n_val])
+    train_dataset, val_dataset = torch.utils.data.random_split(trainval_dataset, [len(trainval_dataset)-n_val, n_val])
 
     train_generator = ImageCooccurenceGenerator(train_dataset, device)
     val_generator = ImageCooccurenceGenerator(val_dataset, device)
