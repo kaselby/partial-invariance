@@ -170,7 +170,7 @@ def load_mnist(root_folder="./data"):
 def poisson_loss(outputs, targets):
     return -1 * (targets * outputs - torch.exp(outputs)).mean()
 
-def train(model, optimizer, train_dataset, test_dataset, steps, poisson=False, batch_size=64, eval_every=500, save_every=2000, eval_steps=100, checkpoint_dir=None, data_kwargs={}):
+def train(model, optimizer, train_generator, val_generator, test_generator, steps, poisson=False, batch_size=64, eval_every=500, save_every=2000, eval_steps=100, checkpoint_dir=None, data_kwargs={}):
     losses = []
     eval_accs = []
     initial_step=1
@@ -188,7 +188,7 @@ def train(model, optimizer, train_dataset, test_dataset, steps, poisson=False, b
     for i in tqdm.tqdm(range(steps)):
         optimizer.zero_grad()
 
-        (X,Y), target = train_dataset(batch_size, **data_kwargs)
+        (X,Y), target = train_generator(batch_size, **data_kwargs)
 
         out = model(X,Y)
         loss = loss_fct(out.squeeze(-1), target)
@@ -199,7 +199,7 @@ def train(model, optimizer, train_dataset, test_dataset, steps, poisson=False, b
         avg_loss += loss.item()
 
         if i % eval_every == 0 and i > 0:
-            acc = evaluate(model, train_dataset, eval_steps, poisson, batch_size, data_kwargs)
+            acc = evaluate(model, val_generator, eval_steps, poisson, batch_size, data_kwargs)
             eval_accs.append(acc)
             print("Step: %d\tAccuracy:%f\tTraining Loss: %f" % (i, acc, avg_loss/eval_every))
             avg_loss=0
@@ -210,15 +210,15 @@ def train(model, optimizer, train_dataset, test_dataset, steps, poisson=False, b
                 os.remove(checkpoint_path)
             torch.save({'model':model,'optimizer':optimizer, 'step': i, 'losses':losses, 'accs': eval_accs}, checkpoint_path)
     
-    test_acc = evaluate(model, test_dataset, eval_steps, poisson, batch_size, data_kwargs)
+    test_acc = evaluate(model, test_generator, eval_steps, poisson, batch_size, data_kwargs)
     
     return model, (losses, eval_accs, test_acc)
 
-def evaluate(model, eval_dataset, steps, poisson=False, batch_size=64, data_kwargs={}):
+def evaluate(model, eval_generator, steps, poisson=False, batch_size=64, data_kwargs={}):
     n_correct = 0
     with torch.no_grad():
         for i in range(steps):
-            (X,Y), target = eval_dataset(batch_size, **data_kwargs)
+            (X,Y), target = eval_generator(batch_size, **data_kwargs)
             out = model(X,Y).squeeze(-1)
             if poisson:
                 n_correct += torch.logical_or(torch.eq(out.ceil(), target.int()), torch.eq(out.ceil()-1, target.int())).sum().item()
@@ -227,13 +227,10 @@ def evaluate(model, eval_dataset, steps, poisson=False, batch_size=64, data_kwar
     return n_correct / (batch_size * steps)
 
 
-def pretrain(encoder, n_classes, dataset, epochs, lr, batch_size, device, val_split=0.1):
+def pretrain(encoder, n_classes, train_dataset, val_dataset, epochs, lr, batch_size, device, val_split=0.1):
     model = nn.Sequential(encoder, nn.Linear(encoder.output_size, n_classes)).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     criterion = nn.CrossEntropyLoss()
-
-    n_val = int(len(dataset) * val_split)
-    train_dataset, val_dataset = torch.utils.data.random_split(dataset, [len(dataset)-n_val, n_val])
 
     for i in range(epochs):
         loader = DataLoader(train_dataset, shuffle=True, batch_size=batch_size)
@@ -281,6 +278,7 @@ def parse_args():
     parser.add_argument('--dataset', type=str, choices=['mnist', 'omniglot'], default='mnist')
     parser.add_argument('--pretrain_epochs', type=int, default=0)
     parser.add_argument('--poisson', action='store_true')
+    parser.add_argument('--val_split', type=float, default=0.1)
     return parser.parse_args()
 
 if __name__ == '__main__':
@@ -293,21 +291,25 @@ if __name__ == '__main__':
     device = torch.device("cuda:0")
 
     if args.dataset == "mnist":
-        train_dataset, test_dataset = load_mnist(args.data_dir)
+        trainval_dataset, test_dataset = load_mnist(args.data_dir)
         conv_encoder = ConvEncoder.make_mnist_model(args.latent_size)
         n_classes=10
     else:
-        train_dataset, test_dataset = load_omniglot(args.data_dir)
+        trainval_dataset, test_dataset = load_omniglot(args.data_dir)
         conv_encoder = ConvEncoder.make_omniglot_model(args.latent_size)
         n_classes=1623
+    n_val = int(len(trainval_dataset) * args.val_split)
+    train_dataset, val_dataset = torch.utils.data.random_split(trainval_dataset, [len(dataset)-n_val, n_val])
+
     train_generator = ImageCooccurenceGenerator(train_dataset, device)
+    val_generator = ImageCooccurenceGenerator(val_dataset, device)
     test_generator = ImageCooccurenceGenerator(test_dataset, device)
 
     if args.pretrain_epochs > 0:
         pretrain_lr = 1e-3
         pretrain_bs = 64
         print("Beginning Pretraining...")
-        conv_encoder = pretrain(conv_encoder, n_classes, train_dataset, args.pretrain_epochs, pretrain_lr, pretrain_bs, device)        
+        conv_encoder = pretrain(conv_encoder, n_classes, train_dataset, val_dataset, args.pretrain_epochs, pretrain_lr, pretrain_bs, device)        
 
     if args.model == 'csab':
         model_kwargs={
@@ -337,7 +339,7 @@ if __name__ == '__main__':
     optimizer = torch.optim.Adam(model.parameters(), args.lr)
     checkpoint_dir = os.path.join(args.checkpoint_dir, args.checkpoint_name) if args.checkpoint_name is not None else None
     data_kwargs = {'set_size':args.set_size}
-    model, (losses, accs, test_acc) = train(model, optimizer, train_generator, test_generator, steps, batch_size, checkpoint_dir=checkpoint_dir, data_kwargs=data_kwargs)
+    model, (losses, accs, test_acc) = train(model, optimizer, train_generator, val_generator, test_generator, steps, batch_size, checkpoint_dir=checkpoint_dir, data_kwargs=data_kwargs)
 
     print("Test Accuracy:", test_acc)
 
