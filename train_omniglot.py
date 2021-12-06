@@ -116,6 +116,23 @@ class ModifiedOmniglotDataset(Dataset):
     def __len__(self) -> int:
         return len(self._flat_character_images)
 
+    def _make_output(self, image_name, character_class):
+        image_path = os.path.join(self.target_folder, self._characters[character_class], image_name)
+        image = Image.open(image_path, mode='r').convert('L')
+
+        if self.transform:
+            image = self.transform(image)
+
+        return image, character_class
+
+    def get_character_image(self, character_index, img_index):
+        image_name, character_class = self._character_images[character_index][img_index]
+        return self._make_output(image_name, character_class)
+
+    def get_image(self, index):
+        image_name, character_class = self._flat_character_images[index]
+        return self._make_output(image_name, character_class)
+
     def __getitem__(self, index: int) -> Tuple[Any, Any]:
         """
         Args:
@@ -124,14 +141,8 @@ class ModifiedOmniglotDataset(Dataset):
         Returns:
             tuple: (image, target) where target is index of the target character class.
         """
-        image_name, character_class = self._flat_character_images[index]
-        image_path = os.path.join(self.target_folder, self._characters[character_class], image_name)
-        image = Image.open(image_path, mode='r').convert('L')
+        return self.get_image(index)
 
-        if self.transform:
-            image = self.transform(image)
-
-        return image, character_class
 
 
 class ConvLayer(nn.Module):
@@ -234,6 +245,7 @@ class MultiSetImageModel(nn.Module):
 
 
 def load_omniglot(root_folder="./data"):
+    '''
     train_dataset = torchvision.datasets.Omniglot(
         root=root_folder, download=True, transform=torchvision.transforms.ToTensor(), background=True
     )
@@ -241,6 +253,8 @@ def load_omniglot(root_folder="./data"):
     test_dataset = torchvision.datasets.Omniglot(
         root=root_folder, download=True, transform=torchvision.transforms.ToTensor(), background=False
     )
+    '''
+    train, val, test = ModifiedOmniglotDataset.splits(root_folder, 15, 5, 5)
 
     return train_dataset, test_dataset
 
@@ -263,7 +277,7 @@ def load_mnist(root_folder="./data"):
 def poisson_loss(outputs, targets):
     return -1 * (targets * outputs - torch.exp(outputs)).mean()
 
-def train(model, optimizer, train_generator, val_generator, test_generator, steps, poisson=False, batch_size=64, eval_every=500, save_every=2000, eval_steps=100, checkpoint_dir=None, data_kwargs={}):
+def train(model, optimizer, train_generator, val_generator, test_generator, steps, poisson=False, batch_size=64, eval_every=500, save_every=2000, eval_steps=100, test_steps=500, checkpoint_dir=None, data_kwargs={}):
     losses = []
     eval_accs = []
     initial_step=1
@@ -303,7 +317,7 @@ def train(model, optimizer, train_generator, val_generator, test_generator, step
                 os.remove(checkpoint_path)
             torch.save({'model':model,'optimizer':optimizer, 'step': i, 'losses':losses, 'accs': eval_accs}, checkpoint_path)
     
-    test_acc = evaluate(model, test_generator, eval_steps, poisson, batch_size, data_kwargs)
+    test_acc = evaluate(model, test_generator, test_steps, poisson, batch_size, data_kwargs)
     
     return model, (losses, eval_accs, test_acc)
 
@@ -385,14 +399,15 @@ if __name__ == '__main__':
 
     if args.dataset == "mnist":
         trainval_dataset, test_dataset = load_mnist(args.data_dir)
+        n_val = int(len(trainval_dataset) * args.val_split)
+        train_dataset, val_dataset = torch.utils.data.random_split(trainval_dataset, [len(trainval_dataset)-n_val, n_val])
         conv_encoder = ConvEncoder.make_mnist_model(args.latent_size)
         n_classes=10
     else:
         trainval_dataset, test_dataset = load_omniglot(args.data_dir)
         conv_encoder = ConvEncoder.make_omniglot_model(args.latent_size)
         n_classes=1623
-    n_val = int(len(trainval_dataset) * args.val_split)
-    train_dataset, val_dataset = torch.utils.data.random_split(trainval_dataset, [len(trainval_dataset)-n_val, n_val])
+    
 
     train_generator = ImageCooccurenceGenerator(train_dataset, device)
     val_generator = ImageCooccurenceGenerator(val_dataset, device)
