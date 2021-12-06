@@ -290,7 +290,7 @@ class OmniglotCooccurenceGenerator(ImageCooccurenceGenerator):
         flat_character_images= sum([self.dataset._character_images[i] for i in character_indices], [])
 
         indices = torch.randperm(len(flat_character_images))
-        for i in range(batch_size):
+        for j in range(batch_size):
             mindex = j * (x_samples + y_samples)
             X_j = [self.dataset._make_output(*flat_character_images[i]) for i in indices[mindex:mindex + x_samples]]
             Y_j = [self.dataset._make_output(*flat_character_images[i]) for i in indices[mindex + x_samples: mindex + x_samples + y_samples]]
