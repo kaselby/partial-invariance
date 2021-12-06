@@ -71,11 +71,11 @@ class ModifiedOmniglotDataset(Dataset):
     def splits(cls, root_dir, *n, img_dir="images_background", transform=None):
         target_folder = os.path.join(root_dir, self.folder, img_dir)
         all_alphabets = list_dir(target_folder)
-        assert sum(*n) <= len(all_alphabets)
+        assert sum(n) <= len(all_alphabets)
         perm = torch.randperm(len(all_alphabets))
         alphabet_splits = []
         i=0
-        for ni in *n:
+        for ni in n:
             alphabet_splits.append([all_alphabets[i] for i in perm[i:i+ni]])
             i += ni
         
