@@ -247,7 +247,7 @@ def pretrain(encoder, n_classes, train_dataset, val_dataset, epochs, lr, batch_s
         avg_loss /= len(train_dataset)/batch_size
         eval_loader = DataLoader(val_dataset, shuffle=True, batch_size=batch_size)
         acc = 0
-        for batch, targets in loader:
+        for batch, targets in eval_loader:
             with torch.no_grad():
                 out = model(batch.cuda())
                 acc += out.argmax(dim=-1).eq(targets.cuda()).sum().item()
