@@ -358,7 +358,7 @@ class CaptionGenerator():
         flattened_seqs = []
         for set_i in captions:
             for seq_j in set_i:
-                flattened_seqs += batch_element
+                flattened_seqs += seq_j
         tokenized_seqs = self.tokenizer(flattened_seqs, padding=True, truncation=True, return_tensors='pt')
         tokenized_seqs = {k:v.to(self.device) for k,v in tokenized_seqs.items()}
 
