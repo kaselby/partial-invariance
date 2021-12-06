@@ -262,7 +262,7 @@ class ImageCooccurenceGenerator():
         for j in range(batch_size):
             mindex = j * (x_samples + y_samples)
             X_j = [self.dataset[i] for i in indices[mindex:mindex + x_samples]]
-            Y_j = [self.dataset[i] for i in indices[mindex + x_samples: mindex + x_sample + y_samples]]
+            Y_j = [self.dataset[i] for i in indices[mindex + x_samples: mindex + x_samples + y_samples]]
             yield X_j, Y_j
 
     def _generate(self, batch_size, set_size=(50,75)):
@@ -285,13 +285,13 @@ class OmniglotCooccurenceGenerator(ImageCooccurenceGenerator):
     def __init__(self, dataset, device):
         super().__init__(dataset, device)
 
-    def sample_omniglot_batch(self, batch_size, x_samples, y_samples, n_chars=100):
+    def _sample_batch(self, batch_size, x_samples, y_samples, n_chars=100):
         character_indices = [i for i in torch.randperm(len(self.dataset._characters))[:n_chars]]
         flat_character_images= sum([self.dataset._character_images[i] for i in character_indices], [])
 
         indices = torch.randperm(len(flat_character_images))
         for i in range(batch_size):
-            mindex = j * (n_samples[0] + n_samples[1]).item()
+            mindex = j * (x_samples + y_samples)
             X_j = [self.dataset._make_output(*flat_character_images[i]) for i in indices[mindex:mindex + x_samples]]
             Y_j = [self.dataset._make_output(*flat_character_images[i]) for i in indices[mindex + x_samples: mindex + x_samples + y_samples]]
             yield X_j, Y_j
