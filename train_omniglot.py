@@ -425,7 +425,7 @@ if __name__ == '__main__':
     else:
         train_dataset, val_dataset, test_dataset = load_omniglot(args.data_dir)
         conv_encoder = ConvEncoder.make_omniglot_model(args.latent_size)
-        n_classes=len(trainval_dataset._characters)
+        n_classes=len(train_dataset._characters)
         generator_cls = OmniglotCooccurenceGenerator
         pretrain_val = train_dataset
     
