@@ -267,10 +267,10 @@ def load_omniglot(root_folder="./data"):
     )
     '''
     transforms = torchvision.transforms.ToTensor()
-    train, val = ModifiedOmniglotDataset.splits(root_folder, 25, 5, transform=transforms, img_dir="images_background")
-    test, = ModifiedOmniglotDataset.splits(root_folder, 25, 5, transform=transforms, img_dir="images_background")
+    train, = ModifiedOmniglotDataset.splits(root_folder, -1, transform=transforms, img_dir="images_background")
+    val, test = ModifiedOmniglotDataset.splits(root_folder, 5, -1, transform=transforms, img_dir="images_evaluation")
 
-    return train_dataset, test_dataset
+    return train_dataset, val_dataset, test_dataset
 
 def load_mnist(root_folder="./data"):
     transform=torchvision.transforms.Compose([
@@ -418,14 +418,14 @@ if __name__ == '__main__':
         conv_encoder = ConvEncoder.make_mnist_model(args.latent_size)
         n_classes=10
     else:
-        trainval_dataset, test_dataset = load_omniglot(args.data_dir)
+        train_dataset, val_dataset, test_dataset = load_omniglot(args.data_dir)
         conv_encoder = ConvEncoder.make_omniglot_model(args.latent_size)
         n_classes=1623
     
 
-    train_generator = ImageCooccurenceGenerator(train_dataset, device)
-    val_generator = ImageCooccurenceGenerator(val_dataset, device)
-    test_generator = ImageCooccurenceGenerator(test_dataset, device)
+    train_generator = OmniglotCooccurenceGenerator(train_dataset, device)
+    val_generator = OmniglotCooccurenceGenerator(val_dataset, device)
+    test_generator = OmniglotCooccurenceGenerator(test_dataset, device)
 
     if args.pretrain_epochs > 0:
         pretrain_lr = 1e-3
