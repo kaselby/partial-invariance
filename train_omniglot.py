@@ -396,7 +396,7 @@ def parse_args():
     parser.add_argument('--lr', type=float, default=1e-3)
     parser.add_argument('--latent_size', type=int, default=128)
     parser.add_argument('--hidden_size', type=int, default=256)
-    parser.add_argument('--set_size', type=int, nargs=2, default=[10,20])
+    parser.add_argument('--set_size', type=int, nargs=2, default=[6,10])
     parser.add_argument('--basedir', type=str, default="final-runs")
     parser.add_argument('--data_dir', type=str, default='./data')
     parser.add_argument('--dataset', type=str, choices=['mnist', 'omniglot'], default='mnist')
@@ -413,6 +413,7 @@ if __name__ == '__main__':
         os.makedirs(run_dir)
 
     device = torch.device("cuda:0")
+    data_kwargs = {'set_size':args.set_size}
 
     if args.dataset == "mnist":
         trainval_dataset, test_dataset = load_mnist(args.data_dir)
@@ -428,6 +429,7 @@ if __name__ == '__main__':
         n_classes=len(train_dataset._characters)
         generator_cls = OmniglotCooccurenceGenerator
         pretrain_val = train_dataset
+        data_kwargs['n_chars'] = 50
     
     train_generator = generator_cls(train_dataset, device)
     val_generator = generator_cls(val_dataset, device)
@@ -466,7 +468,6 @@ if __name__ == '__main__':
 
     optimizer = torch.optim.Adam(model.parameters(), args.lr)
     checkpoint_dir = os.path.join(args.checkpoint_dir, args.checkpoint_name) if args.checkpoint_name is not None else None
-    data_kwargs = {'set_size':args.set_size}
     model, (losses, accs, test_acc) = train(model, optimizer, train_generator, val_generator, test_generator, steps, batch_size, checkpoint_dir=checkpoint_dir, data_kwargs=data_kwargs)
 
     print("Test Accuracy:", test_acc)
