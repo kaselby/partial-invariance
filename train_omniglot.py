@@ -203,14 +203,14 @@ class ConvBlock(nn.Module):
     def forward(self, inputs):
         return self.net(inputs)
 
-class ConvEncoder(nn.Module):
+class ConvEncoder(nn.Module)
     @classmethod
     def make_omniglot_model(cls, output_size):
         layers = [
-            ConvBlock(1, 16, pool='max'),
-            ConvBlock(16, 32, pool='max'),
-            ConvBlock(32, 64, pool='max'),
-            ConvBlock(64, 128, n_conv=3, pool='none')
+            ConvLayer(1, 32, kernel_size=7, stride=2)
+            ConvBlock(32, 32, n_conv=1, pool='max'),
+            ConvBlock(32, 64, n_conv=1,pool='max'),
+            ConvBlock(64, 128, n_conv=1, pool='max')
         ]
         return cls(layers, 105, output_size)
     

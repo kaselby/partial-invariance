@@ -2,6 +2,8 @@ import torch
 from torch.distributions import MultivariateNormal, LKJCholesky, Categorical, MixtureSameFamily, Dirichlet, LogNormal
 from scipy.stats import invwishart
 
+import os
+
 use_cuda = torch.cuda.is_available()
 
 
