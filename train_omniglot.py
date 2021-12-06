@@ -273,7 +273,7 @@ def load_omniglot(root_folder="./data"):
     val_dataset, test_dataset = ModifiedOmniglotDataset.splits(root_folder, 5, -1, transform=transforms, img_dir="images_evaluation")
     
 
-    return train_dataset, test_dataset
+    return train_dataset, val_dataset, test_dataset
 
 def load_mnist(root_folder="./data"):
     transform=torchvision.transforms.Compose([
