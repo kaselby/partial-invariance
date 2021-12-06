@@ -46,7 +46,7 @@ class ImageCooccurenceDataset(IterableDataset):
             yield (Xdata, Ydata), target
 '''
 
-'''
+
 
 #from torchvision
 def list_dir(root: str, prefix: bool = False) -> List[str]:
@@ -157,7 +157,7 @@ class ModifiedOmniglotDataset(Dataset):
         """
         return self.get_image(index)
 
-'''
+
 
 class ConvLayer(nn.Module):
     def __init__(self, in_filters, out_filters, kernel_size=3, stride=1):
@@ -259,7 +259,7 @@ class MultiSetImageModel(nn.Module):
 
 
 def load_omniglot(root_folder="./data"):
-    
+    '''
     train_dataset = torchvision.datasets.Omniglot(
         root=root_folder, download=True, transform=torchvision.transforms.ToTensor(), background=True
     )
@@ -269,9 +269,9 @@ def load_omniglot(root_folder="./data"):
     )
     '''
     transforms = torchvision.transforms.ToTensor()
-    train, = ModifiedOmniglotDataset.splits(root_folder, -1, transform=transforms, img_dir="images_background")
-    val, test = ModifiedOmniglotDataset.splits(root_folder, 5, -1, transform=transforms, img_dir="images_evaluation")
-    '''
+    train_dataset, = ModifiedOmniglotDataset.splits(root_folder, -1, transform=transforms, img_dir="images_background")
+    val_dataset, test_dataset = ModifiedOmniglotDataset.splits(root_folder, 5, -1, transform=transforms, img_dir="images_evaluation")
+    
 
     return train_dataset, test_dataset
 
@@ -294,7 +294,7 @@ def load_mnist(root_folder="./data"):
 def poisson_loss(outputs, targets):
     return -1 * (targets * outputs - torch.exp(outputs)).mean()
 
-def train(model, optimizer, train_generator, val_generator, test_generator, steps, poisson=False, batch_size=64, eval_every=500, save_every=2000, eval_steps=100, test_steps=500, checkpoint_dir=None, data_kwargs={}):
+def train(model, optimizer, train_generator, val_generator, test_generator, steps, poisson=False, batch_size=64, eval_every=500, save_every=2000, eval_steps=200, test_steps=500, checkpoint_dir=None, data_kwargs={}):
     losses = []
     eval_accs = []
     initial_step=1
@@ -396,7 +396,7 @@ def parse_args():
     parser.add_argument('--lr', type=float, default=1e-3)
     parser.add_argument('--latent_size', type=int, default=128)
     parser.add_argument('--hidden_size', type=int, default=256)
-    parser.add_argument('--set_size', type=int, nargs=2, default=[6,10])
+    parser.add_argument('--set_size', type=int, nargs=2, default=[10,20])
     parser.add_argument('--basedir', type=str, default="final-runs")
     parser.add_argument('--data_dir', type=str, default='./data')
     parser.add_argument('--dataset', type=str, choices=['mnist', 'omniglot'], default='mnist')
@@ -416,28 +416,28 @@ if __name__ == '__main__':
 
     if args.dataset == "mnist":
         trainval_dataset, test_dataset = load_mnist(args.data_dir)
+        n_val = int(len(trainval_dataset) * args.val_split)
+        train_dataset, val_dataset = torch.utils.data.random_split(trainval_dataset, [len(trainval_dataset)-n_val, n_val])
         conv_encoder = ConvEncoder.make_mnist_model(args.latent_size)
         n_classes=10
         generator_cls = ImageCooccurenceGenerator
+        pretrain_val = val_dataset
     else:
-        trainval_dataset, test_dataset = load_omniglot(args.data_dir)
+        train_dataset, val_dataset, test_dataset = load_omniglot(args.data_dir)
         conv_encoder = ConvEncoder.make_omniglot_model(args.latent_size)
         n_classes=len(trainval_dataset._characters)
         generator_cls = OmniglotCooccurenceGenerator
-
-    n_val = int(len(trainval_dataset) * args.val_split)
-    train_dataset, val_dataset = torch.utils.data.random_split(trainval_dataset, [len(trainval_dataset)-n_val, n_val])
+        pretrain_val = train_dataset
     
     train_generator = generator_cls(train_dataset, device)
     val_generator = generator_cls(val_dataset, device)
     test_generator = generator_cls(test_dataset, device)
 
-
     if args.pretrain_epochs > 0:
         pretrain_lr = 1e-3
         pretrain_bs = 64
         print("Beginning Pretraining...")
-        conv_encoder = pretrain(conv_encoder, n_classes, train_dataset, val_dataset, args.pretrain_epochs, pretrain_lr, pretrain_bs, device)        
+        conv_encoder = pretrain(conv_encoder, n_classes, train_dataset, pretrain_val, args.pretrain_epochs, pretrain_lr, pretrain_bs, device)        
 
     if args.model == 'csab':
         model_kwargs={
