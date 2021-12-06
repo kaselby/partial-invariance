@@ -64,7 +64,7 @@ class ModifiedOmniglotDataset(Dataset):
 
     @classmethod
     def make_dataset(cls, root_dir, n_alphabets, img_dir="images_background", transform=None):
-        target_folder = os.path.join(root_dir, self.folder, img_dir)
+        target_folder = os.path.join(root_dir, cls.folder, img_dir)
         all_alphabets = list_dir(target_folder)
         perm = torch.randperm(len(all_alphabets))
         alphabets = [all_alphabets[i] for i in perm[:n_alphabets]]
@@ -72,7 +72,7 @@ class ModifiedOmniglotDataset(Dataset):
 
     @classmethod
     def splits(cls, root_dir, *n, img_dir="images_background", transform=None):
-        target_folder = os.path.join(root_dir, self.folder, img_dir)
+        target_folder = os.path.join(root_dir, cls.folder, img_dir)
         all_alphabets = list_dir(target_folder)
         assert sum(n) <= len(all_alphabets)
         perm = torch.randperm(len(all_alphabets))
