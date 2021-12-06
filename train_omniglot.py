@@ -4,6 +4,9 @@ import torch.nn as nn
 from torch.utils.data import IterableDataset, DataLoader, Dataset
 from torchvision.datasets import Omniglot
 
+from PIL import Image
+from typing import Any, Callable, List, Optional, Tuple
+
 import os
 import argparse
 import math
