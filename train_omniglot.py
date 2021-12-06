@@ -171,7 +171,7 @@ class ConvLayer(nn.Module):
         )
 
     def size_transform(self, input_size):
-        return int(math.floor((input_size - kernel_size)/self.stride))
+        return int(math.floor((input_size - self.kernel_size)/self.stride))
     
     def forward(self, inputs):
         return self.net(inputs)
