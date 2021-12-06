@@ -203,7 +203,7 @@ class ConvBlock(nn.Module):
     def forward(self, inputs):
         return self.net(inputs)
 
-class ConvEncoder(nn.Module)
+class ConvEncoder(nn.Module):
     @classmethod
     def make_omniglot_model(cls, output_size):
         layers = [
