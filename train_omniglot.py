@@ -16,7 +16,10 @@ from models2 import MultiSetTransformer, PINE, MultiSetModel
 from generators import ImageCooccurenceGenerator, OmniglotCooccurenceGenerator
 
 
-
+from train_omniglot import *
+train, val = ModifiedOmniglotDataset.splits("./data", 25,5, transform=torchvision.transforms.ToTensor())
+gen = OmniglotCooccurenceGenerator(train, torch.device('cpu'))
+gen(8, set_size=(10,20))[1]
 
 '''
 class ImageCooccurenceDataset(IterableDataset):
@@ -81,18 +84,33 @@ class ModifiedOmniglotDataset(Dataset):
     folder="omniglot-py"
 
     @classmethod
-    def make_dataset(cls, root_dir, n_alphabets, img_dir="images_background", transform=None):
+    def make_dataset(cls, root_dir, n_alphabets=-1, img_dir="images_background", transform=None):
         target_folder = os.path.join(root_dir, cls.folder, img_dir)
         all_alphabets = list_dir(target_folder)
+        n_alphabets = n_alphabets if n_alphabets > 0 else len(all_alphabets)
         perm = torch.randperm(len(all_alphabets))
         alphabets = [all_alphabets[i] for i in perm[:n_alphabets]]
         return cls(target_folder, alphabets, transform)
 
     @classmethod
     def splits(cls, root_dir, *n, img_dir="images_background", transform=None):
+        def validate_n(n, n_tot):
+            n_out = []
+            s = 0
+            for i in range(len(n)):
+                if n[i] > 0:
+                    n_out.append(n[i])
+                    s += n[i]
+                else:
+                    n_out.append(n_tot - s)
+                    s = n_tot
+            assert s <= n_tot
+            return n_out
+
+
         target_folder = os.path.join(root_dir, cls.folder, img_dir)
         all_alphabets = list_dir(target_folder)
-        assert sum(n) <= len(all_alphabets)
+        n = validate_n(n, len(all_alphabets))
         perm = torch.randperm(len(all_alphabets))
         alphabet_splits = []
         i=0
@@ -254,7 +272,9 @@ def load_omniglot(root_folder="./data"):
         root=root_folder, download=True, transform=torchvision.transforms.ToTensor(), background=False
     )
     '''
-    train, val, test = ModifiedOmniglotDataset.splits(root_folder, 15, 5, 5)
+    transforms = torchvision.transforms.ToTensor()
+    train, val = ModifiedOmniglotDataset.splits(root_folder, 25, 5, transform=transforms, img_dir="images_background")
+    test, = ModifiedOmniglotDataset.splits(root_folder, 25, 5, transform=transforms, img_dir="images_background")
 
     return train_dataset, test_dataset
 
