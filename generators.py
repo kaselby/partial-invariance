@@ -280,10 +280,19 @@ class ImageCooccurenceGenerator():
     def __call__(self, *args, **kwargs):
         return self._generate(*args, **kwargs)
 
-
+from PIL import Image
 class OmniglotCooccurenceGenerator(ImageCooccurenceGenerator):
     def __init__(self, dataset, device):
         super().__init__(dataset, device)
+
+    def _make_output(self, image_name, character_class):
+        image_path = os.path.join(self.dataset.target_folder, self.dataset._characters[character_class], image_name)
+        image = Image.open(image_path, mode='r').convert('L')
+
+        if self.dataset.transform:
+            image = self.dataset.transform(image)
+        
+        return image, character_class
 
     def _sample_batch(self, batch_size, x_samples, y_samples, n_chars=100):
         character_indices = [i for i in torch.randperm(len(self.dataset._characters))[:n_chars]]
@@ -292,8 +301,8 @@ class OmniglotCooccurenceGenerator(ImageCooccurenceGenerator):
         indices = torch.randperm(len(flat_character_images))
         for j in range(batch_size):
             mindex = j * (x_samples + y_samples)
-            X_j = [self.dataset._make_output(*flat_character_images[i]) for i in indices[mindex:mindex + x_samples]]
-            Y_j = [self.dataset._make_output(*flat_character_images[i]) for i in indices[mindex + x_samples: mindex + x_samples + y_samples]]
+            X_j = [self._make_output(*flat_character_images[i]) for i in indices[mindex:mindex + x_samples]]
+            Y_j = [self._make_output(*flat_character_images[i]) for i in indices[mindex + x_samples: mindex + x_samples + y_samples]]
             yield X_j, Y_j
 
 

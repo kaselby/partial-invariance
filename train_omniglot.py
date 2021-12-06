@@ -46,6 +46,8 @@ class ImageCooccurenceDataset(IterableDataset):
             yield (Xdata, Ydata), target
 '''
 
+'''
+
 #from torchvision
 def list_dir(root: str, prefix: bool = False) -> List[str]:
     """List all directories at a given root
@@ -155,7 +157,7 @@ class ModifiedOmniglotDataset(Dataset):
         """
         return self.get_image(index)
 
-
+'''
 
 class ConvLayer(nn.Module):
     def __init__(self, in_filters, out_filters, kernel_size=3, stride=1):
@@ -257,7 +259,7 @@ class MultiSetImageModel(nn.Module):
 
 
 def load_omniglot(root_folder="./data"):
-    '''
+    
     train_dataset = torchvision.datasets.Omniglot(
         root=root_folder, download=True, transform=torchvision.transforms.ToTensor(), background=True
     )
@@ -269,8 +271,9 @@ def load_omniglot(root_folder="./data"):
     transforms = torchvision.transforms.ToTensor()
     train, = ModifiedOmniglotDataset.splits(root_folder, -1, transform=transforms, img_dir="images_background")
     val, test = ModifiedOmniglotDataset.splits(root_folder, 5, -1, transform=transforms, img_dir="images_evaluation")
+    '''
 
-    return train_dataset, val_dataset, test_dataset
+    return train_dataset, test_dataset
 
 def load_mnist(root_folder="./data"):
     transform=torchvision.transforms.Compose([
@@ -413,19 +416,22 @@ if __name__ == '__main__':
 
     if args.dataset == "mnist":
         trainval_dataset, test_dataset = load_mnist(args.data_dir)
-        n_val = int(len(trainval_dataset) * args.val_split)
-        train_dataset, val_dataset = torch.utils.data.random_split(trainval_dataset, [len(trainval_dataset)-n_val, n_val])
         conv_encoder = ConvEncoder.make_mnist_model(args.latent_size)
         n_classes=10
+        generator_cls = ImageCooccurenceGenerator
     else:
-        train_dataset, val_dataset, test_dataset = load_omniglot(args.data_dir)
+        trainval_dataset, test_dataset = load_omniglot(args.data_dir)
         conv_encoder = ConvEncoder.make_omniglot_model(args.latent_size)
-        n_classes=1623
-    
+        n_classes=len(trainval_dataset._characters)
+        generator_cls = OmniglotCooccurenceGenerator
 
-    train_generator = OmniglotCooccurenceGenerator(train_dataset, device)
-    val_generator = OmniglotCooccurenceGenerator(val_dataset, device)
-    test_generator = OmniglotCooccurenceGenerator(test_dataset, device)
+    n_val = int(len(trainval_dataset) * args.val_split)
+    train_dataset, val_dataset = torch.utils.data.random_split(trainval_dataset, [len(trainval_dataset)-n_val, n_val])
+    
+    train_generator = generator_cls(train_dataset, device)
+    val_generator = generator_cls(val_dataset, device)
+    test_generator = generator_cls(test_dataset, device)
+
 
     if args.pretrain_epochs > 0:
         pretrain_lr = 1e-3
