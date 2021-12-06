@@ -89,7 +89,7 @@ class ModifiedOmniglotDataset(Dataset):
         self.target_folder = target_folder
         self.transform = transform
         self._alphabets = alphabets
-        self._characters: List[str] = sum([[join(a, c) for c in list_dir(os.path.join(self.target_folder, a))]
+        self._characters: List[str] = sum([[os.path.join(a, c) for c in list_dir(os.path.join(self.target_folder, a))]
                                            for a in self._alphabets], [])
         self._character_images = [[(image, idx) for image in list_files(os.path.join(self.target_folder, character), '.png')]
                                   for idx, character in enumerate(self._characters)]
@@ -107,7 +107,7 @@ class ModifiedOmniglotDataset(Dataset):
             tuple: (image, target) where target is index of the target character class.
         """
         image_name, character_class = self._flat_character_images[index]
-        image_path = join(self.target_folder, self._characters[character_class], image_name)
+        image_path = os.path.join(self.target_folder, self._characters[character_class], image_name)
         image = Image.open(image_path, mode='r').convert('L')
 
         if self.transform:
