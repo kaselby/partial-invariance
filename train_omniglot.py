@@ -1,7 +1,8 @@
 import torchvision
 import torch
 import torch.nn as nn
-from torch.utils.data import IterableDataset, DataLoader
+from torch.utils.data import IterableDataset, DataLoader, Dataset
+from torchvision.datasets import Omniglot
 
 import os
 import argparse
@@ -40,6 +41,77 @@ class ImageCooccurenceDataset(IterableDataset):
 
             yield (Xdata, Ydata), target
 '''
+
+#from torchvision
+def list_dir(root: str, prefix: bool = False) -> List[str]:
+    """List all directories at a given root
+    Args:
+        root (str): Path to directory whose folders need to be listed
+        prefix (bool, optional): If true, prepends the path to each result, otherwise
+            only returns the name of the directories found
+    """
+    root = os.path.expanduser(root)
+    directories = [p for p in os.listdir(root) if os.path.isdir(os.path.join(root, p))]
+    if prefix is True:
+        directories = [os.path.join(root, d) for d in directories]
+    return directories
+
+class ModifiedOmniglotDataset(Dataset):
+    folder="omniglot-py"
+
+    @classmethod
+    def make_dataset(cls, root_dir, n_alphabets, img_dir="images_background", transform=None):
+        target_folder = os.path.join(root_dir, self.folder, img_dir)
+        all_alphabets = list_dir(target_folder)
+        perm = torch.randperm(len(all_alphabets))
+        alphabets = [all_alphabets[i] for i in perm[:n_alphabets]]
+        return cls(target_folder, alphabets, transform)
+
+    @classmethod
+    def splits(cls, root_dir, *n, img_dir="images_background", transform=None):
+        target_folder = os.path.join(root_dir, self.folder, img_dir)
+        all_alphabets = list_dir(target_folder)
+        assert sum(*n) <= len(all_alphabets)
+        perm = torch.randperm(len(all_alphabets))
+        alphabet_splits = []
+        i=0
+        for ni in *n:
+            alphabet_splits.append([all_alphabets[i] for i in perm[i:i+ni]])
+            i += ni
+        
+        return [cls(target_folder, alphabet, transform) for alphabet in alphabet_splits]
+
+    def __init__(self, target_folder, alphabets, transform):
+        super().__init__()
+        self.target_folder = target_folder
+        self.transform = transform
+        self._alphabets = alphabets
+        self._characters: List[str] = sum([[join(a, c) for c in list_dir(join(self.target_folder, a))]
+                                           for a in self._alphabets], [])
+        self._character_images = [[(image, idx) for image in list_files(join(self.target_folder, character), '.png')]
+                                  for idx, character in enumerate(self._characters)]
+        self._flat_character_images: List[Tuple[str, int]] = sum(self._character_images, [])
+
+    def __len__(self) -> int:
+        return len(self._flat_character_images)
+
+    def __getitem__(self, index: int) -> Tuple[Any, Any]:
+        """
+        Args:
+            index (int): Index
+
+        Returns:
+            tuple: (image, target) where target is index of the target character class.
+        """
+        image_name, character_class = self._flat_character_images[index]
+        image_path = join(self.target_folder, self._characters[character_class], image_name)
+        image = Image.open(image_path, mode='r').convert('L')
+
+        if self.transform:
+            image = self.transform(image)
+
+        return image, character_class
+
 
 class ConvLayer(nn.Module):
     def __init__(self, in_filters, out_filters, kernel_size=3, stride=1):
