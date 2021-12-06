@@ -28,7 +28,6 @@ def load_caption_data(imgdir, anndir):
     return train_dataset, val_dataset
 
 
-
 def make_model(set_model):
     tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
     model = BertModel.from_pretrained("bert-base-uncased")

@@ -396,7 +396,7 @@ class CaptionGenerator():
         Y = self._build_text_batch(Y)
         return (X, Y), aligned
     
-    def forward(self, *args, **kwargs):
+    def __call__(self, *args, **kwargs):
         return self._generate(*args, **kwargs)
             
             
