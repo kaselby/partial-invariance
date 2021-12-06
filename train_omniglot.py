@@ -15,9 +15,7 @@ import tqdm
 from models2 import MultiSetTransformer, PINE, MultiSetModel
 from generators import ImageCooccurenceGenerator
 
-from train_omniglot import *
-transform=torchvision.transforms.ToTensor()
-train,val,test=ModifiedOmniglotDataset.splits("./data",15,5,5,transform=transform)
+
 
 
 '''
