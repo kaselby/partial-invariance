@@ -265,10 +265,10 @@ class ImageCooccurenceGenerator():
             Y_j = [self.dataset[i] for i in indices[mindex + x_samples: mindex + x_samples + y_samples]]
             yield X_j, Y_j
 
-    def _generate(self, batch_size, set_size=(50,75)):
+    def _generate(self, batch_size, set_size=(50,75), **kwargs):
         n_samples = torch.randint(*set_size, (2,))
         X, Y, targets = [], [], []
-        for X_j, Y_j in self._sample_batch(batch_size, n_samples[0].item(), n_samples[1].item()):
+        for X_j, Y_j in self._sample_batch(batch_size, n_samples[0].item(), n_samples[1].item(), **kwargs):
             Xdata, Xlabels = zip(*X_j)
             Ydata, Ylabels = zip(*Y_j)
             target = len(set(Xlabels) & set(Ylabels))
