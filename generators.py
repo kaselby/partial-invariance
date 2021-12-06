@@ -260,17 +260,18 @@ class ImageCooccurenceGenerator():
         self.image_size = dataset[0][0].size()[1:]
 
     def _sample_batch(self, batch_size, x_samples, y_samples):
-        indices = torch.randperm(len(self.dataset))
+        #indices = torch.randperm(len(self.dataset))
         for j in range(batch_size):
-            mindex = j * (x_samples + y_samples)
-            X_j = [self.dataset[i] for i in indices[mindex:mindex + x_samples]]
-            Y_j = [self.dataset[i] for i in indices[mindex + x_samples: mindex + x_samples + y_samples]]
+            #mindex = j * (x_samples + y_samples)
+            indices = torch.randperm(len(self.dataset))
+            X_j = [self.dataset[i] for i in indices[:x_samples]]
+            Y_j = [self.dataset[i] for i in indices[x_samples: x_samples + y_samples]]
             yield X_j, Y_j
 
     def _generate(self, batch_size, set_size=(50,75), **kwargs):
         n_samples = torch.randint(*set_size, (2,))
         X, Y, targets = [], [], []
-        for X_j, Y_j in self._sample_batch(batch_size, n_samples[0].item(), n_samples[1].item(), **kwargs):
+        for (X_j, Y_j) in self._sample_batch(batch_size, n_samples[0].item(), n_samples[1].item(), **kwargs):
             Xdata, Xlabels = zip(*X_j)
             Ydata, Ylabels = zip(*Y_j)
             target = len(set(Xlabels) & set(Ylabels))
@@ -300,12 +301,11 @@ class OmniglotCooccurenceGenerator(ImageCooccurenceGenerator):
         character_indices = [i for i in torch.randperm(len(self.dataset._characters))[:n_chars]]
         flat_character_images= sum([self.dataset._character_images[i] for i in character_indices], [])
 
-        indices = torch.randperm(len(flat_character_images))
         for j in range(batch_size):
-            mindex = j * (x_samples + y_samples)
-            X_j = [self._make_output(*flat_character_images[i]) for i in indices[mindex:mindex + x_samples]]
-            Y_j = [self._make_output(*flat_character_images[i]) for i in indices[mindex + x_samples: mindex + x_samples + y_samples]]
-            yield X_j, Y_j
+            indices = torch.randperm(len(flat_character_images))
+            X_j = [self._make_output(*flat_character_images[i]) for i in indices[:x_samples]]
+            Y_j = [self._make_output(*flat_character_images[i]) for i in indices[x_samples: x_samples + y_samples]]
+            yield (X_j, Y_j)
 
 
 class CorrespondenceGenerator():
