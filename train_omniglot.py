@@ -467,7 +467,7 @@ if __name__ == '__main__':
             'remove_diag':False,
             'num_blocks':args.num_blocks,
             'num_heads':args.num_heads,
-            'dropout':args.dropout,
+            #'dropout':args.dropout,
             'equi':False,
             'weight_sharing': args.weight_sharing
         }
