@@ -356,7 +356,8 @@ def pretrain(encoder, n_classes, train_dataset, val_dataset, steps, lr, batch_si
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     criterion = nn.CrossEntropyLoss()
 
-    step=0
+    step = 0
+    avg_loss = 0
     while step < steps:
         loader = DataLoader(train_dataset, shuffle=True, batch_size=batch_size)
         for batch, targets in loader:
@@ -381,6 +382,7 @@ def pretrain(encoder, n_classes, train_dataset, val_dataset, steps, lr, batch_si
                         acc += out.argmax(dim=-1).eq(targets.cuda()).sum().item()
                 acc /= len(val_dataset)
                 print("Step: %d\tTraining Loss: %f\t Eval Acc: %f" % (step, avg_loss, acc))
+                avg_loss = 0
 
             if step >= steps:
                 break
