@@ -176,21 +176,33 @@ class ISAB(nn.Module):
 
 
 class CSAB(nn.Module):
-    def __init__(self, input_size, latent_size, hidden_size, num_heads, remove_diag=False, nn_attn=False, share_crossset_weights=False, **kwargs):
+    def __init__(self, input_size, latent_size, hidden_size, num_heads, remove_diag=False, nn_attn=False, weight_sharing='none', **kwargs):
         super(CSAB, self).__init__()
-        self.MAB_XX = MAB(input_size, latent_size, hidden_size, num_heads, nn_attn=nn_attn, **kwargs)
-        self.MAB_YY = MAB(input_size, latent_size, hidden_size, num_heads, nn_attn=nn_attn, **kwargs)
-        if not share_crossset_weights:
-            self.MAB_XY = MAB(input_size, latent_size, hidden_size, num_heads, nn_attn=nn_attn, **kwargs)
-            self.MAB_YX = MAB(input_size, latent_size, hidden_size, num_heads, nn_attn=nn_attn, **kwargs)
-        else:
-            MAB_cross = MAB(input_size, latent_size, hidden_size, num_heads, nn_attn=nn_attn, **kwargs)
-            self.MAB_XY = MAB_cross
-            self.MAB_YX = MAB_cross
+        self._init_blocks(weight_sharing)
         self.fc_X = nn.Linear(latent_size * 2, latent_size)
         self.fc_Y = nn.Linear(latent_size * 2, latent_size)
         self.remove_diag = remove_diag
         self.nn_attn = nn_attn
+
+    def _init_blocks(self, weight_sharing):
+        if weight_sharing == 'none':
+            self.MAB_XX = MAB(input_size, latent_size, hidden_size, num_heads, nn_attn=nn_attn, **kwargs)
+            self.MAB_YY = MAB(input_size, latent_size, hidden_size, num_heads, nn_attn=nn_attn, **kwargs)
+            self.MAB_XY = MAB(input_size, latent_size, hidden_size, num_heads, nn_attn=nn_attn, **kwargs)
+            self.MAB_YX = MAB(input_size, latent_size, hidden_size, num_heads, nn_attn=nn_attn, **kwargs)
+        elif weight_sharing == 'cross':
+            self.MAB_XX = MAB(input_size, latent_size, hidden_size, num_heads, nn_attn=nn_attn, **kwargs)
+            self.MAB_YY = MAB(input_size, latent_size, hidden_size, num_heads, nn_attn=nn_attn, **kwargs)
+            MAB_cross = MAB(input_size, latent_size, hidden_size, num_heads, nn_attn=nn_attn, **kwargs)
+            self.MAB_XY = MAB_cross
+            self.MAB_YX = MAB_cross
+        elif weight_sharing == 'sym':
+            MAB_cross = MAB(input_size, latent_size, hidden_size, num_heads, nn_attn=nn_attn, **kwargs)
+            MAB_self = MAB(input_size, latent_size, hidden_size, num_heads, nn_attn=nn_attn, **kwargs)
+            self.MAB_XX = MAB_self
+            self.MAB_YY = MAB_self
+            self.MAB_XY = MAB_cross
+            self.MAB_YX = MAB_cross
 
     def _get_masks(self, N, M, masks):
         if self.remove_diag:
@@ -310,7 +322,7 @@ class SetTransformer(nn.Module):
 
 class MultiSetTransformer(nn.Module):
     def __init__(self, input_size, latent_size, hidden_size, output_size, num_heads=4, num_blocks=2, remove_diag=False, ln=False, equi=False, 
-            nn_attn=False, share_crossset_weights=False, k_neighbours=5, dropout=0.1, num_inds=-1):
+            nn_attn=False, weight_sharing='none', k_neighbours=5, dropout=0.1, num_inds=-1):
         super(MultiSetTransformer, self).__init__()
         if equi:
             input_size = 1
@@ -319,10 +331,10 @@ class MultiSetTransformer(nn.Module):
             
         if num_inds > 0:
             self.enc = EncoderStack(*[ICSAB(latent_size, latent_size, hidden_size, num_heads, num_inds, ln=ln, remove_diag=remove_diag, 
-                equi=equi, share_crossset_weights=share_crossset_weights, dropout=dropout) for i in range(num_blocks)])
+                equi=equi, weight_sharing=weight_sharing, dropout=dropout) for i in range(num_blocks)])
         else:
             self.enc = EncoderStack(*[CSAB(latent_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, 
-                equi=equi, nn_attn=nn_attn, share_crossset_weights=share_crossset_weights, dropout=dropout) for i in range(num_blocks)])
+                equi=equi, nn_attn=nn_attn, weight_sharing=weight_sharing, dropout=dropout) for i in range(num_blocks)])
         self.pool_x = PMA(latent_size, hidden_size, num_heads, 1, ln=ln)
         self.pool_y = PMA(latent_size, hidden_size, num_heads, 1, ln=ln)
         self.dec = nn.Sequential(

@@ -411,7 +411,7 @@ def parse_args():
     parser.add_argument('--dataset', type=str, choices=['mnist', 'omniglot'], default='mnist')
     parser.add_argument('--pretrain_steps', type=int, default=0)
     parser.add_argument('--poisson', action='store_true')
-    parser.add_argument('--share_weights', action='store_true')
+    parser.add_argument('--weight_sharing', type=str, choices=['none', 'cross', 'sym'], default='none')
     parser.add_argument('--val_split', type=float, default=0.1)
     return parser.parse_args()
 
@@ -446,7 +446,7 @@ if __name__ == '__main__':
     test_generator = generator_cls(test_dataset, device)
 
     if args.pretrain_steps > 0:
-        pretrain_lr = 1e-3
+        pretrain_lr = 3e-4
         pretrain_bs = 64
         print("Beginning Pretraining...")
         conv_encoder = pretrain(conv_encoder, n_classes, train_dataset, pretrain_val, args.pretrain_steps, pretrain_lr, pretrain_bs, device)        
@@ -459,7 +459,7 @@ if __name__ == '__main__':
             'num_heads':args.num_heads,
             'dropout':args.dropout,
             'equi':False,
-            'share_crossset_weights': args.share_weights
+            'weight_sharing': args.weight_sharing
         }
         set_model = MultiSetTransformer(args.latent_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
     elif args.model == 'pine':
