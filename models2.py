@@ -203,6 +203,8 @@ class CSAB(nn.Module):
             self.MAB_YY = MAB_self
             self.MAB_XY = MAB_cross
             self.MAB_YX = MAB_cross
+        else:
+            raise NotImplementedError("weight sharing must be none, cross or sym")
 
     def _get_masks(self, N, M, masks):
         if self.remove_diag:
@@ -370,9 +372,14 @@ class MultiSetTransformer(nn.Module):
 
 
 class NaiveMultiSetModel(nn.Module):
-    def __init__(self, input_size, latent_size, hidden_size, output_size, num_blocks, num_heads, remove_diag=False, ln=False, equi=False):
-        self.encoder1 = SetTransformer(input_size, latent_size, hidden_size, latent_size, num_heads, num_blocks, remove_diag, ln, equi)
-        self.encoder2 = SetTransformer(input_size, latent_size, hidden_size, latent_size, num_heads, num_blocks, remove_diag, ln, equi)
+    def __init__(self, input_size, latent_size, hidden_size, output_size, num_blocks, num_heads, remove_diag=False, ln=False, equi=False, weight_sharing='none'):
+        if weight_sharing == 'none':
+            self.encoder1 = SetTransformer(input_size, latent_size, hidden_size, latent_size, num_heads, num_blocks, remove_diag, ln, equi)
+            self.encoder2 = SetTransformer(input_size, latent_size, hidden_size, latent_size, num_heads, num_blocks, remove_diag, ln, equi)
+        else:
+            encoder = SetTransformer(input_size, latent_size, hidden_size, latent_size, num_heads, num_blocks, remove_diag, ln, equi)
+            self.encoder1 = encoder
+            self.encoder2 = encoder
         self.decoder = nn.Sequential(
             nn.Linear(2*latent_size, hidden_size),
             nn.Linear(hidden_size, output_size)

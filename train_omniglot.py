@@ -460,8 +460,19 @@ if __name__ == '__main__':
             'dropout':args.dropout,
             'equi':False,
             'weight_sharing': args.weight_sharing
-        }
+    }
         set_model = MultiSetTransformer(args.latent_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
+    elif args.model == 'naive':
+        model_kwargs={
+            'ln':True,
+            'remove_diag':False,
+            'num_blocks':args.num_blocks,
+            'num_heads':args.num_heads,
+            'dropout':args.dropout,
+            'equi':False,
+            'weight_sharing': args.weight_sharing
+    }
+        set_model = NaiveMultiSetModel(args.latent_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
     elif args.model == 'pine':
         set_model = PINE(args.latent_size, args.latent_size/4, 16, 2, args.hidden_size, 1)
     else:
@@ -481,7 +492,7 @@ if __name__ == '__main__':
 
     optimizer = torch.optim.Adam(model.parameters(), args.lr)
     checkpoint_dir = os.path.join(args.checkpoint_dir, args.checkpoint_name) if args.checkpoint_name is not None else None
-    model, (losses, accs, test_acc) = train(model, optimizer, train_generator, val_generator, test_generator, steps, batch_size, checkpoint_dir=checkpoint_dir, data_kwargs=data_kwargs)
+    model, (losses, accs, test_acc) = train(model, optimizer, train_generator, val_generator, test_generator, steps, batch_size, poisson=args.poisson, checkpoint_dir=checkpoint_dir, data_kwargs=data_kwargs)
 
     print("Test Accuracy:", test_acc)
 
