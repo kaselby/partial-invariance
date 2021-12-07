@@ -351,14 +351,13 @@ def evaluate(model, eval_generator, steps, poisson=False, batch_size=64, data_kw
     return n_correct / (batch_size * steps)
 
 
-def pretrain(encoder, n_classes, train_dataset, val_dataset, epochs, lr, batch_size, device, val_split=0.1):
+def pretrain(encoder, n_classes, train_dataset, val_dataset, steps, lr, batch_size, device, val_split=0.1, eval_every=300):
     model = nn.Sequential(encoder, nn.Linear(encoder.output_size, n_classes)).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     criterion = nn.CrossEntropyLoss()
 
-    for i in range(epochs):
-        loader = DataLoader(train_dataset, shuffle=True, batch_size=batch_size)
-        avg_loss = 0
+    step=0
+    while step < steps:
         for batch, targets in loader:
             optimizer.zero_grad()
 
@@ -368,15 +367,22 @@ def pretrain(encoder, n_classes, train_dataset, val_dataset, epochs, lr, batch_s
             optimizer.step()
 
             avg_loss += loss.item()
-        avg_loss /= len(train_dataset)/batch_size
-        eval_loader = DataLoader(val_dataset, shuffle=True, batch_size=batch_size)
-        acc = 0
-        for batch, targets in eval_loader:
-            with torch.no_grad():
-                out = model(batch.cuda())
-                acc += out.argmax(dim=-1).eq(targets.cuda()).sum().item()
-        acc /= len(val_dataset)
-        print("Epoch: %d\tTraining Loss: %f\t Eval Acc: %f" % (i, avg_loss, acc))
+
+            step += 1
+
+            if step % eval_every == 0 and step > 0:
+                avg_loss /= eval_every
+                eval_loader = DataLoader(val_dataset, shuffle=True, batch_size=batch_size)
+                acc = 0
+                for batch, targets in eval_loader:
+                    with torch.no_grad():
+                        out = model(batch.cuda())
+                        acc += out.argmax(dim=-1).eq(targets.cuda()).sum().item()
+                acc /= len(val_dataset)
+                print("Step: %d\tTraining Loss: %f\t Eval Acc: %f" % (step, avg_loss, acc))
+
+            if step >= steps:
+                break
         
     return encoder
 
@@ -400,7 +406,7 @@ def parse_args():
     parser.add_argument('--basedir', type=str, default="final-runs")
     parser.add_argument('--data_dir', type=str, default='./data')
     parser.add_argument('--dataset', type=str, choices=['mnist', 'omniglot'], default='mnist')
-    parser.add_argument('--pretrain_epochs', type=int, default=0)
+    parser.add_argument('--pretrain_steps', type=int, default=0)
     parser.add_argument('--poisson', action='store_true')
     parser.add_argument('--val_split', type=float, default=0.1)
     return parser.parse_args()
@@ -435,11 +441,11 @@ if __name__ == '__main__':
     val_generator = generator_cls(val_dataset, device)
     test_generator = generator_cls(test_dataset, device)
 
-    if args.pretrain_epochs > 0:
+    if args.pretrain_steps > 0:
         pretrain_lr = 1e-3
         pretrain_bs = 64
         print("Beginning Pretraining...")
-        conv_encoder = pretrain(conv_encoder, n_classes, train_dataset, pretrain_val, args.pretrain_epochs, pretrain_lr, pretrain_bs, device)        
+        conv_encoder = pretrain(conv_encoder, n_classes, train_dataset, pretrain_val, args.pretrain_steps, pretrain_lr, pretrain_bs, device)        
 
     if args.model == 'csab':
         model_kwargs={
