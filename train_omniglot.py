@@ -448,7 +448,8 @@ if __name__ == '__main__':
             'num_blocks':args.num_blocks,
             'num_heads':args.num_heads,
             'dropout':args.dropout,
-            'equi':False
+            'equi':False,
+            'share_crossset_weights': False
         }
         set_model = MultiSetTransformer(args.latent_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
     elif args.model == 'pine':
