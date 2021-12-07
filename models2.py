@@ -362,8 +362,8 @@ class NaiveMultiSetModel(nn.Module):
         self.encoder1 = SetTransformer(input_size, latent_size, hidden_size, latent_size, num_heads, num_blocks, remove_diag, ln, equi)
         self.encoder2 = SetTransformer(input_size, latent_size, hidden_size, latent_size, num_heads, num_blocks, remove_diag, ln, equi)
         self.decoder = nn.Sequential(
-            nn.Linear(2*latent_size, hidden_size)
-            nn.Linear(hidden_size, output_size),
+            nn.Linear(2*latent_size, hidden_size),
+            nn.Linear(hidden_size, output_size)
         )
 
     def forward(self, X, Y):
