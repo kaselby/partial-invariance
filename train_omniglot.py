@@ -358,6 +358,7 @@ def pretrain(encoder, n_classes, train_dataset, val_dataset, steps, lr, batch_si
 
     step=0
     while step < steps:
+        loader = DataLoader(train_dataset, shuffle=True, batch_size=batch_size)
         for batch, targets in loader:
             optimizer.zero_grad()
 
@@ -473,6 +474,8 @@ if __name__ == '__main__':
         model = nn.DataParallel(model)
         batch_size *= n_gpus
         steps = int(steps/n_gpus)
+
+    print("Beginning Training...")
 
     optimizer = torch.optim.Adam(model.parameters(), args.lr)
     checkpoint_dir = os.path.join(args.checkpoint_dir, args.checkpoint_name) if args.checkpoint_name is not None else None
