@@ -311,7 +311,7 @@ class SetTransformer(nn.Module):
             input_size = 1
         self.proj = nn.Linear(input_size, latent_size)
         self.enc = nn.Sequential(*[SAB(input_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, equi=equi) for _ in range(num_blocks)])
-        self.pool = PMA(latent_size, num_heads, 1, ln=ln)
+        self.pool = PMA(latent_size, hidden_size, num_heads, 1, ln=ln)
         self.dec = nn.Linear(latent_size, output_size)
                 
     def forward(self, X):
