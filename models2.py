@@ -157,7 +157,7 @@ class MAB(nn.Module):
 class SAB(nn.Module):
     def __init__(self, input_size, latent_size, hidden_size, num_heads, ln=False, remove_diag=False, equi=False, nn=False):
         super(SAB, self).__init__()
-        self.mab = MAB(input_size, latent_size, hidden_size, num_heads, ln=ln, equi=equi, nn=nn)
+        self.mab = MAB(input_size, latent_size, hidden_size, num_heads, ln=ln, equi=equi)
 
     def forward(self, X, mask=None):
         return self.mab(X, X, mask=mask)
