@@ -621,14 +621,14 @@ class BertEncoderWrapper(nn.Module):
 
 
 class MultiSetModel(nn.Module):
-    def __init__(self, set_model, x_encoder, y_encoder):
+    def __init__(self, set_model, X_encoder, Y):
         super().__init__()
         self.set_model = set_model
-        self.x_encoder = x_encoder
-        self.y_encoder = y_encoder
+        self.X_encoder = X_encoder
+        self.Y_encoder = Y_encoder
         self.latent_size = set_model.input_size
-        self.x_proj = nn.Linear(x_encoder.output_size, self.latent_size) if x_encoder.output_size != self.latent_size else None
-        self.y_proj = nn.Linear(y_encoder.output_size, self.latent_size) if y_encoder.output_size != self.latent_size else None
+        self.X_proj = nn.Linear(X_encoder.output_size, self.latent_size) if X_encoder.output_size != self.latent_size else None
+        self.Y_proj = nn.Linear(Y_encoder.output_size, self.latent_size) if Y_encoder.output_size != self.latent_size else None
 
     def forward(self, X, Y, **kwargs):
         ZX, ZY = X, Y
@@ -636,7 +636,7 @@ class MultiSetModel(nn.Module):
             ZX = self.X_proj(ZX)
         if self.Y_proj is not None:
             ZY = self.Y_proj(ZY)
-        ZX = self.x_encoder(ZX)
-        ZY = self.y_encoder(ZY)
+        ZX = self.X_encoder(ZX)
+        ZY = self.Y_encoder(ZY)
         
         return self.set_model(ZX, ZY, **kwargs)
