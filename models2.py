@@ -178,13 +178,13 @@ class ISAB(nn.Module):
 class CSAB(nn.Module):
     def __init__(self, input_size, latent_size, hidden_size, num_heads, remove_diag=False, nn_attn=False, weight_sharing='none', **kwargs):
         super(CSAB, self).__init__()
-        self._init_blocks(weight_sharing)
+        self._init_blocks(input_size, latent_size, hidden_size, num_heads, remove_diag, nn_attn, weight_sharing, **kwargs)
         self.fc_X = nn.Linear(latent_size * 2, latent_size)
         self.fc_Y = nn.Linear(latent_size * 2, latent_size)
         self.remove_diag = remove_diag
         self.nn_attn = nn_attn
 
-    def _init_blocks(self, weight_sharing):
+    def _init_blocks(self, input_size, latent_size, hidden_size, num_heads, remove_diag=False, nn_attn=False, weight_sharing='none', **kwargs):
         if weight_sharing == 'none':
             self.MAB_XX = MAB(input_size, latent_size, hidden_size, num_heads, nn_attn=nn_attn, **kwargs)
             self.MAB_YY = MAB(input_size, latent_size, hidden_size, num_heads, nn_attn=nn_attn, **kwargs)
