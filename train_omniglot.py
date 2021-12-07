@@ -408,6 +408,7 @@ def parse_args():
     parser.add_argument('--dataset', type=str, choices=['mnist', 'omniglot'], default='mnist')
     parser.add_argument('--pretrain_steps', type=int, default=0)
     parser.add_argument('--poisson', action='store_true')
+    parser.add_argument('--share_weights', action='store_true')
     parser.add_argument('--val_split', type=float, default=0.1)
     return parser.parse_args()
 
@@ -455,7 +456,7 @@ if __name__ == '__main__':
             'num_heads':args.num_heads,
             'dropout':args.dropout,
             'equi':False,
-            'share_crossset_weights': False
+            'share_crossset_weights': args.share_weights
         }
         set_model = MultiSetTransformer(args.latent_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
     elif args.model == 'pine':
