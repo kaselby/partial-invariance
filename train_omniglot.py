@@ -401,7 +401,7 @@ def parse_args():
     parser.add_argument('--batch_size', type=int, default=64)
     parser.add_argument('--steps', type=int, default=5000)
     parser.add_argument('--dropout', type=float, default=0)
-    parser.add_argument('--lr', type=float, default=1e-3)
+    parser.add_argument('--lr', type=float, default=3e-4)
     parser.add_argument('--latent_size', type=int, default=128)
     parser.add_argument('--hidden_size', type=int, default=256)
     parser.add_argument('--set_size', type=int, nargs=2, default=[6,10])
