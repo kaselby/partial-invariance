@@ -309,14 +309,19 @@ class SetTransformer(nn.Module):
         super(SetTransformer, self).__init__()
         if equi:
             input_size = 1
-        self.proj = nn.Linear(input_size, latent_size)
+        self.equi=equi
+        self.proj = None if input_size == latent_size else nn.Linear(input_size, latent_size) 
         self.enc = nn.Sequential(*[SAB(input_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, equi=equi) for _ in range(num_blocks)])
         self.pool = PMA(latent_size, hidden_size, num_heads, 1, ln=ln)
         self.dec = nn.Linear(latent_size, output_size)
                 
     def forward(self, X):
-        Xproj = self.proj(X.unsqueeze(-1)) if self.equi else self.proj(X)
-        ZX = self.enc(Xproj)
+        ZX = X
+        if self.equi:
+            ZX= ZX.unsqueeze(-1)
+        if self.proj is not None:
+            ZX= self.proj(ZX)
+        ZX = self.enc(ZX)
         if self.equi:
             ZX = ZX.max(dim=2)[0]
         ZX = self.pool(ZX)
