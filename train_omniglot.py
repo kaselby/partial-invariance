@@ -473,7 +473,7 @@ if __name__ == '__main__':
         }
         set_model = NaiveMultiSetModel(args.latent_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
     elif args.model == 'pine':
-        set_model = PINE(args.latent_size, args.latent_size/4, 16, 2, args.hidden_size, 1)
+        set_model = PINE(args.latent_size, int(args.latent_size/4), 16, 2, args.hidden_size, 1)
     else:
         raise NotImplementedError("Model type not recognized.")
     model = MultiSetImageModel(conv_encoder, set_model).to(device)
