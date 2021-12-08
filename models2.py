@@ -641,7 +641,7 @@ class BertEncoderWrapper(nn.Module):
 
     def forward(self, inputs):
         ss, bs, bert_inputs = inputs['set_size'], inputs['batch_size'], inputs['inputs']
-        encoded_seqs = self.bert(**bert_inputs)
+        encoded_seqs = self.bert(**bert_inputs)[0]
         return encoded_seqs[:,0].view(ss, bs, -1).transpose(0,1)
 
 
