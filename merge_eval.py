@@ -7,11 +7,7 @@ def get_runs(run_name):
     subfolders = [f.name for f in os.scandir(run_name) if f.is_dir()]
     return subfolders
 
-model_suffixes = {
-    'csab':'',
-    'naive':'_naive',
-    'pine':'_pine'
-}
+model_suffixes = ['csab','pine','naive']
 
 parser = ArgumentParser()
 parser.add_argument('run_name', type=str)
@@ -22,9 +18,9 @@ args = parser.parse_args()
 base_dir = os.path.join(args.basedir, args.dataset)
 
 results={}
-for name, suffix in model_suffixes.items():
-    results[name] = {}
-    model_dir = os.path.join(base_dir, args.run_name + suffix)
+for model_name in model_suffixes:
+    results[model_name] = {}
+    model_dir = os.path.join(base_dir, args.run_name + "_" + model_name)
     runs = get_runs(model_dir)
     accs = []
     for run_num in runs:
