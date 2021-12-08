@@ -646,7 +646,7 @@ class BertEncoderWrapper(nn.Module):
 
 
 class MultiSetModel(nn.Module):
-    def __init__(self, set_model, X_encoder, Y):
+    def __init__(self, set_model, X_encoder, Y_encoder):
         super().__init__()
         self.set_model = set_model
         self.X_encoder = X_encoder
