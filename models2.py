@@ -656,12 +656,12 @@ class MultiSetModel(nn.Module):
         self.Y_proj = nn.Linear(Y_encoder.output_size, self.latent_size) if Y_encoder.output_size != self.latent_size else None
 
     def forward(self, X, Y, **kwargs):
-        ZX, ZY = X, Y
+        ZX = self.X_encoder(X)
+        ZY = self.Y_encoder(Y)
+
         if self.X_proj is not None:
             ZX = self.X_proj(ZX)
         if self.Y_proj is not None:
             ZY = self.Y_proj(ZY)
-        ZX = self.X_encoder(ZX)
-        ZY = self.Y_encoder(ZY)
         
         return self.set_model(ZX, ZY, **kwargs)
