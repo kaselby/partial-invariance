@@ -32,7 +32,7 @@ for model_name in model_suffixes:
 output_file = os.path.join(base_dir, args.run_name +"_results.txt")
 with open(output_file, 'w') as outfile:
     for model_name, model_results in results.items():
-        outfile.write(model_name + "\tAll Accs:" + str(model_results['all_accs']) + "\tAvg Acc:" + str(model_results['avg_acc']))
+        outfile.write(model_name + "\tAll Accs:" + str(model_results['all_accs']) + "\tAvg Acc:" + str(model_results['avg_acc'])+"\n")
 
 
     
