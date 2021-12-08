@@ -90,7 +90,7 @@ def evaluate(model, eval_dataset, steps, batch_size=64, data_kwargs={}):
     n_correct = 0
     with torch.no_grad():
         for i in range(steps):
-            (X,Y), target = eval_dataset(batch_size, data_kwargs)
+            (X,Y), target = eval_dataset(batch_size, **data_kwargs)
             out = model(X,Y).squeeze(-1)
             n_correct += torch.eq((out > 0.5), target).sum().item()
     
