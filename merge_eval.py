@@ -26,8 +26,8 @@ for model_name in model_suffixes:
     for run_num in runs:
         logs = torch.load(os.path.join(model_dir, run_num, "logs.pt"))
         accs.append(logs['test_acc'])
-    results[name]['all_accs'] = accs
-    results[name]['avg_acc'] = sum(accs)/len(accs)
+    results[model_name]['all_accs'] = accs
+    results[model_name]['avg_acc'] = sum(accs)/len(accs)
 
 output_file = os.path.join(base_dir, args.run_name, "results.txt")
 with open(output_file, 'w') as outfile:
