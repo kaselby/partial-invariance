@@ -107,7 +107,7 @@ def parse_args():
     parser.add_argument('--checkpoint_name', type=str, default=None)
     parser.add_argument('--num_blocks', type=int, default=2)
     parser.add_argument('--num_heads', type=int, default=4)
-    parser.add_argument('--batch_size', type=int, default=64)
+    parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--steps', type=int, default=5000)
     parser.add_argument('--dropout', type=float, default=0)
     parser.add_argument('--lr', type=float, default=1e-3)
