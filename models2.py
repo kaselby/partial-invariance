@@ -640,9 +640,13 @@ class BertEncoderWrapper(nn.Module):
         self.output_size = bert.config.hidden_size
 
     def forward(self, inputs):
-        ss, bs, bert_inputs = inputs['set_size'], inputs['batch_size'], inputs['inputs']
+        ss, n_seqs, bert_inputs = inputs['set_size'], inputs['n_seqs'], inputs['inputs']
         encoded_seqs = self.bert(**bert_inputs)[0]
-        return encoded_seqs[:,0].reshape(bs, ss, -1)
+        if n_seqs == 1:
+            out = encoded_seqs[:,0].reshape(-1, ss, encoded_seqs.size(-1))
+        else:
+            out = encoded_seqs[:,0].reshape(-1, ss, n_seqs, encoded_seqs.size(-1)).mean(2)
+        return out
 
 
 class MultiSetModel(nn.Module):
