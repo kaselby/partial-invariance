@@ -514,10 +514,6 @@ if __name__ == '__main__':
         generator_cls = OmniglotCooccurenceGenerator
         pretrain_val = train_dataset
         data_kwargs['n_chars'] = 50
-    
-    train_generator = generator_cls(train_dataset, device)
-    val_generator = generator_cls(val_dataset, device)
-    test_generator = generator_cls(test_dataset, device)
 
     if args.pretrain_steps > 0:
         pretrain_lr = 3e-4
@@ -530,6 +526,10 @@ if __name__ == '__main__':
         train_dataset = DatasetByClass.splits(train_dataset, (100,))
         val_dataset = DatasetByClass.splits(val_dataset, (100,))
         test_dataset = DatasetByClass.splits(test_dataset, (100,))
+
+    train_generator = generator_cls(train_dataset, device)
+    val_generator = generator_cls(val_dataset, device)
+    test_generator = generator_cls(test_dataset, device)
 
     if args.model == 'csab':
         model_kwargs={
