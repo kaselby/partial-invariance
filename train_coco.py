@@ -58,8 +58,9 @@ def train(model, optimizer, train_dataset, test_dataset, steps, batch_size=64, e
             checkpoint_path = os.path.join(checkpoint_dir, "checkpoint.pt")
             if os.path.exists(checkpoint_path):
                 load_dict = torch.load(checkpoint_path)
-                model, optimizer, initial_step, losses, eval_accs = load_dict['model'], load_dict['optimizer'], load_dict['step'], load_dict['losses'], load_dict['accs']
+                model, optimizer, initial_step, train_losses, eval_accs = load_dict['model'], load_dict['optimizer'], load_dict['step'], load_dict['losses'], load_dict['accs']
     
+    avg_loss = 0
     loss_fct = nn.BCEWithLogitsLoss()
     for i in tqdm.tqdm(range(steps)):
         optimizer.zero_grad()
@@ -71,10 +72,15 @@ def train(model, optimizer, train_dataset, test_dataset, steps, batch_size=64, e
         loss.backward()
         optimizer.step()
 
+        avg_loss += loss.item()
+        train_losses.append(loss.item())
+
         if i % eval_every == 0:
             acc = evaluate(model, train_dataset, eval_steps, batch_size, data_kwargs)
             eval_accs.append(acc)
-            print("Step: %d\tAccuracy:%f" % (i, acc))
+            avg_loss /= eval_every
+            print("Step: %d\tLoss: %f\tAccuracy: %f" % (i, avg_loss, acc))
+            avg_loss = 0
 
         if i % save_every == 0 and checkpoint_dir is not None:
             checkpoint_path = os.path.join(checkpoint_dir, "checkpoint.pt")
