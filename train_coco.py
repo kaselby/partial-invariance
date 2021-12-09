@@ -86,7 +86,7 @@ def train(model, optimizer, train_dataset, test_dataset, steps, batch_size=64, e
             checkpoint_path = os.path.join(checkpoint_dir, "checkpoint.pt")
             if os.path.exists(checkpoint_path):
                 os.remove(checkpoint_path)
-            torch.save({'model':model,'optimizer':optimizer, 'step': i, 'losses':losses, 'accs': eval_accs}, checkpoint_path)
+            torch.save({'model':model,'optimizer':optimizer, 'step': i, 'losses':train_losses, 'accs': eval_accs}, checkpoint_path)
     
     test_acc = evaluate(model, test_dataset, eval_steps, batch_size, data_kwargs)
     
