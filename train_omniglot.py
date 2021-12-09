@@ -168,9 +168,9 @@ class DatasetByClass():
         return {k: Subset(dataset, v) for k,v in indices.items()}
 
     @classmethod
-    def splits(cls, dataset, class_splits, max_per_class=-1):
+    def splits(cls, dataset, class_splits):
         n_classes = sum(class_splits)
-        subsets = cls._subsets_by_class(dataset, n_classes, max_per_class)
+        subsets = cls._subsets_by_class(dataset, n_classes)
         if len(class_splits) == 1:
             return cls(subsets)
         else:
