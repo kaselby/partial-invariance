@@ -13,7 +13,7 @@ import math
 import tqdm
 
 from models2 import MultiSetTransformer, PINE, MultiSetModel, NaiveMultiSetModel
-from generators import ImageCooccurenceGenerator, OmniglotCooccurenceGenerator
+from generators import ImageCooccurenceGenerator, OmniglotCooccurenceGenerator, CIFARCooccurenceGenerator
 
 
 '''
