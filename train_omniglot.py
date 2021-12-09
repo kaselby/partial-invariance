@@ -158,6 +158,41 @@ class ModifiedOmniglotDataset(Dataset):
         return self.get_image(index)
 
 
+from torch.utils.data import Dataset, Subset
+class DatasetByClass():
+    @staticmethod
+    def _subsets_by_class(dataset, n_classes):
+        indices = {i:[] for i in range(n_classes)}
+        for i, (_, label) in enumerate(dataset):
+            indices[label].append(i)
+        return {k: Subset(dataset, v) for k,v in indices.items()}
+
+    @classmethod
+    def splits(cls, dataset, class_splits, max_per_class=-1):
+        n_classes = sum(class_splits)
+        subsets = cls._subsets_by_class(base_dataset, n_classes, max_per_class)
+        if len(class_splits) == 1:
+            return cls(subsets)
+        else:
+            perm = torch.randperm(n_classes)
+            j=0
+            datasets=[]
+            for split in class_splits:
+                datasets.append(cls({i:subsets[i] for i in perm[j:j+split]}))
+                j += split
+            return datasets
+            
+    def __init__(self, subsets_by_class):
+        self.n_classes = len(subsets_by_Class.keys())
+        self.subsets_by_class = subsets_by_class
+
+    def get_item_by_class(self, cls_label, i):
+        return self.subsets_by_class[cls_label][i]
+
+    def get_subset_by_class(self, cls_labels):
+        return ConcatDataset([self.subsets_by_class[i] for i in cls_labels])
+
+
 
 class ConvLayer(nn.Module):
     def __init__(self, in_filters, out_filters, kernel_size=3, stride=1):
@@ -275,6 +310,7 @@ def load_omniglot(root_folder="./data"):
 
     return train_dataset, val_dataset, test_dataset
 
+
 def load_mnist(root_folder="./data"):
     transform=torchvision.transforms.Compose([
         torchvision.transforms.ToTensor(),
@@ -290,6 +326,23 @@ def load_mnist(root_folder="./data"):
     )
 
     return train_dataset, test_dataset
+
+def load_cifar(root_folder="./data"):
+    transform=torchvision.transforms.Compose([
+        torchvision.transforms.ToTensor(),
+        torchvision.transforms.Normalize((0.5071, 0.4866, 0.4409]), (0.1642, 0.1496, 0.1728))
+    ])
+
+    train_dataset = torchvision.datasets.CIFAR100(
+        root=root_folder, download=True, transform=transform, train=True
+    )
+
+    test_dataset = torchvision.datasets.CIFAR100(
+        root=root_folder, download=True, transform=transform, train=False
+    )
+
+    return train_dataset, test_dataset
+
 
 def poisson_loss(outputs, targets):
     return -1 * (targets * outputs - torch.exp(outputs)).mean()
@@ -431,6 +484,17 @@ if __name__ == '__main__':
         conv_encoder = ConvEncoder.make_mnist_model(args.latent_size)
         n_classes=10
         generator_cls = ImageCooccurenceGenerator
+        pretrain_val = val_dataset
+    elif args.dataset == "cifar100":
+        trainval_dataset, test_dataset = load_cifar(args.data_dir)
+        n_val = int(len(trainval_dataset) * args.val_split)
+        train_dataset, val_dataset = torch.utils.data.random_split(trainval_dataset, [len(trainval_dataset)-n_val, n_val])
+        train_dataset = DatasetByClass.splits(train_dataset, (100,))
+        val_dataset = DatasetByClass.splits(val_dataset, (100,))
+        test_dataset = DatasetByClass.splits(test_dataset, (100,))
+        conv_encoder = ConvEncoder.make_mnist_model(args.latent_size)
+        n_classes=100
+        generator_cls = CIFARCooccurenceGenerator
         pretrain_val = val_dataset
     else:
         train_dataset, val_dataset, test_dataset = load_omniglot(args.data_dir)

@@ -253,8 +253,9 @@ class NFGenerator():
             return outputs
 
 
+
 class ImageCooccurenceGenerator():
-    def __init__(self, dataset, device):
+    def __init__(self, dataset, device=torch.device('cuda')):
         self.dataset = dataset
         self.device=device
         self.image_size = dataset[0][0].size()[1:]
@@ -283,11 +284,20 @@ class ImageCooccurenceGenerator():
     def __call__(self, *args, **kwargs):
         return self._generate(*args, **kwargs)
 
+class CIFARCooccurenceGenerator(ImageCooccurenceGenerator):
+    def _sample_batch(self, batch_size, x_samples, y_samples):
+        batch_n_classes = max(x_samples, y_samples)
+        for j in range(batch_size):
+            classes = torch.randperm(self.dataset.n_classes)[:batch_n_classes]
+            subset = self.dataset.get_subset_by_class(classes)
+            indices = torch.randperm(len(subset))
+            X_j = [self.dataset[i] for i in indices[:x_samples]]
+            Y_j = [self.dataset[i] for i in indices[x_samples: x_samples + y_samples]]
+            yield X_j, Y_j
+
+
 from PIL import Image
 class OmniglotCooccurenceGenerator(ImageCooccurenceGenerator):
-    def __init__(self, dataset, device):
-        super().__init__(dataset, device)
-
     def _make_output(self, image_name, character_class):
         image_path = os.path.join(self.dataset.target_folder, self.dataset._characters[character_class], image_name)
         image = Image.open(image_path, mode='r').convert('L')
