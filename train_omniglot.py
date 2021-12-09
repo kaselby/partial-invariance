@@ -196,6 +196,8 @@ class DatasetByClass():
     def __getitem__(self, i):
         return self.dataset[i]
 
+    
+
 
 
 class ConvLayer(nn.Module):
@@ -493,9 +495,6 @@ if __name__ == '__main__':
         trainval_dataset, test_dataset = load_cifar(args.data_dir)
         n_val = int(len(trainval_dataset) * args.val_split)
         train_dataset, val_dataset = torch.utils.data.random_split(trainval_dataset, [len(trainval_dataset)-n_val, n_val])
-        train_dataset = DatasetByClass.splits(train_dataset, (100,))
-        val_dataset = DatasetByClass.splits(val_dataset, (100,))
-        test_dataset = DatasetByClass.splits(test_dataset, (100,))
         conv_encoder = ConvEncoder.make_mnist_model(args.latent_size)
         n_classes=100
         generator_cls = CIFARCooccurenceGenerator
@@ -517,6 +516,12 @@ if __name__ == '__main__':
         pretrain_bs = 64
         print("Beginning Pretraining...")
         conv_encoder = pretrain(conv_encoder, n_classes, train_dataset, pretrain_val, args.pretrain_steps, pretrain_lr, pretrain_bs, device)        
+
+
+    if args.dataset == 'cifar100':
+        train_dataset = DatasetByClass.splits(train_dataset, (100,))
+        val_dataset = DatasetByClass.splits(val_dataset, (100,))
+        test_dataset = DatasetByClass.splits(test_dataset, (100,))
 
     if args.model == 'csab':
         model_kwargs={
