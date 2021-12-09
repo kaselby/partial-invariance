@@ -1,7 +1,7 @@
 import torchvision
 import torch
 import torch.nn as nn
-from torch.utils.data import IterableDataset, DataLoader, Dataset
+from torch.utils.data import IterableDataset, DataLoader, Dataset, Subset, ConcatDataset
 from torchvision.datasets import Omniglot
 
 from PIL import Image
@@ -520,7 +520,6 @@ if __name__ == '__main__':
         pretrain_bs = 64
         print("Beginning Pretraining...")
         conv_encoder = pretrain(conv_encoder, n_classes, train_dataset, pretrain_val, args.pretrain_steps, pretrain_lr, pretrain_bs, device)        
-
 
     if args.dataset == 'cifar100':
         train_dataset = DatasetByClass.splits(train_dataset, (100,))
