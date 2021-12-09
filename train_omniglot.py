@@ -262,6 +262,14 @@ class ConvEncoder(nn.Module):
             ConvBlock(32, 64, n_conv=1, pool='max'),
         ]
         return cls(layers, 28, output_size)
+    
+    @classmethod
+    def make_cifar_model(cls, output_size):
+        layers = [
+            ConvBlock(3, 32, n_conv=2, pool='max'),
+            ConvBlock(32, 64, n_conv=2, pool='max'),
+        ]
+        return cls(layers, 32, output_size)
 
     def __init__(self, layers, img_size, output_size, avg_pool=False):
         super().__init__()
@@ -495,7 +503,7 @@ if __name__ == '__main__':
         trainval_dataset, test_dataset = load_cifar(args.data_dir)
         n_val = int(len(trainval_dataset) * args.val_split)
         train_dataset, val_dataset = torch.utils.data.random_split(trainval_dataset, [len(trainval_dataset)-n_val, n_val])
-        conv_encoder = ConvEncoder.make_mnist_model(args.latent_size)
+        conv_encoder = ConvEncoder.make_cifar_model(args.latent_size)
         n_classes=100
         generator_cls = CIFARCooccurenceGenerator
         pretrain_val = val_dataset
