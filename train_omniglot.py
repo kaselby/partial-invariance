@@ -158,7 +158,6 @@ class ModifiedOmniglotDataset(Dataset):
         return self.get_image(index)
 
 
-from torch.utils.data import Dataset, Subset
 class DatasetByClass():
     @staticmethod
     def _subsets_by_class(dataset, n_classes):

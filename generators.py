@@ -289,7 +289,7 @@ class CIFARCooccurenceGenerator(ImageCooccurenceGenerator):
         batch_n_classes = max(x_samples, y_samples)
         for j in range(batch_size):
             classes = torch.randperm(self.dataset.n_classes)[:batch_n_classes]
-            subset = self.dataset.get_subset_by_class(classes)
+            subset = self.dataset.get_subset_by_class(classes.tolist())
             indices = torch.randperm(len(subset))
             X_j = [self.dataset[i] for i in indices[:x_samples]]
             Y_j = [self.dataset[i] for i in indices[x_samples: x_samples + y_samples]]
