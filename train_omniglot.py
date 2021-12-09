@@ -172,18 +172,19 @@ class DatasetByClass():
         n_classes = sum(class_splits)
         subsets = cls._subsets_by_class(dataset, n_classes)
         if len(class_splits) == 1:
-            return cls(subsets)
+            return cls(dataset, subsets)
         else:
             perm = torch.randperm(n_classes)
             j=0
             datasets=[]
             for split in class_splits:
-                datasets.append(cls({i:subsets[i] for i in perm[j:j+split]}))
+                datasets.append(cls(dataset, {i:subsets[i] for i in perm[j:j+split]}))
                 j += split
             return datasets
             
-    def __init__(self, subsets_by_class):
+    def __init__(self, dataset, subsets_by_class):
         self.n_classes = len(subsets_by_class.keys())
+        self.dataset = dataset
         self.subsets_by_class = subsets_by_class
 
     def get_item_by_class(self, cls_label, i):
@@ -191,6 +192,9 @@ class DatasetByClass():
 
     def get_subset_by_class(self, cls_labels):
         return ConcatDataset([self.subsets_by_class[i] for i in cls_labels])
+
+    def __getitem__(self, i):
+        return self.dataset[i]
 
 
 
