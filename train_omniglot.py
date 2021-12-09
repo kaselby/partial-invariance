@@ -330,7 +330,7 @@ def load_mnist(root_folder="./data"):
 def load_cifar(root_folder="./data"):
     transform=torchvision.transforms.Compose([
         torchvision.transforms.ToTensor(),
-        torchvision.transforms.Normalize((0.5071, 0.4866, 0.4409]), (0.1642, 0.1496, 0.1728))
+        torchvision.transforms.Normalize((0.5071, 0.4866, 0.4409), (0.1642, 0.1496, 0.1728))
     ])
 
     train_dataset = torchvision.datasets.CIFAR100(
