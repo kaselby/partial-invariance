@@ -170,7 +170,7 @@ class DatasetByClass():
     @classmethod
     def splits(cls, dataset, class_splits, max_per_class=-1):
         n_classes = sum(class_splits)
-        subsets = cls._subsets_by_class(base_dataset, n_classes, max_per_class)
+        subsets = cls._subsets_by_class(dataset, n_classes, max_per_class)
         if len(class_splits) == 1:
             return cls(subsets)
         else:
@@ -183,7 +183,7 @@ class DatasetByClass():
             return datasets
             
     def __init__(self, subsets_by_class):
-        self.n_classes = len(subsets_by_Class.keys())
+        self.n_classes = len(subsets_by_class.keys())
         self.subsets_by_class = subsets_by_class
 
     def get_item_by_class(self, cls_label, i):
