@@ -669,3 +669,37 @@ class MultiSetModel(nn.Module):
             ZY = self.Y_proj(ZY)
         
         return self.set_model(ZX, ZY, **kwargs)
+
+
+
+
+#
+#   GAN Stuff
+#
+
+
+class SetDecoderBlock(nn.Module):
+    def __init__(self, input_size, latent_size, hidden_size, num_heads, attn_size=None, ln=False, equi=False, nn_attn=False, dropout=0.1):
+        super().__init__()
+        attn_size = attn_size if attn_size is not None else input_size
+        self.attn1 = MHA(input_size, attn_size, latent_size, num_heads, equi=equi, nn_attn=nn_attn)
+        self.attn1 = MHA(input_size, attn_size, latent_size, num_heads, equi=equi, nn_attn=nn_attn)
+        if dropout > 0:
+            self.dropout = nn.Dropout(dropout)
+        self.fc = nn.Sequential(nn.Linear(latent_size, hidden_size), nn.ReLU(), nn.Linear(hidden_size, latent_size))
+        if ln:
+            self.ln0 = nn.LayerNorm(latent_size)
+            self.ln1 = nn.LayerNorm(latent_size)
+            self.ln2 = nn.LayerNorm(latent_size)
+
+    def forward(self, Q, K, **kwargs):
+        X = Q + self.attn(Q, Q, **kwargs)
+        X = X if getattr(self, 'dropout', None) is None else self.dropout(X)
+        X = X if getattr(self, 'ln0', None) is None else self.ln0(X)
+        X = X + self.attn(X, K, **kwargs)
+        X = X if getattr(self, 'dropout', None) is None else self.dropout(X)
+        X = X if getattr(self, 'ln1', None) is None else self.ln1(X)
+        X = X + self.fc(X)
+        X = X if getattr(self, 'dropout', None) is None else self.dropout(X)
+        X = X if getattr(self, 'ln2', None) is None else self.ln2(X)
+        return X
