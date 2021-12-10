@@ -484,6 +484,7 @@ def parse_args():
     parser.add_argument('--poisson', action='store_true')
     parser.add_argument('--weight_sharing', type=str, choices=['none', 'cross', 'sym'], default='none')
     parser.add_argument('--val_split', type=float, default=0.1)
+    parser.add_argument('--eval_every', type=int, default=500)
     return parser.parse_args()
 
 if __name__ == '__main__':
@@ -566,19 +567,21 @@ if __name__ == '__main__':
 
     batch_size = args.batch_size
     steps = args.steps
+    eval_every=args.eval_every
     if torch.cuda.device_count() > 1:
         n_gpus = torch.cuda.device_count()
         print("Let's use", n_gpus, "GPUs!")
         model = nn.DataParallel(model)
         batch_size *= n_gpus
         steps = int(steps/n_gpus)
+        eval_every = int(eval_every/n_gpus)
 
     print("Beginning Training...")
 
     optimizer = torch.optim.Adam(model.parameters(), args.lr)
     checkpoint_dir = os.path.join(args.checkpoint_dir, args.checkpoint_name) if args.checkpoint_name is not None else None
     model, (losses, accs, test_acc) = train(model, optimizer, train_generator, val_generator, test_generator, steps, 
-        batch_size=batch_size, poisson=args.poisson, checkpoint_dir=checkpoint_dir, data_kwargs=data_kwargs)
+        batch_size=batch_size, poisson=args.poisson, checkpoint_dir=checkpoint_dir, data_kwargs=data_kwargs, eval_every=eval_every)
 
     print("Test Accuracy:", test_acc)
 
