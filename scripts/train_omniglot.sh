@@ -9,4 +9,4 @@
 #SBATCH --mem=25GB
 #SBATCH --exclude=gpu109
 
-python3 train_omniglot.py $1 --checkpoint_name $SLURM_JOB_ID --dataset $2 --pretrain_steps $3 --poisson --model $4
+python3 train_omniglot.py $1 --checkpoint_name $SLURM_JOB_ID --dataset $2 --pretrain_steps $3 --poisson --model $4 --weight_sharing cross --lr $5
