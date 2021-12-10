@@ -306,6 +306,12 @@ class MultiSetImageModel(nn.Module):
         return self.set_model(ZX, ZY, **kwargs)
 
 
+def make_resnet_model(latent_size):
+    model = torchvision.models.resnet34(pretrained=False)
+    model.fc = nn.Linear(512, latent_size)
+    return model
+
+
 def load_omniglot(root_folder="./data"):
     '''
     train_dataset = torchvision.datasets.Omniglot(
@@ -502,7 +508,8 @@ if __name__ == '__main__':
         trainval_dataset, test_dataset = load_cifar(args.data_dir)
         n_val = int(len(trainval_dataset) * args.val_split)
         train_dataset, val_dataset = torch.utils.data.random_split(trainval_dataset, [len(trainval_dataset)-n_val, n_val])
-        conv_encoder = ConvEncoder.make_cifar_model(args.latent_size)
+        conv_encoder = make_resnet_model(args.latent_size)
+        #conv_encoder = ConvEncoder.make_cifar_model(args.latent_size)
         n_classes=100
         generator_cls = CIFARCooccurenceGenerator
         pretrain_val = val_dataset
