@@ -62,7 +62,7 @@ def train(model, optimizer, train_dataset, test_dataset, steps, batch_size=64, e
     
     avg_loss = 0
     loss_fct = nn.BCEWithLogitsLoss()
-    for i in tqdm.tqdm(range(steps)):
+    for i in tqdm.tqdm(range(initial_step, steps)):
         optimizer.zero_grad()
 
         (X,Y), target = train_dataset(batch_size, **data_kwargs)
