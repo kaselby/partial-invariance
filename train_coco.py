@@ -50,7 +50,7 @@ def make_model(set_model):
 def train(model, optimizer, train_dataset, test_dataset, steps, batch_size=64, eval_every=500, save_every=2000, eval_steps=100, checkpoint_dir=None, data_kwargs={}):
     train_losses = []
     eval_accs = []
-    initial_step=1
+    initial_step=0
     if checkpoint_dir is not None:
         if not os.path.exists(checkpoint_dir):
             os.makedirs(checkpoint_dir)
@@ -75,14 +75,14 @@ def train(model, optimizer, train_dataset, test_dataset, steps, batch_size=64, e
         avg_loss += loss.item()
         train_losses.append(loss.item())
 
-        if i % eval_every == 0:
+        if i % eval_every == 0 and i > 0:
             acc = evaluate(model, train_dataset, eval_steps, batch_size, data_kwargs)
             eval_accs.append(acc)
             avg_loss /= eval_every
             print("Step: %d\tLoss: %f\tAccuracy: %f" % (i, avg_loss, acc))
             avg_loss = 0
 
-        if i % save_every == 0 and checkpoint_dir is not None:
+        if i % save_every == 0 and i > 0 and checkpoint_dir is not None:
             checkpoint_path = os.path.join(checkpoint_dir, "checkpoint.pt")
             if os.path.exists(checkpoint_path):
                 os.remove(checkpoint_path)
