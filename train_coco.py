@@ -90,7 +90,7 @@ def train(model, optimizer, train_dataset, test_dataset, steps, batch_size=64, e
     
     test_acc = evaluate(model, test_dataset, eval_steps, batch_size, data_kwargs)
     
-    return model, (train_losses, accs, test_acc)
+    return model, (train_losses, eval_accs, test_acc)
 
 def evaluate(model, eval_dataset, steps, batch_size=64, data_kwargs={}):
     n_correct = 0
