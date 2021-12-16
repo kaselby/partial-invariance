@@ -18,6 +18,10 @@ from generators import CaptionGenerator
 
 
 
+def fasttext_encoder_preproc():
+
+
+
 def load_caption_data(imgdir, anndir):
     transforms = T.Compose([T.Resize(256), T.CenterCrop(224), T.ToTensor(), T.Normalize(mean=[0.485, 0.456, 0.406],
                                  std=[0.229, 0.224, 0.225])])
@@ -122,6 +126,8 @@ def parse_args():
     parser.add_argument('--set_size', type=int, nargs=2, default=[10,15])
     parser.add_argument('--basedir', type=str, default="final-runs")
     parser.add_argument('--data_dir', type=str, default='./coco')
+    parser.add_argument('--eval_every', type=int, default=500)
+    parser.add_argument('--eval_steps', type=int, default=200)
     return parser.parse_args()
 
 #IMG_SIZE=105
@@ -158,18 +164,23 @@ if __name__ == '__main__':
 
     batch_size = args.batch_size
     steps = args.steps
+    eval_every=args.eval_every
+    eval_steps=args.eval_steps
     if torch.cuda.device_count() > 1:
         n_gpus = torch.cuda.device_count()
         print("Let's use", n_gpus, "GPUs!")
         model = nn.DataParallel(model)
         batch_size *= n_gpus
         steps = int(steps/n_gpus)    
+        eval_every = int(eval_every/n_gpus)
+        eval_steps = int(eval_steps/n_gpus)
 
     optimizer = torch.optim.Adam(model.parameters(), args.lr)
     checkpoint_dir = os.path.join(args.checkpoint_dir, args.checkpoint_name) if args.checkpoint_name is not None else None
     data_kwargs = {'set_size':args.set_size}
     print("Beginning training...")
-    model, (losses, accs, test_acc) = train(model, optimizer, train_generator, train_generator, steps, batch_size, checkpoint_dir=checkpoint_dir, data_kwargs=data_kwargs)
+    model, (losses, accs, test_acc) = train(model, optimizer, train_generator, train_generator, steps, batch_size, 
+        checkpoint_dir=checkpoint_dir, data_kwargs=data_kwargs, eval_every=eval_every, eval_steps=eval_steps)
 
     print("Test Accuracy:", test_acc)
 

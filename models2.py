@@ -648,6 +648,10 @@ class BertEncoderWrapper(nn.Module):
             out = encoded_seqs[:,0].reshape(-1, ss, n_seqs, encoded_seqs.size(-1)).mean(2)
         return out
 
+class EmbeddingEncoderWrapper(nn.Module):
+    def forward(self, inputs):
+        return inputs.sum(dim=2)
+
 
 class MultiSetModel(nn.Module):
     def __init__(self, set_model, X_encoder, Y_encoder):

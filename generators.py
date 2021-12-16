@@ -346,12 +346,13 @@ class CorrespondenceGenerator():
 
 
 class CaptionGenerator():
-    def __init__(self, dataset, tokenizer, p=0.5, device=torch.device('cpu')):
+    def __init__(self, dataset, tokenize_fct, tokenize_args, p=0.5, device=torch.device('cpu')):
         self.N = len(dataset)
         self.dataset = dataset
         #self.img_encoder = img_encoder
         #self.text_encoder = text_encoder
-        self.tokenizer = tokenizer
+        self.tokenize_fct = tokenize_fct
+        self.tokenize_args = tokenize_args
         self.p = p
         self.device = device
     
@@ -363,6 +364,7 @@ class CaptionGenerator():
         return imgs, text
     
     def _build_text_batch(self, captions, use_first=True):
+        '''
         bs = len(captions)
         ss = len(captions[0])
         ns = 1 if use_first else len(captions[0][0]) 
@@ -374,6 +376,7 @@ class CaptionGenerator():
                     flattened_seqs.append(set_element[0])
                 else:
                     flattened_seqs += set_element
+        
         tokenized_seqs = self.tokenizer(flattened_seqs, padding=True, truncation=True, return_tensors='pt')
         tokenized_seqs = {k:v.to(self.device) for k,v in tokenized_seqs.items()}
 
@@ -382,6 +385,8 @@ class CaptionGenerator():
         #    encoded_seqs = self.text_encoder(tokenized_seqs)
 
         #return encoded_seqs[:,0].view(ss, bs, -1).transpose(0,1)
+        '''
+        return self.tokenize_fct(captions, *self.tokenize_args, device=self.device, use_first=use_first)
 
     def _build_img_batch(self, imgs):
         bs = len(imgs)
@@ -414,6 +419,25 @@ class CaptionGenerator():
     
     def __call__(self, *args, **kwargs):
         return self._generate(*args, **kwargs)
+
+
+def _bert_tokenize_batch(captions, tokenizer, device=torch.device("cpu"), use_first=True):
+    bs = len(captions)
+    ss = len(captions[0])
+    ns = 1 if use_first else len(captions[0][0]) 
+    #batch = [[self.text_dataset[i] for i in indices_j] for indices_j in indices]
+    flattened_seqs = []
+    for batch_element in captions:
+        for set_element in batch_element:
+            if use_first:
+                flattened_seqs.append(set_element[0])
+            else:
+                flattened_seqs += set_element
+    
+    tokenized_seqs = self.tokenizer(flattened_seqs, padding=True, truncation=True, return_tensors='pt')
+    tokenized_seqs = {k:v.to(self.device) for k,v in tokenized_seqs.items()}
+
+    return {'set_size':ss, 'n_seqs': ns, 'inputs': tokenized_seqs}
 
 
 class DistinguishabilityGenerator():
