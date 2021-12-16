@@ -628,10 +628,8 @@ class ImageEncoderWrapper(nn.Module):
         self.output_size = output_size
 
     def forward(self, inputs):
-        bs, ss = inputs.size(0), inputs.size(1)
         encoded_batch = self.encoder(inputs.view(-1, *inputs.size()[-3:]))
-        return encoded_batch.view(bs, ss, -1)
-
+        return encoded_batch.view(*inputs.size()[:3], encoded_batch.size(-1))
 
 class BertEncoderWrapper(nn.Module):
     def __init__(self, bert):
@@ -649,8 +647,12 @@ class BertEncoderWrapper(nn.Module):
         return out
 
 class EmbeddingEncoderWrapper(nn.Module):
+    def __init__(self, embed_dim):
+        super().__init__()
+        self.output_size=embed_dim
+
     def forward(self, inputs):
-        return inputs.sum(dim=2)
+        return inputs
 
 
 class MultiSetModel(nn.Module):

@@ -439,6 +439,21 @@ def bert_tokenize_batch(captions, tokenizer, device=torch.device("cpu"), use_fir
 
     return {'set_size':ss, 'n_seqs': ns, 'inputs': tokenized_seqs}
 
+def fasttext_tokenize_batch(captions, ft, device=torch.device("cpu"), use_first=True):
+    def preproc(s):
+        return s.lower() 
+    batch = []
+    for batch_element in captions:
+        seqs = []
+        for set_element in batch_element:
+            if use_first:
+                seqs.append(torch.tensor(ft.get_sentence_vector(preproc(set_element[0]))))
+            else:
+                seqs.append(torch.tensor([ft.get_sentence_vector(preproc(s)) for s in set_element]]))
+        batch.append(torch.stack(seqs, 0))
+    batch = torch.stack(batch, 0)
+    return batch.to(device)
+
 
 class DistinguishabilityGenerator():
     def __init__(self, *datasets, p=0.5, device=torch.device('cpu')):

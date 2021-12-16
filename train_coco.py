@@ -12,6 +12,7 @@ import argparse
 import math
 import tqdm
 import json
+import fasttext
 
 from models2 import MultiSetTransformer, PINE, MultiSetModel, BertEncoderWrapper, ImageEncoderWrapper
 from generators import CaptionGenerator, bert_tokenize_batch
@@ -32,10 +33,12 @@ def load_caption_data(imgdir, anndir):
     return train_dataset, val_dataset
 
 
-def make_model(set_model):
-    tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
-    model = BertModel.from_pretrained("bert-base-uncased")
-    bert_encoder = BertEncoderWrapper(model)
+def make_model(set_model, text_model='bert', embed_dim=300):
+    if text_model == 'bert'"
+        model = BertModel.from_pretrained("bert-base-uncased")
+        text_encoder = BertEncoderWrapper(model)
+    else:
+        text_encoder = EmbeddingEncoderWrapper(embed_dim)
 
     vgg = torchvision.models.vgg16(pretrained=True)
     vgg.classifier = nn.Sequential(*list(vgg.classifier.children())[:-3])
@@ -43,11 +46,11 @@ def make_model(set_model):
 
     for param in img_encoder.parameters():
         param.requires_grad = False
-    for param in bert_encoder.parameters():
+    for param in text_encoder.parameters():
         param.requires_grad = False
     
     #set_model = MultiSetTransformer(*args, **kwargs)
-    return MultiSetModel(set_model, img_encoder, bert_encoder)
+    return MultiSetModel(set_model, img_encoder, text_encoder)
 
 
 
@@ -128,6 +131,9 @@ def parse_args():
     parser.add_argument('--data_dir', type=str, default='./coco')
     parser.add_argument('--eval_every', type=int, default=500)
     parser.add_argument('--eval_steps', type=int, default=200)
+    parser.add_argument('--text_model', type=str, choices=['bert', 'ft'], default='bert')
+    parser.add_argument('--embed_path', type=str, default="wiki-news-300d-1M.vec")
+    parser.add_argument('--embed_dim', type=int, default=300)
     return parser.parse_args()
 
 #IMG_SIZE=105
@@ -141,10 +147,18 @@ if __name__ == '__main__':
 
     device = torch.device("cuda:0")
 
-    tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
+    if args.text_model == 'bert':
+        tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
+        tokenize_fct = bert_tokenize_batch
+        tokenize_args = (tokenizer,)
+    elif args.text_model == 'ft':
+        ft = fasttext.load(args.embed_path)
+        tokenize_fct = fasttext_tokenize_batch
+        tokenize_args = (ft,)
+
     train_dataset, test_dataset = load_caption_data(os.path.join(args.data_dir, "images"), os.path.join(args.data_dir, "annotations"))
-    train_generator = CaptionGenerator(train_dataset, bert_tokenize_batch, (tokenizer,), device=device)
-    test_generator = CaptionGenerator(test_dataset, bert_tokenize_batch, (tokenizer,), device=device)
+    train_generator = CaptionGenerator(train_dataset, tokenize_fct, tokenize_args, device=device)
+    test_generator = CaptionGenerator(test_dataset, tokenize_fct, tokenize_args, device=device)
     
     if args.model == 'csab':
         model_kwargs={
@@ -160,7 +174,7 @@ if __name__ == '__main__':
         set_model = PINE(args.latent_size, args.latent_size/4, 16, 2, args.hidden_size, 1)
     else:
         raise NotImplementedError("Model type not recognized.")
-    model = make_model(set_model).to(device)
+    model = make_model(set_model, text_model=args.text_model, embed_dim=args.embed_dim).to(device)
 
     batch_size = args.batch_size
     steps = args.steps
