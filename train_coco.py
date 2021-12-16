@@ -18,7 +18,7 @@ from generators import CaptionGenerator
 
 
 
-def fasttext_encoder_preproc():
+#def fasttext_encoder_preproc():
 
 
 
