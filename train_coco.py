@@ -143,8 +143,8 @@ if __name__ == '__main__':
 
     tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
     train_dataset, test_dataset = load_caption_data(os.path.join(args.data_dir, "images"), os.path.join(args.data_dir, "annotations"))
-    train_generator = CaptionGenerator(train_dataset, tokenizer, device=device)
-    test_generator = CaptionGenerator(test_dataset, tokenizer, device=device)
+    train_generator = CaptionGenerator(train_dataset, bert_tokenize_batch, (tokenizer,), device=device)
+    test_generator = CaptionGenerator(test_dataset, bert_tokenize_batch, (tokenizer,), device=device)
     
     if args.model == 'csab':
         model_kwargs={

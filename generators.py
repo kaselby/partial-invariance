@@ -421,7 +421,7 @@ class CaptionGenerator():
         return self._generate(*args, **kwargs)
 
 
-def _bert_tokenize_batch(captions, tokenizer, device=torch.device("cpu"), use_first=True):
+def bert_tokenize_batch(captions, tokenizer, device=torch.device("cpu"), use_first=True):
     bs = len(captions)
     ss = len(captions[0])
     ns = 1 if use_first else len(captions[0][0]) 
