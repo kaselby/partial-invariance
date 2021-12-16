@@ -34,7 +34,7 @@ def load_caption_data(imgdir, anndir):
 
 
 def make_model(set_model, text_model='bert', embed_dim=300):
-    if text_model == 'bert'"
+    if text_model == 'bert':
         model = BertModel.from_pretrained("bert-base-uncased")
         text_encoder = BertEncoderWrapper(model)
     else:
