@@ -414,6 +414,44 @@ class CaptionGenerator():
     
     def __call__(self, *args, **kwargs):
         return self._generate(*args, **kwargs)
+
+
+class DistinguishabilityGenerator():
+    def __init__(self, *datasets, p=0.5, device=torch.device('cpu')):
+        self.datasets = datasets    #DatasetByClass objects
+        self.n_datasets = len(datasets)
+        self.p=p
+        self.device=device
+
+    def _generate_single(self, dataset, set_size=(10, 15)):
+        classes = torch.randint(dataset.n_classes, ())
+        aligned = (torch.rand(1) < self.p).item()
+        n_samples = torch.randint(*set_size, (1,)).item()
+        indices = torch.randperm(len(self.dataset1))
+        X = [self.dataset1[i] for i in indices[:n_samples]]
+        if aligned:
+            Y = [self.dataset2[i] for i in indices[:n_samples]]
+        else:
+            Y = [self.dataset2[i] for i in indices[n_samples:n_samples*2]]
+        return torch.stack(X, 0), torch.stack(Y, 0), aligned
+    
+    def _generate(self, batch_size, set_size=(25,50)):
+        dataset = self.datasets[torch.randint(self.n_datasets).item()]
+        classes = torch.randint(dataset.n_classes, (batch_size,))
+        n_samples = torch.randint(*set_size, (1,)).item()
+        aligned = (torch.rand(batch_size) < self.p).to(self.device)
+
+        X=[]
+        Y=[]
+        for i in range(batch_size):
+            
+
+
+        X, Y, label = zip(*[self._generate_single(set_size=set_size) for _ in range(batch_size)])
+        X = torch.stack(X,0).to(self.device)
+        Y = torch.stack(Y,0).to(self.device)
+        label = torch.tensor(label).to(self.device)
+        return (X, Y), label
             
             
 
