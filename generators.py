@@ -434,8 +434,8 @@ def bert_tokenize_batch(captions, tokenizer, device=torch.device("cpu"), use_fir
             else:
                 flattened_seqs += set_element
     
-    tokenized_seqs = self.tokenizer(flattened_seqs, padding=True, truncation=True, return_tensors='pt')
-    tokenized_seqs = {k:v.to(self.device) for k,v in tokenized_seqs.items()}
+    tokenized_seqs = tokenizer(flattened_seqs, padding=True, truncation=True, return_tensors='pt')
+    tokenized_seqs = {k:v.to(device) for k,v in tokenized_seqs.items()}
 
     return {'set_size':ss, 'n_seqs': ns, 'inputs': tokenized_seqs}
 
