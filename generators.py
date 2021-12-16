@@ -444,7 +444,7 @@ class DistinguishabilityGenerator():
         X=[]
         Y=[]
         for i in range(batch_size):
-            
+            pass
 
 
         X, Y, label = zip(*[self._generate_single(set_size=set_size) for _ in range(batch_size)])
