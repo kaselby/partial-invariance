@@ -14,7 +14,7 @@ import tqdm
 import json
 import fasttext
 
-from models2 import MultiSetTransformer, PINE, MultiSetModel, BertEncoderWrapper, ImageEncoderWrapper
+from models2 import MultiSetTransformer, PINE, MultiSetModel, BertEncoderWrapper, ImageEncoderWrapper, EmbeddingEncoderWrapper
 from generators import CaptionGenerator, bert_tokenize_batch, fasttext_tokenize_batch
 
 
