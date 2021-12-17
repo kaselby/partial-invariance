@@ -442,7 +442,7 @@ def bert_tokenize_batch(captions, tokenizer, device=torch.device("cpu"), use_fir
 
 def fasttext_tokenize_batch(captions, ft, device=torch.device("cpu"), use_first=True):
     def preproc(s):
-        s = s.translate(str.maketrans('', '', string.punctuation))
+        s = s.translate(str.maketrans('', '', string.punctuation)).replace("\n", "")
         return s.lower().strip()
     batch = []
     for batch_element in captions:
