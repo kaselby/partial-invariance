@@ -152,7 +152,7 @@ if __name__ == '__main__':
         tokenize_fct = bert_tokenize_batch
         tokenize_args = (tokenizer,)
     elif args.text_model == 'ft':
-        ft = fasttext.load(args.embed_path)
+        ft = fasttext.load_model(args.embed_path)
         tokenize_fct = fasttext_tokenize_batch
         tokenize_args = (ft,)
 
