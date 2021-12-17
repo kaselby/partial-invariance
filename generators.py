@@ -441,6 +441,7 @@ def bert_tokenize_batch(captions, tokenizer, device=torch.device("cpu"), use_fir
 
 def fasttext_tokenize_batch(captions, ft, device=torch.device("cpu"), use_first=True):
     def preproc(s):
+        s = s.translate(str.maketrans('', '', string.punctuation))
         return s.lower().strip()
     batch = []
     for batch_element in captions:
@@ -491,6 +492,26 @@ class DistinguishabilityGenerator():
         Y = torch.stack(Y,0).to(self.device)
         label = torch.tensor(label).to(self.device)
         return (X, Y), label
-            
+
+
+class SetDataGenerator():
+    def __init__(self, dataset, device=torch.device('cpu')):
+        self.dataset = dataset
+        self.device=device
+    
+    def _generate(self, batch_size, set_size=(25,50), n_samples=-1):
+        indices = torch.randperm(len(self.dataset))
+        n_samples = torch.randint(*set_size, (1,)).item() if n_samples <= 0 else n_samples
+
+        batch = []
+        for i in range(batch_size):
+            set_i = [self.dataset[j.item()] for j in indices[i*n_samples:(i+1)*n_samples]]
+            batch.append(torch.stack(set_i, 0))
+        batch = torch.stack(batch, 0)
+
+        return batch.to(self.device)
+    
+    def __call__(self, *args, **kwargs):
+        return self._generate(*args, **kwargs)
             
 
