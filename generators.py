@@ -448,10 +448,13 @@ def fasttext_tokenize_batch(captions, ft, device=torch.device("cpu"), use_first=
     for batch_element in captions:
         seqs = []
         for set_element in batch_element:
-            if use_first:
-                seqs.append(torch.tensor(ft.get_sentence_vector(preproc(set_element[0]))))
-            else:
-                seqs.append(torch.tensor([ft.get_sentence_vector(preproc(s)) for s in set_element]))
+            try:
+                if use_first:
+                    seqs.append(torch.tensor(ft.get_sentence_vector(preproc(set_element[0]))))
+                else:
+                    seqs.append(torch.tensor([ft.get_sentence_vector(preproc(s)) for s in set_element]))
+            except:
+                import pdb;pdb.set_trace()
         batch.append(torch.stack(seqs, 0))
     batch = torch.stack(batch, 0)
     return batch.to(device)
