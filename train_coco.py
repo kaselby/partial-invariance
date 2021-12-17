@@ -132,7 +132,7 @@ def parse_args():
     parser.add_argument('--eval_every', type=int, default=500)
     parser.add_argument('--eval_steps', type=int, default=200)
     parser.add_argument('--text_model', type=str, choices=['bert', 'ft'], default='bert')
-    parser.add_argument('--embed_path', type=str, default="wiki-news-300d-1M.vec")
+    parser.add_argument('--embed_path', type=str, default="cc.en.300.bin")
     parser.add_argument('--embed_dim', type=int, default=300)
     return parser.parse_args()
 
