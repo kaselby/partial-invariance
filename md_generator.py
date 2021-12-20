@@ -21,7 +21,7 @@ class MetaDatasetGenerator():
         self.N = len(self.datasets_by_class)
         self.transforms = get_transforms(self.image_size, self.split)
 
-    def _build_datasets(min_class_examples=20):
+    def _build_datasets(self, min_class_examples=20):
         datasets = []
         for dataset in ALL_DATASETS:
             dataset_spec = dataset_spec_lib.load_dataset_spec(os.path.join(DATASET_ROOT, dataset))
