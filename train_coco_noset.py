@@ -6,6 +6,7 @@ from train_omniglot import ConvEncoder
 
 import os
 import fasttext
+import tqdm
 
 import re
 from nltk.stem import WordNetLemmatizer
@@ -110,7 +111,7 @@ def train(model, optimizer, train_dataset, val_dataset, epochs, batch_size):
     for i in range(epochs):
         train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
         train_loss = 0
-        for (imgs, captions), aligned in train_loader:
+        for (imgs, captions), aligned in tqdm.tqdm(train_loader):
             optimizer.zero_grad()
             yhat = model(imgs, captions)
             loss = criterion(model.squeeze(-1), aligned)
