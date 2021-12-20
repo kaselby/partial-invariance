@@ -98,10 +98,9 @@ def collate_with_padding(batch):
     return (torch.stack(imgs, 0), packed_text), labels
 
 class CaptionMatchingDataset(IterableDataset):
-    def __init__(self, dataset, embeddings, device=torch.device('cpu')):
+    def __init__(self, dataset, embeddings):
         self.dataset=dataset
         self.embeddings = embeddings
-        self.device = device
 
     def __iter__(self, p=0.5):
         N = len(self.dataset)
@@ -123,7 +122,7 @@ class CaptionMatchingDataset(IterableDataset):
 
 
 
-def train(model, optimizer, train_dataset, val_dataset, epochs, batch_size):
+def train(model, optimizer, train_dataset, val_dataset, epochs, batch_size, device=torch.device('cpu')):
     criterion = nn.BCEWithLogitsLoss()
 
     for i in range(epochs):
@@ -131,7 +130,7 @@ def train(model, optimizer, train_dataset, val_dataset, epochs, batch_size):
         train_loss = 0
         for (imgs, captions), aligned in tqdm.tqdm(train_loader):
             optimizer.zero_grad()
-            yhat = model(imgs.to(model.device()), captions.to(model.device()))
+            yhat = model(imgs.to(device), captions.to(device))
             loss = criterion(model.squeeze(-1), aligned)
             loss.backward()
             optimizer.step()
@@ -142,7 +141,7 @@ def train(model, optimizer, train_dataset, val_dataset, epochs, batch_size):
             acc = 0
             val_loader = DataLoader(val_dataset, batch_size=batch_size, collate_fn=collate_with_padding)
             for (imgs, captions), aligned in val_loader:
-                yhat = model(imgs.to(model.device()), captions.to(model.device()))
+                yhat = model(imgs.to(device), captions.to(device))
                 loss = criterion(model.squeeze(-1), aligned)
                 val_loss += loss.item()
                 acc += (yhat > 0).sum()
@@ -164,13 +163,13 @@ if __name__ == "__main__":
     device = torch.device("cuda")
 
     base_train_dataset, base_val_dataset = load_caption_data(os.path.join(coco_path, "images"), os.path.join(coco_path, "annotations"))
-    train_dataset = CaptionMatchingDataset(base_train_dataset, ft, device)
-    val_dataset = CaptionMatchingDataset(base_val_dataset, ft, device)
+    train_dataset = CaptionMatchingDataset(base_train_dataset, ft)
+    val_dataset = CaptionMatchingDataset(base_val_dataset, ft)
 
     model = build_model(ls, hs, embed_dim).to(device)
     optimizer = optim.Adam(model.parameters(), lr)
 
-    train(model, optimizer, train_dataset, val_dataset, epochs, bs)
+    train(model, optimizer, train_dataset, val_dataset, epochs, bs, device)
 
     
         
