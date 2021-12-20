@@ -2,6 +2,7 @@ import torch
 import torchvision
 import torch.nn as nn
 
+from train_omniglot import ConvEncoder, ConvBlock, ConvLayer, MultiSetImageModel
 from md_generator import MetaDatasetGenerator
 from meta_dataset.dataset_spec import Split
 
@@ -185,6 +186,13 @@ if __name__ == '__main__':
 
     device = torch.device("cuda")
 
+    layers = [
+        ConvLayer(1, 32, kernel_size=7, stride=2),
+        ConvBlock(32, 32, n_conv=2, pool='max'),
+        ConvBlock(32, 64, n_conv=2,pool='max'),
+        ConvBlock(64, 128, n_conv=2, pool='max')
+    ]
+    encoder = ConvEncoder(layers, 84, args.latent_size)
     if args.model == 'csab':
         model_kwargs={
             'ln':True,
@@ -195,7 +203,7 @@ if __name__ == '__main__':
             'equi':False,
             'weight_sharing': args.weight_sharing
         }
-        discriminator = MultiSetTransformer(args.latent_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
+        set_model = MultiSetTransformer(args.latent_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
     elif args.model == 'naive':
         model_kwargs={
             'ln':True,
@@ -206,12 +214,12 @@ if __name__ == '__main__':
             'equi':False,
             'weight_sharing': args.weight_sharing
         }
-        discriminator = NaiveMultiSetModel(args.latent_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
+        set_model = NaiveMultiSetModel(args.latent_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
     elif args.model == 'pine':
-        discriminator = PINE(args.latent_size, int(args.latent_size/4), 16, 2, args.hidden_size, 1)
+        set_model = PINE(args.latent_size, int(args.latent_size/4), 16, 2, args.hidden_size, 1)
     else:
         raise NotImplementedError
-    discriminator = discriminator.to(device)
+    discriminator = MultiSetImageModel(encoder, set_model).to(device)
 
     train_generator = MetaDatasetGenerator(split=Split.TRAIN)
     val_generator = MetaDatasetGenerator(split=Split.VALID)

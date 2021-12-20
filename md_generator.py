@@ -1,6 +1,7 @@
 from meta_dataset.reader import Reader
 from meta_dataset.dataset_spec import Split
 from meta_dataset import dataset_spec as dataset_spec_lib
+from meta_dataset.transform import get_transforms
 
 import torch
 import os
@@ -11,19 +12,23 @@ ALL_DATASETS=["aircraft", "cu_birds", "dtd", "fungi", "ilsvrc_2012", "mscoco", "
 
 class MetaDatasetGenerator():
     N = len(ALL_DATASETS)
-    def __init__(self, p_aligned=0.5, p_sameset=0.5, dataset_path=DATASET_ROOT, split=Split.TRAIN, device=torch.device('cpu')):
+    def __init__(self, image_size=84, p_aligned=0.5, p_sameset=0.5, dataset_path=DATASET_ROOT, split=Split.TRAIN, device=torch.device('cpu')):
         self.split=split
         self.p_aligned = p_aligned
         self.p_sameset = p_sameset
+        self.image_size = image_size
         self.device=device
         self.dataset_specs = [dataset_spec_lib.load_dataset_spec(os.path.join(DATASET_ROOT, dataset)) for dataset in ALL_DATASETS]
         self.readers = [Reader(dataset_spec, split, False, 0) for dataset_spec in self.dataset_specs]
         self.datasets_by_class = [reader.construct_class_datasets() for reader in self.readers]
+        self.transforms = get_transforms(self.image_size, self.split)
 
     def _generate(self, batch_size, set_size=(10,15)):
+        def process_image(imgdict):
+            return self.transforms(imgdict['image'])
         def sample_dataset(dataset, data_class, n_samples):
             data_iter = iter(self.datasets_by_class[dataset][data_class])
-            return [next(data_iter) for _ in range(n_samples)]
+            return [process_image(next(data_iter)) for _ in range(n_samples)]
 
         aligned = (torch.rand(batch_size) < self.p_aligned)
         n_samples = torch.randint(*set_size).item()
