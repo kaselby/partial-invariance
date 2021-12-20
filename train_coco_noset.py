@@ -106,6 +106,9 @@ class CaptionMatchingDataset(Dataset):
             if not aligned[j]:
                 captions = self.dataset[self.unaligned_map[j, 1]][1]
             yield (imgs, process_captions(self.embeddings, captions)), aligned[j]
+    
+    def __len__(self):
+        return len(self.dataset)
 
 
 
