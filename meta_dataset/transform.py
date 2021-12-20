@@ -12,6 +12,20 @@ jitter_param = dict(Brightness=0.4, Contrast=0.4, Color=0.4)
 TRAIN_TRANSFORMS = ['random_resized_crop', 'jitter', 'random_flip', 'to_tensor', 'normalize']
 TEST_TRANSFORMS = ['resize', 'center_crop', 'to_tensor', 'normalize']
 
+def parse_record(feat_dic):
+    # typename_mapping = {
+    #     "byte": "bytes_list",
+    #     "float": "float_list",
+    #     "int": "int64_list"
+    # }
+    # get BGR image from bytes
+    image = cv2.imdecode(feat_dic["image"], -1)
+    # from BGR to RGB
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    image = Image.fromarray(image)
+    feat_dic["image"] = image
+    return feat_dic
+
 class ImageJitter(object):
     def __init__(self, transformdict):
         transformtypedict = dict(Brightness=ImageEnhance.Brightness,

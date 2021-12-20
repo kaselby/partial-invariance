@@ -7,6 +7,23 @@ from .dataset_spec import DatasetSpecification as DS
 from .dataset_spec import BiLevelDatasetSpecification as BDS
 from .dataset_spec import HierarchicalDatasetSpecification as HDS
 
+from PIL import Image
+import cv2
+
+def parse_record(feat_dic):
+    # typename_mapping = {
+    #     "byte": "bytes_list",
+    #     "float": "float_list",
+    #     "int": "int64_list"
+    # }
+    # get BGR image from bytes
+    image = cv2.imdecode(feat_dic["image"], -1)
+    # from BGR to RGB
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    image = Image.fromarray(image)
+    feat_dic["image"] = image
+    return feat_dic
+
 
 class Reader(object):
     """Class reading data from one source and assembling examples.

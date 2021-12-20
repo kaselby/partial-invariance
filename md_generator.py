@@ -1,4 +1,4 @@
-from meta_dataset.reader import Reader
+from meta_dataset.reader import Reader, parse_record
 from meta_dataset.dataset_spec import Split
 from meta_dataset import dataset_spec as dataset_spec_lib
 from meta_dataset.transform import get_transforms
@@ -26,7 +26,7 @@ class MetaDatasetGenerator():
 
     def _generate(self, batch_size, set_size=(10,15)):
         def process_image(imgdict):
-            return self.transforms(imgdict['image'])
+            return self.transforms(parse_record(imgdict)['image'])
         def sample_dataset(dataset, data_class, n_samples):
             data_iter = iter(self.datasets_by_class[dataset][data_class])
             return [process_image(next(data_iter)) for _ in range(n_samples)]
