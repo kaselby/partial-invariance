@@ -41,7 +41,7 @@ class MetaDatasetGenerator():
                 class1 = torch.randint(len(self.datasets_by_class[dataset1])).item()
                 class2 = class1
             else:
-                if torch.rand() < self.p_sameset:
+                if torch.rand(1).item() < self.p_sameset:
                     dataset1 = torch.randint(self.N).item()
                     dataset2 = dataset1
                     class1, class2 = torch.multinomial(torch.ones(len(self.datasets_by_class[dataset1])), 2)
