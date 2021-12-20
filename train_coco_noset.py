@@ -4,6 +4,10 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset
 from train_omniglot import ConvEncoder
 
+import torchvision
+from torchvision.datasets import CocoCaptions
+import torchvision.transforms as T
+
 import os
 import fasttext
 import tqdm
