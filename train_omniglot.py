@@ -273,8 +273,8 @@ class ConvEncoder(nn.Module):
     @classmethod
     def make_coco_model(cls, output_size):
         layers = [
-            ConvLayer(1, 32, kernel_size=7, stride=2),
-            ConvBlock(3, 32, n_conv=1, pool='max'),
+            ConvLayer(3, 32, kernel_size=7, stride=2),
+            ConvBlock(32, 32, n_conv=1, pool='max'),
             ConvBlock(32, 64, n_conv=1, pool='max'),
             ConvBlock(32, 128, n_conv=1, pool='max'),
             ConvBlock(32, 256, n_conv=1, pool='max'),
