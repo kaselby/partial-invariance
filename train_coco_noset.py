@@ -73,7 +73,7 @@ class CocoMatchingModel(nn.Module):
         ZX = self.img_encoder(imgs)
         packed_texts = torch.nn.utils.pack_padded_sequence(texts, lens, batch_first=True, enforce_sorted=False)
         ZY = self.text_encoder(texts)
-        ZY = torch.nn.utils.pad_packed_sequence(ZY, batch_First=True)[:,0]
+        ZY, _ = torch.nn.utils.pad_packed_sequence(ZY, batch_first=True)[:,0]
         return self.decoder(torch.cat([ZX, ZY], dim=1), **kwargs)
 
 
@@ -102,13 +102,14 @@ class CaptionMatchingDataset(IterableDataset):
         indices = torch.randperm(N)
         aligned = (torch.rand(N) > p)
         unaligned_indices = torch.nonzero(aligned.logical_not())
-        unaligned_map = torch.cat([unaligned_indices, unaligned_indices.roll(-1, dims=0)], 1)
+        unaligned_pairs = torch.cat([unaligned_indices, unaligned_indices.roll(-1, dims=0)], 1)
+        unaligned_map = {unaligned_pairs[i,0].item():unaligned_pairs[i,1].item() for i in range(unaligned_pairs.size(0))}
 
         for i in range(N):
             j = indices[i]
             imgs, captions = self.dataset[j]
             if not aligned[j].item():
-                captions = self.dataset[unaligned_map[j, 1].item()][1]
+                captions = self.dataset[unaligned_map[j]][1]
             yield (imgs, process_captions(self.embeddings, captions)), aligned[j]
     
     def __len__(self):
