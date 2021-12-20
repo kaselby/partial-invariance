@@ -87,7 +87,7 @@ def build_model(latent_size, hidden_size, embed_size=300):
 
 def process_captions(ft, captions, start_tok="cls"):
     processed_seq = start_tok + " " + preprocess_text(captions[0]) 
-    seq_tensors = torch.tensor([ft[x] for x in processed_seqs.split(" ") if x in ft])
+    seq_tensors = torch.tensor([ft[x] for x in processed_seq.split(" ") if x in ft])
     return seq_tensors
     #return torch.nn.utils.rnn.pad_sequence(seq_tensors, batch_first=True), [seq.size(1) for seq in seq_tensors]
 
@@ -142,7 +142,7 @@ def train(model, optimizer, train_dataset, val_dataset, epochs, batch_size):
             acc = 0
             val_loader = DataLoader(val_dataset, batch_size=batch_size, collate_fn=collate_with_padding)
             for (imgs, captions), aligned in val_loader:
-                yhat = model(imgs, captions)
+                yhat = model(imgs.to(model.device()), captions.to(model.device()))
                 loss = criterion(model.squeeze(-1), aligned)
                 val_loss += loss.item()
                 acc += (yhat > 0).sum()
