@@ -678,6 +678,29 @@ class MultiSetModel(nn.Module):
 
 
 
+class CocoTrivialModel(nn.Module):
+    def __init__(self, text_enc, img_enc, latent_size, hidden_size, output_size):
+        self.text_encoder = text_enc
+        self.img_encoder = img_enc
+        self.decoder = nn.Sequential(
+            nn.Linear(2*latent_size, hidden_size),
+            nn.ReLU(),
+            nn.Linear(hidden_size, output_size)
+        )
+        self.X_proj = nn.Linear(X_encoder.output_size, self.latent_size) if X_encoder.output_size != self.latent_size else None
+        self.Y_proj = nn.Linear(Y_encoder.output_size, self.latent_size) if Y_encoder.output_size != self.latent_size else None
+    
+    def forward(self, imgs, texts):
+        ZX = self.img_encoder(imgs)
+        ZY = self.text_encoder(texts)
+
+        if self.X_proj is not None:
+            ZX = self.X_proj(ZX)
+        if self.Y_proj is not None:
+            ZY = self.Y_proj(ZY)
+        
+        return self.set_model(ZX, ZY, **kwargs)
+
 
 #
 #   GAN Stuff

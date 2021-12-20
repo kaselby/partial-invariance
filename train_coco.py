@@ -37,8 +37,8 @@ def make_model(set_model, text_model='bert', img_model='vgg', embed_dim=300):
     if text_model == 'bert':
         model = BertModel.from_pretrained("bert-base-uncased")
         text_encoder = BertEncoderWrapper(model)
-        for param in text_encoder.parameters():
-            param.requires_grad = False
+        #for param in text_encoder.parameters():
+         #   param.requires_grad = False
     else:
         text_encoder = EmbeddingEncoderWrapper(embed_dim)
 
