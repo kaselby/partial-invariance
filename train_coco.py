@@ -42,7 +42,7 @@ def make_model(set_model, text_model='bert', img_model='vgg', embed_dim=300):
     else:
         text_encoder = EmbeddingEncoderWrapper(embed_dim)
 
-    if img_model = 'vgg':
+    if img_model == 'vgg':
         vgg = torchvision.models.vgg16(pretrained=True)
         vgg.classifier = nn.Sequential(*list(vgg.classifier.children())[:-3])
         img_encoder = ImageEncoderWrapper(vgg, 4096)
