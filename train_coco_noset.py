@@ -92,7 +92,8 @@ def process_captions(ft, batch, start_tok="cls"):
     #return torch.nn.utils.rnn.pad_sequence(seq_tensors, batch_first=True), [seq.size(1) for seq in seq_tensors]
 
 def collate_with_padding(batch):
-    (imgs, texts), labels = zip(*batch)
+    inputs, labels = zip(*batch)
+    imgs, texts = zip(*inputs)
     packed_text = torch.nn.utils.rnn.pack_sequence(texts, enforce_sorted=False)
     return (torch.stack(imgs, 0), packed_text), labels
 
