@@ -236,7 +236,7 @@ if __name__ == '__main__':
     if torch.cuda.device_count() > 1:
         n_gpus = torch.cuda.device_count()
         print("Let's use", n_gpus, "GPUs!")
-        model = nn.DataParallel(model)
+        discriminator = nn.DataParallel(discriminator)
         batch_size *= n_gpus
         steps = int(steps/n_gpus)
         eval_every = int(eval_every/n_gpus)
@@ -245,14 +245,14 @@ if __name__ == '__main__':
     print("Beginning Training...")
 
     data_kwargs = {'set_size':args.set_size}
-    optimizer = torch.optim.Adam(model.parameters(), args.lr)
+    optimizer = torch.optim.Adam(discriminator.parameters(), args.lr)
     checkpoint_dir = os.path.join(args.checkpoint_dir, args.checkpoint_name) if args.checkpoint_name is not None else None
-    model, (losses, accs, test_acc) = train_disc(model, optimizer, train_generator, val_generator, test_generator, steps, 
+    model, (losses, accs, test_acc) = train_disc(discriminator, optimizer, train_generator, val_generator, test_generator, steps, 
         batch_size=batch_size, checkpoint_dir=checkpoint_dir, data_kwargs=data_kwargs, eval_every=eval_every, eval_steps=eval_steps)
 
     print("Test Accuracy:", test_acc)
 
-    model_out = model._modules['module'] if torch.cuda.device_count() > 1 else model
+    model_out = discriminator._modules['module'] if torch.cuda.device_count() > 1 else discriminator
     torch.save(model_out, os.path.join(run_dir, "model.pt"))  
     torch.save({'losses':losses, 'eval_accs': accs, 'test_acc': test_acc, 'args':args}, os.path.join(run_dir,"logs.pt"))  
 
