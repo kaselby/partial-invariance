@@ -85,7 +85,7 @@ def build_model(latent_size, hidden_size, embed_size=300):
 
 def process_captions(ft, batch, start_tok="cls"):
     processed_seqs = [start_tok + " " + preprocess_text(captions[0]) for captions in batch]
-    return torch.tensor([[ft[x] for x in seq if x in ft] for seq in batch])
+    return torch.tensor([[ft[x] for x in seq.split(" ") if x in ft] for seq in batch])
 
 class CaptionMatchingDataset(IterableDataset):
     def __init__(self, dataset, embeddings, device=torch.device('cpu')):
