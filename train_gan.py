@@ -7,6 +7,8 @@ from md_generator import MetaDatasetGenerator
 from meta_dataset.dataset_spec import Split
 
 import argparse
+import os
+import tqdm
 
 def train_adv(discriminator, generator, d_opt, g_opt, dataset, steps, device, set_size=(10,15),batch_size=64, save_every=2000, checkpoint_dir=None, data_kwargs={}):
     d_losses = []
