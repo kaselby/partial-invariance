@@ -39,8 +39,8 @@ def preprocess_text(document):
         # Lemmatization
         tokens = document.split()
         tokens = [stemmer.lemmatize(word) for word in tokens]
-        tokens = [word for word in tokens if word not in en_stop]
-        tokens = [word for word in tokens if len(word) > 3]
+        #tokens = [word for word in tokens if word not in en_stop]
+        #tokens = [word for word in tokens if len(word) > 3]
 
         preprocessed_text = ' '.join(tokens)
 
@@ -84,7 +84,7 @@ def build_model(latent_size, hidden_size, embed_size=300):
     return model
 
 def process_captions(ft, batch, start_tok="cls"):
-    processed_seqs = [preprocess_text(start_tok + " " + captions[0]) for captions in batch]
+    processed_seqs = [start_tok + " " + preprocess_text(captions[0]) for captions in batch]
     return torch.tensor([[ft[x] for x in seq if x in ft] for seq in batch])
 
 class CaptionMatchingDataset(IterableDataset):
