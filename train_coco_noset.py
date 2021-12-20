@@ -92,7 +92,7 @@ def process_captions(ft, batch, start_tok="cls"):
     #return torch.nn.utils.rnn.pad_sequence(seq_tensors, batch_first=True), [seq.size(1) for seq in seq_tensors]
 
 def collate_with_padding(batch):
-    imgs, texts = batch
+    (imgs, texts), labels = zip(*batch)
     packed_text = torch.nn.utils.rnn.pack_sequence(texts, enforce_sorted=False)
     return torch.stack(imgs, 0), packed_text
 
@@ -130,7 +130,7 @@ def train(model, optimizer, train_dataset, val_dataset, epochs, batch_size):
         train_loss = 0
         for (imgs, captions), aligned in tqdm.tqdm(train_loader):
             optimizer.zero_grad()
-            yhat = model(imgs, captions)
+            yhat = model(imgs.to(model.device()), captions.to(model.device()))
             loss = criterion(model.squeeze(-1), aligned)
             loss.backward()
             optimizer.step()
