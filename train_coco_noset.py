@@ -74,7 +74,7 @@ class CocoMatchingModel(nn.Module):
         packed_output, (h,c) = self.text_encoder(texts)
         ZY = torch.nn.utils.rnn.pad_packed_sequence(packed_output, batch_first=True)[0][:,0]
         ZX = self.img_encoder(imgs)
-        return self.decoder(torch.cat([ZX, ZY], dim=1), **kwargs)
+        return self.decoder(torch.cat([ZX, ZY], dim=1))
 
 
 
