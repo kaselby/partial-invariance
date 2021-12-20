@@ -131,7 +131,7 @@ def train(model, optimizer, train_dataset, val_dataset, epochs, batch_size, devi
         for (imgs, captions), aligned in tqdm.tqdm(train_loader):
             optimizer.zero_grad()
             yhat = model(imgs.to(device), captions.to(device))
-            loss = criterion(model.squeeze(-1), aligned)
+            loss = criterion(yhat.squeeze(-1), aligned)
             loss.backward()
             optimizer.step()
             train_loss += loss.item()
