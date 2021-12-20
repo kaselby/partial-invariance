@@ -179,6 +179,10 @@ def parse_args():
 if __name__ == '__main__':
     args = parse_args()
 
+    run_dir = os.path.join(args.basedir, "meta-dataset", "discriminator", args.run_name)
+    if not os.path.exists(run_dir):
+        os.makedirs(run_dir)
+
     device = torch.device("cuda")
 
     if args.model == 'csab':
@@ -237,7 +241,7 @@ if __name__ == '__main__':
     print("Test Accuracy:", test_acc)
 
     model_out = model._modules['module'] if torch.cuda.device_count() > 1 else model
-    torch.save(model_out, os.path.join(run_dir,"model.pt"))  
+    torch.save(model_out, os.path.join(run_dir, "model.pt"))  
     torch.save({'losses':losses, 'eval_accs': accs, 'test_acc': test_acc, 'args':args}, os.path.join(run_dir,"logs.pt"))  
 
 
