@@ -6,7 +6,7 @@ from train_omniglot import ConvEncoder, ConvBlock, ConvLayer, MultiSetImageModel
 from md_generator import MetaDatasetGenerator
 from meta_dataset.dataset_spec import Split
 
-from argparse import ArgumentParser
+import argparse
 
 def train_adv(discriminator, generator, d_opt, g_opt, dataset, steps, device, set_size=(10,15),batch_size=64, save_every=2000, checkpoint_dir=None, data_kwargs={}):
     d_losses = []
