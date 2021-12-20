@@ -71,7 +71,7 @@ class CocoMatchingModel(nn.Module):
     
     def forward(self, imgs, texts):
         ZX = self.img_encoder(imgs)
-        packed_texts = torch.nn.utils.rnn.pack_sequence(texts, enforce_sorted=False)
+        #packed_texts = torch.nn.utils.rnn.pack_sequence(texts, enforce_sorted=False)
         encoded_texts = self.text_encoder(texts)
         ZY, _ = torch.nn.utils.rnn.pad_packed_sequence(encoded_texts, batch_first=True)[:,0]
         return self.decoder(torch.cat([ZX, ZY], dim=1), **kwargs)
@@ -88,7 +88,7 @@ def build_model(latent_size, hidden_size, embed_size=300):
 def process_captions(ft, batch, start_tok="cls"):
     processed_seqs = [start_tok + " " + preprocess_text(captions[0]) for captions in batch]
     seq_tensors = [torch.tensor([ft[x] for x in seq.split(" ") if x in ft]) for seq in batch]
-    return seq_tensors
+    return torch.nn.utils.rnn.pack_sequence(seq_tensors, enforce_sorted=False)
 
 class CaptionMatchingDataset(IterableDataset):
     def __init__(self, dataset, embeddings, device=torch.device('cpu')):
