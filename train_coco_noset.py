@@ -95,7 +95,7 @@ def collate_with_padding(batch):
     inputs, labels = zip(*batch)
     imgs, texts = zip(*inputs)
     packed_text = torch.nn.utils.rnn.pack_sequence(texts, enforce_sorted=False)
-    return (torch.stack(imgs, 0), packed_text), labels
+    return (torch.stack(imgs, 0), packed_text), torch.cat(labels, dim=0).float()
 
 class CaptionMatchingDataset(IterableDataset):
     def __init__(self, dataset, embeddings):
