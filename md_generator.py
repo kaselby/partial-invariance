@@ -17,12 +17,21 @@ class MetaDatasetGenerator():
         self.p_sameset = p_sameset
         self.image_size = image_size
         self.device=device
-        self.dataset_specs = [dataset_spec_lib.load_dataset_spec(os.path.join(DATASET_ROOT, dataset)) for dataset in ALL_DATASETS]
-        self.readers = [Reader(dataset_spec, split, False, 0) for dataset_spec in self.dataset_specs]
-        datasets_by_class = [reader.construct_class_datasets() for reader in self.readers]
-        self.datasets_by_class = [x for x in datasets_by_class if len(x) > 0]
+        self.datasets_by_class = self._build_datasets()
         self.N = len(self.datasets_by_class)
         self.transforms = get_transforms(self.image_size, self.split)
+
+    def _build_datasets(min_class_examples=20):
+        datasets = []
+        for dataset in ALL_DATASETS:
+            dataset_spec = dataset_spec_lib.load_dataset_spec(os.path.join(DATASET_ROOT, dataset))
+            reader = Reader(dataset_spec, split, False, 0) 
+            datasets_by_class = reader.construct_class_datasets()
+            datasets_by_class = [x for i, x in enumerate(datasets_by_class) if dataset_spec.images_per_class[i] >= min_class_examples]
+            if len(datasets_by_class) > 0:
+                datasets.append(datasets_by_class)
+
+        return datasets
 
     def _generate(self, batch_size, set_size=(10,15)):
         def process_image(imgdict):
