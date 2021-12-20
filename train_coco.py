@@ -135,6 +135,7 @@ def parse_args():
     parser.add_argument('--eval_every', type=int, default=500)
     parser.add_argument('--eval_steps', type=int, default=200)
     parser.add_argument('--text_model', type=str, choices=['bert', 'ft'], default='bert')
+    parser.add_argument('--img_model', type=str, choices=['vgg', 'base'], default='vgg')
     parser.add_argument('--embed_path', type=str, default="cc.en.300.bin")
     parser.add_argument('--embed_dim', type=int, default=300)
     return parser.parse_args()
@@ -177,7 +178,7 @@ if __name__ == '__main__':
         set_model = PINE(args.latent_size, args.latent_size/4, 16, 2, args.hidden_size, 1)
     else:
         raise NotImplementedError("Model type not recognized.")
-    model = make_model(set_model, text_model=args.text_model, embed_dim=args.embed_dim).to(device)
+    model = make_model(set_model, text_model=args.text_model, img_model=args.img_model, embed_dim=args.embed_dim).to(device)
 
     batch_size = args.batch_size
     steps = args.steps
