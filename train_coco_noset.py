@@ -71,8 +71,8 @@ class CocoMatchingModel(nn.Module):
     
     def forward(self, imgs, texts):
         #packed_texts = torch.nn.utils.rnn.pack_sequence([torch.tensor(seq) for seq in texts], enforce_sorted=False)
-        encoded_texts = self.text_encoder(texts)
-        ZY, _ = torch.nn.utils.rnn.pad_packed_sequence(encoded_texts, batch_first=True)[:,0]
+        packed_output, (h,c) = self.text_encoder(texts)
+        ZY, _ = torch.nn.utils.rnn.pad_packed_sequence(packed_output, batch_first=True)[:,0]
         ZX = self.img_encoder(imgs)
         return self.decoder(torch.cat([ZX, ZY], dim=1), **kwargs)
 
