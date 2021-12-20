@@ -85,9 +85,9 @@ def build_model(latent_size, hidden_size, embed_size=300):
     model = CocoMatchingModel(text_enc, img_enc, latent_size, hidden_size, 1)
     return model
 
-def process_captions(ft, batch, start_tok="cls"):
-    processed_seqs = [start_tok + " " + preprocess_text(captions[0]) for captions in batch]
-    seq_tensors = [torch.tensor([ft[x] for x in seq.split(" ") if x in ft]) for seq in batch]
+def process_captions(ft, captions, start_tok="cls"):
+    processed_seqs = start_tok + " " + preprocess_text(captions[0]) 
+    seq_tensors = torch.tensor([ft[x] for x in seq.split(" ") if x in ft])
     return seq_tensors
     #return torch.nn.utils.rnn.pad_sequence(seq_tensors, batch_first=True), [seq.size(1) for seq in seq_tensors]
 
