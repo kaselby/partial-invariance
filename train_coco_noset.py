@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader, Dataset, IterableDataset
 from train_omniglot import ConvEncoder
 
 import torchvision
@@ -87,7 +87,7 @@ def process_captions(ft, batch, start_tok="cls"):
     processed_seqs = [preprocess_text(start_tok + " " + captions[0]) for captions in batch]
     return torch.tensor([[ft[x] for x in seq if x in ft] for seq in batch])
 
-class CaptionMatchingDataset(Dataset):
+class CaptionMatchingDataset(IterableDataset):
     def __init__(self, dataset, embeddings, device=torch.device('cpu')):
         self.dataset=dataset
         self.embeddings = embeddings
