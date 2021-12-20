@@ -405,14 +405,16 @@ class CaptionGenerator():
         indices = torch.randperm(self.N)
         X, Y = [], []
         for i in range(batch_size):
-            mindex = n_samples * 2 * i
+            mindex = n_samples * 2 * i4
             imgs, captions = zip(*[self.dataset[i] for i in indices[mindex:mindex+n_samples]])
             X.append(imgs)
             if aligned[i].item():
-                Y.append(captions)
+                #Y.append(captions)
+                Y.append(["y" for _ in captions])
             else:
-                _, captions2 = zip(*[self.dataset[i] for i in indices[mindex+n_samples:mindex+n_samples*2]])
-                Y.append(captions2)
+                #_, captions2 = zip(*[self.dataset[i] for i in indices[mindex+n_samples:mindex+n_samples*2]])
+                #Y.append(captions2)
+                Y.append(["n" for _ in captions])
 
         X = self._build_img_batch(X)
         Y = self._build_text_batch(Y)
