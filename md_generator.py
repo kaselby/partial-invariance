@@ -36,21 +36,21 @@ class MetaDatasetGenerator():
         Y = []
         for j in range(batch_size):
             if aligned[j]:
-                dataset1 = torch.randint(self.N).item()
+                dataset1 = torch.randint(self.N, (1,)).item()
                 dataset2 = dataset1
-                class1 = torch.randint(len(self.datasets_by_class[dataset1])).item()
+                class1 = torch.randint(len(self.datasets_by_class[dataset1]), (1,)).item()
                 class2 = class1
             else:
                 if torch.rand(1).item() < self.p_sameset:
-                    dataset1 = torch.randint(self.N).item()
+                    dataset1 = torch.randint(self.N, (1,)).item()
                     dataset2 = dataset1
                     class1, class2 = torch.multinomial(torch.ones(len(self.datasets_by_class[dataset1])), 2)
                     class1, class2 = class1.item(), class2.item()
                 else:
                     dataset1, dataset2 = torch.multinomial(torch.ones(self.N), 2)
                     dataset1, dataset2 = dataset1.item(), dataset2.item()
-                    class1 = torch.randint(len(self.datasets_by_class[dataset1])).item()
-                    class2 = torch.randint(len(self.datasets_by_class[dataset2])).item()
+                    class1 = torch.randint(len(self.datasets_by_class[dataset1]), (1,)).item()
+                    class2 = torch.randint(len(self.datasets_by_class[dataset2]), (1,)).item()
             X_j = sample_dataset(dataset1, class1, n_samples)
             Y_j = sample_dataset(dataset2, class2, n_samples)
             X.append(torch.stack(X_j, 0))
