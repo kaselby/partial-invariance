@@ -176,6 +176,7 @@ def parse_args():
     parser.add_argument('--basedir', type=str, default="final-runs")
     parser.add_argument('--eval_every', type=int, default=500)
     parser.add_argument('--eval_steps', type=int, default=200)
+    parser.add_argument('--weight_sharing', type=str, choices=['none', 'cross', 'sym'], default='none')
     return parser.parse_args()
 
 
