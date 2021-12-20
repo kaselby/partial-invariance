@@ -104,7 +104,7 @@ class CaptionMatchingDataset(IterableDataset):
             j = indices[i]
             imgs, captions = self.dataset[j]
             if not aligned[j].item():
-                captions = self.dataset[self.unaligned_map[j, 1]][1]
+                captions = self.dataset[self.unaligned_map[j, 1].item()][1]
             yield (imgs, process_captions(self.embeddings, captions)), aligned[j]
     
     def __len__(self):
