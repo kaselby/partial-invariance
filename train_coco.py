@@ -16,7 +16,7 @@ import fasttext
 
 from models2 import MultiSetTransformer, PINE, MultiSetModel, BertEncoderWrapper, ImageEncoderWrapper, EmbeddingEncoderWrapper
 from generators import CaptionGenerator, bert_tokenize_batch, fasttext_tokenize_batch
-
+from train_omniglot import ConvEncoder
 
 
 #def fasttext_encoder_preproc():
@@ -33,21 +33,24 @@ def load_caption_data(imgdir, anndir):
     return train_dataset, val_dataset
 
 
-def make_model(set_model, text_model='bert', embed_dim=300):
+def make_model(set_model, text_model='bert', img_model='vgg', embed_dim=300):
     if text_model == 'bert':
         model = BertModel.from_pretrained("bert-base-uncased")
         text_encoder = BertEncoderWrapper(model)
+        for param in text_encoder.parameters():
+            param.requires_grad = False
     else:
         text_encoder = EmbeddingEncoderWrapper(embed_dim)
 
-    vgg = torchvision.models.vgg16(pretrained=True)
-    vgg.classifier = nn.Sequential(*list(vgg.classifier.children())[:-3])
-    img_encoder = ImageEncoderWrapper(vgg, 4096)
-
-    for param in img_encoder.parameters():
-        param.requires_grad = False
-    for param in text_encoder.parameters():
-        param.requires_grad = False
+    if img_model = 'vgg':
+        vgg = torchvision.models.vgg16(pretrained=True)
+        vgg.classifier = nn.Sequential(*list(vgg.classifier.children())[:-3])
+        img_encoder = ImageEncoderWrapper(vgg, 4096)
+        for param in img_encoder.parameters():
+            param.requires_grad = False
+    else:
+        enc = ConvEncoder.make_coco_model(256)
+        img_encoder = ImageEncoderWrapper(vgg, 256)
     
     #set_model = MultiSetTransformer(*args, **kwargs)
     return MultiSetModel(set_model, img_encoder, text_encoder)

@@ -628,7 +628,6 @@ class ImageEncoderWrapper(nn.Module):
         self.output_size = output_size
 
     def forward(self, inputs):
-
         encoded_batch = self.encoder(inputs.view(-1, *inputs.size()[-3:]))
         return encoded_batch.view(*inputs.size()[:-3], encoded_batch.size(-1))
 

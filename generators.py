@@ -409,12 +409,12 @@ class CaptionGenerator():
             imgs, captions = zip(*[self.dataset[i] for i in indices[mindex:mindex+n_samples]])
             X.append(imgs)
             if aligned[i].item():
-                #Y.append(captions)
-                Y.append(["y" for _ in captions])
+                Y.append(captions)
+                #Y.append(["y" for _ in captions])
             else:
-                #_, captions2 = zip(*[self.dataset[i] for i in indices[mindex+n_samples:mindex+n_samples*2]])
-                #Y.append(captions2)
-                Y.append(["n" for _ in captions])
+                _, captions2 = zip(*[self.dataset[i] for i in indices[mindex+n_samples:mindex+n_samples*2]])
+                Y.append(captions2)
+                #Y.append(["n" for _ in captions])
 
         X = self._build_img_batch(X)
         Y = self._build_text_batch(Y)
@@ -519,5 +519,7 @@ class SetDataGenerator():
     
     def __call__(self, *args, **kwargs):
         return self._generate(*args, **kwargs)
+
+
             
 
