@@ -20,7 +20,8 @@ class MetaDatasetGenerator():
         self.device=device
         self.dataset_specs = [dataset_spec_lib.load_dataset_spec(os.path.join(DATASET_ROOT, dataset)) for dataset in ALL_DATASETS]
         self.readers = [Reader(dataset_spec, split, False, 0) for dataset_spec in self.dataset_specs]
-        self.datasets_by_class = [reader.construct_class_datasets() for reader in self.readers]
+        datasets_by_class = [reader.construct_class_datasets() for reader in self.readers]
+        self.datasets_by_class = [x for x in datasets_by_class if len(x) > 0]
         self.transforms = get_transforms(self.image_size, self.split)
 
     def _generate(self, batch_size, set_size=(10,15)):
