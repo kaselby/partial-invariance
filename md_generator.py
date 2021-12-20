@@ -11,7 +11,6 @@ ALL_DATASETS=["aircraft", "cu_birds", "dtd", "fungi", "ilsvrc_2012", "mscoco", "
 
 
 class MetaDatasetGenerator():
-    N = len(ALL_DATASETS)
     def __init__(self, image_size=84, p_aligned=0.5, p_sameset=0.5, dataset_path=DATASET_ROOT, split=Split.TRAIN, device=torch.device('cpu')):
         self.split=split
         self.p_aligned = p_aligned
@@ -22,6 +21,7 @@ class MetaDatasetGenerator():
         self.readers = [Reader(dataset_spec, split, False, 0) for dataset_spec in self.dataset_specs]
         datasets_by_class = [reader.construct_class_datasets() for reader in self.readers]
         self.datasets_by_class = [x for x in datasets_by_class if len(x) > 0]
+        self.N = len(self.datasets_by_class)
         self.transforms = get_transforms(self.image_size, self.split)
 
     def _generate(self, batch_size, set_size=(10,15)):
