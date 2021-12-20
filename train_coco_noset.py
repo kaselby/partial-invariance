@@ -69,11 +69,11 @@ class CocoMatchingModel(nn.Module):
         #self.X_proj = nn.Linear(img_encoder.output_size, self.latent_size) if img_encoder.output_size != self.latent_size else None
         #self.Y_proj = nn.Linear(text_encoder.output_size, self.latent_size) if text_encoder.output_size != self.latent_size else None
     
-    def forward(self, imgs, texts, lens):
+    def forward(self, imgs, texts):
         ZX = self.img_encoder(imgs)
-        packed_texts = torch.nn.utils.pack_padded_sequence(texts, lens, batch_first=True, enforce_sorted=False)
+        packed_texts = torch.nn.utils.rnn.pack_sequence(texts, enforce_sorted=False)
         ZY = self.text_encoder(texts)
-        ZY, _ = torch.nn.utils.pad_packed_sequence(ZY, batch_first=True)[:,0]
+        ZY, _ = torch.nn.utils.rnn.pad_packed_sequence(ZY, batch_first=True)[:,0]
         return self.decoder(torch.cat([ZX, ZY], dim=1), **kwargs)
 
 
@@ -88,8 +88,7 @@ def build_model(latent_size, hidden_size, embed_size=300):
 def process_captions(ft, batch, start_tok="cls"):
     processed_seqs = [start_tok + " " + preprocess_text(captions[0]) for captions in batch]
     seq_tensors = [torch.tensor([ft[x] for x in seq.split(" ") if x in ft]) for seq in batch]
-    lens = [x.size(0) for x in seq_tensors]
-    return torch.nn.utils.pad_sequence(seq_tensors, batch_first=True)
+    return seq_tensors
 
 class CaptionMatchingDataset(IterableDataset):
     def __init__(self, dataset, embeddings, device=torch.device('cpu')):
