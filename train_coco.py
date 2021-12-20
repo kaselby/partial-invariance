@@ -50,7 +50,7 @@ def make_model(set_model, text_model='bert', img_model='vgg', embed_dim=300):
             param.requires_grad = False
     else:
         enc = ConvEncoder.make_coco_model(256)
-        img_encoder = ImageEncoderWrapper(vgg, 256)
+        img_encoder = ImageEncoderWrapper(enc, 256)
     
     #set_model = MultiSetTransformer(*args, **kwargs)
     return MultiSetModel(set_model, img_encoder, text_encoder)
