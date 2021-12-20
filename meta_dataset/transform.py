@@ -2,8 +2,7 @@ import torch
 import torchvision.transforms as transforms
 from PIL import ImageEnhance
 
-from .utils import Split
-from .config import DataConfig
+from .dataset_spec import Split
 
 normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                  std=[0.229, 0.224, 0.225])
