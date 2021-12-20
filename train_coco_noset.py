@@ -69,11 +69,11 @@ class CocoMatchingModel(nn.Module):
         #self.X_proj = nn.Linear(img_encoder.output_size, self.latent_size) if img_encoder.output_size != self.latent_size else None
         #self.Y_proj = nn.Linear(text_encoder.output_size, self.latent_size) if text_encoder.output_size != self.latent_size else None
     
-    def forward(self, imgs, texts, lens):
-        ZX = self.img_encoder(imgs)
-        packed_texts = torch.nn.utils.rnn.pack_padded_sequence(texts, lens, batch_first=True, enforce_sorted=False)
+    def forward(self, imgs, texts):
+        packed_texts = torch.nn.utils.rnn.pack_sequence([torch.tensor(seq) for seq in texts], enforce_sorted=False)
         encoded_texts = self.text_encoder(packed_texts)
         ZY, _ = torch.nn.utils.rnn.pad_packed_sequence(encoded_texts, batch_first=True)[:,0]
+        ZX = self.img_encoder(imgs)
         return self.decoder(torch.cat([ZX, ZY], dim=1), **kwargs)
 
 
@@ -87,8 +87,9 @@ def build_model(latent_size, hidden_size, embed_size=300):
 
 def process_captions(ft, batch, start_tok="cls"):
     processed_seqs = [start_tok + " " + preprocess_text(captions[0]) for captions in batch]
-    seq_tensors = [torch.tensor([ft[x] for x in seq.split(" ") if x in ft]) for seq in batch]
-    return torch.nn.utils.rnn.pad_sequence(seq_tensors, batch_first=True), [seq.size(1) for seq in seq_tensors]
+    seq_tensors = [[ft[x] for x in seq.split(" ") if x in ft] for seq in batch]
+    return seq_tensors
+    #return torch.nn.utils.rnn.pad_sequence(seq_tensors, batch_first=True), [seq.size(1) for seq in seq_tensors]
 
 class CaptionMatchingDataset(IterableDataset):
     def __init__(self, dataset, embeddings, device=torch.device('cpu')):
@@ -109,7 +110,7 @@ class CaptionMatchingDataset(IterableDataset):
             imgs, captions = self.dataset[j]
             if not aligned[j].item():
                 captions = self.dataset[unaligned_map[j.item()]][1]
-            yield (imgs, *process_captions(self.embeddings, captions)), aligned[j]
+            yield (imgs, process_captions(self.embeddings, captions)), aligned[j]
     
     def __len__(self):
         return len(self.dataset)
@@ -122,9 +123,9 @@ def train(model, optimizer, train_dataset, val_dataset, epochs, batch_size):
     for i in range(epochs):
         train_loader = DataLoader(train_dataset, batch_size=batch_size)
         train_loss = 0
-        for (imgs, captions, lens), aligned in tqdm.tqdm(train_loader):
+        for (imgs, captions), aligned in tqdm.tqdm(train_loader):
             optimizer.zero_grad()
-            yhat = model(imgs, captions, lens)
+            yhat = model(imgs, captions)
             loss = criterion(model.squeeze(-1), aligned)
             loss.backward()
             optimizer.step()
@@ -133,8 +134,8 @@ def train(model, optimizer, train_dataset, val_dataset, epochs, batch_size):
         with torch.no_grad():
             val_loss = 0
             acc = 0
-            for (imgs, captions, lens), aligned in val_loader:
-                yhat = model(imgs, captions, lens)
+            for (imgs, captions), aligned in val_loader:
+                yhat = model(imgs, captions)
                 loss = criterion(model.squeeze(-1), aligned)
                 val_loss += loss.item()
                 acc += (yhat > 0).sum()
