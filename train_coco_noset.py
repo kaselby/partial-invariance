@@ -151,7 +151,7 @@ if __name__ == "__main__":
     model = build_model(ls, hs, embed_dim).to(device)
     optimizer = optim.Adam(model.parameters(), lr)
 
-    train(model optimizer, train_dataset, val_dataset, epochs, bs)
+    train(model, optimizer, train_dataset, val_dataset, epochs, bs)
 
     
         
