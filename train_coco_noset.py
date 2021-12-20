@@ -72,8 +72,8 @@ class CocoMatchingModel(nn.Module):
     def forward(self, imgs, texts):
         ZX = self.img_encoder(imgs)
         packed_texts = torch.nn.utils.rnn.pack_sequence(texts, enforce_sorted=False)
-        ZY = self.text_encoder(texts)
-        ZY, _ = torch.nn.utils.rnn.pad_packed_sequence(ZY, batch_first=True)[:,0]
+        encoded_texts = self.text_encoder(texts)
+        ZY, _ = torch.nn.utils.rnn.pad_packed_sequence(encoded_texts, batch_first=True)[:,0]
         return self.decoder(torch.cat([ZX, ZY], dim=1), **kwargs)
 
 
@@ -108,7 +108,7 @@ class CaptionMatchingDataset(IterableDataset):
             j = indices[i]
             imgs, captions = self.dataset[j]
             if not aligned[j].item():
-                captions = self.dataset[unaligned_map[j]][1]
+                captions = self.dataset[unaligned_map[j.item()]][1]
             yield (imgs, process_captions(self.embeddings, captions)), aligned[j]
     
     def __len__(self):
