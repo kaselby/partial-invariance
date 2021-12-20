@@ -5,6 +5,7 @@ import torch.nn as nn
 from train_omniglot import ConvEncoder, ConvBlock, ConvLayer, MultiSetImageModel
 from md_generator import MetaDatasetGenerator
 from meta_dataset.dataset_spec import Split
+from models2 import MultiSetTransformer, PINE, NaiveMultiSetModel
 
 import argparse
 import os
