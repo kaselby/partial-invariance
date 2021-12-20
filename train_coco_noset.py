@@ -145,8 +145,8 @@ if __name__ == "__main__":
     device = torch.device("cuda")
 
     base_train_dataset, base_val_dataset = load_caption_data(os.path.join(coco_path, "images"), os.path.join(coco_path, "annotations"))
-    train_dataset = CaptionMatchingDataset(base_train_dataset, device)
-    val_dataset = CaptionMatchingDataset(base_val_dataset, device)
+    train_dataset = CaptionMatchingDataset(base_train_dataset, ft, device)
+    val_dataset = CaptionMatchingDataset(base_val_dataset, ft, device)
 
     model = build_model(ls, hs, embed_dim).to(device)
     optimizer = optim.Adam(model.parameters(), lr)
