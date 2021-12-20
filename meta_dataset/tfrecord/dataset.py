@@ -5,8 +5,8 @@ import numpy as np
 
 import torch.utils.data
 
-from .. import reader
-from .. import iterator_utils
+from . import reader
+from . import iterator_utils
 import warnings
 
 
