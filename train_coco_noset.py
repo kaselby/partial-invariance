@@ -116,7 +116,7 @@ def train(model, optimizer, train_dataset, val_dataset, epochs, batch_size):
     criterion = nn.BCEWithLogitsLoss()
 
     for i in range(epochs):
-        train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+        train_loader = DataLoader(train_dataset, batch_size=batch_size)
         train_loss = 0
         for (imgs, captions), aligned in tqdm.tqdm(train_loader):
             optimizer.zero_grad()
