@@ -31,7 +31,7 @@ class MetaDatasetGenerator():
             return [process_image(next(data_iter)) for _ in range(n_samples)]
 
         aligned = (torch.rand(batch_size) < self.p_aligned)
-        n_samples = torch.randint(*set_size).item()
+        n_samples = torch.randint(*set_size, (1,)).item()
         X = []
         Y = []
         for j in range(batch_size):
