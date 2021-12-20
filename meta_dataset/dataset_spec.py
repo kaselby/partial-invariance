@@ -16,6 +16,7 @@
 # Lint as: python2, python3
 """Interfaces for dataset specifications."""
 
+import enum
 import os
 import json
 import collections
