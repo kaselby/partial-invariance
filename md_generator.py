@@ -33,6 +33,7 @@ class MetaDatasetGenerator():
                 datasets.append(datasets_by_class)
         return datasets
 
+    @profile
     def _generate(self, batch_size, set_size=(10,15)):
         def process_image(imgdict):
             return self.transforms(parse_record(imgdict)['image'])
