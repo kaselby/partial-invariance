@@ -99,7 +99,7 @@ def train_disc(model, optimizer, train_dataset, val_dataset, test_dataset, steps
         train_losses.append(loss.item())
 
         if i % eval_every == 0:
-            acc = evaluate(model, val_dataset, eval_steps, batch_size, data_kwargs)
+            acc = eval_disc(model, val_dataset, eval_steps, batch_size, data_kwargs)
             eval_accs.append(acc)
             avg_loss /= eval_every
             print("Step: %d\tLoss: %f\tAccuracy: %f" % (i, avg_loss, acc))
@@ -111,9 +111,20 @@ def train_disc(model, optimizer, train_dataset, val_dataset, test_dataset, steps
                 os.remove(checkpoint_path)
             torch.save({'model':model,'optimizer':optimizer, 'step': i, 'losses':train_losses, 'accs': eval_accs}, checkpoint_path)
     
-    test_acc = evaluate(model, test_dataset, eval_steps, batch_size, data_kwargs)
+    test_acc = eval_disc(model, test_dataset, eval_steps, batch_size, data_kwargs)
     
     return model, (train_losses, accs, test_acc)
+
+def eval_disc(model, dataset, steps, batch_size, data_kwargs):
+    with torch.no_grad():
+        n_correct = 0
+        for i in tqdm.tqdm(range(steps)):
+            (X,Y), target = dataset(batch_size, **data_kwargs)
+            out = model(X,Y).squeeze(-1)
+            n_correct += torch.eq((out > 0), target).sum().item()
+    return n_correct / (batch_size * steps)
+
+
 
 def train_gen(generator, discriminator, optimizer, train_dataset, steps, batch_size=64, save_every=2000, print_every=250, checkpoint_dir=None, data_kwargs={}):
     train_losses = []
