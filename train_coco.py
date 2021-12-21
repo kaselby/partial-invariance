@@ -42,12 +42,12 @@ def make_model(set_model, text_model='bert', img_model='vgg', embed_dim=300):
     else:
         text_encoder = EmbeddingEncoderWrapper(embed_dim)
 
-    if img_model == 'vgg':
-        vgg = torchvision.models.vgg16(pretrained=True)
-        vgg.classifier = nn.Sequential(*list(vgg.classifier.children())[:-3])
-        img_encoder = ImageEncoderWrapper(vgg, 4096)
-        for param in img_encoder.parameters():
-            param.requires_grad = False
+    if img_model == 'resnet':
+        resnet = torchvision.models.resnet101(pretrained=True)
+        resnet.fc = nn.Identity()#nn.Sequential(*list(vgg.classifier.children())[:-3])
+        img_encoder = ImageEncoderWrapper(resnet, 2048)
+        #for param in img_encoder.parameters():
+        #    param.requires_grad = False
     else:
         enc = ConvEncoder.make_coco_model(256)
         img_encoder = ImageEncoderWrapper(enc, 256)
@@ -127,15 +127,15 @@ def parse_args():
     parser.add_argument('--steps', type=int, default=5000)
     parser.add_argument('--dropout', type=float, default=0)
     parser.add_argument('--lr', type=float, default=1e-3)
-    parser.add_argument('--latent_size', type=int, default=128)
-    parser.add_argument('--hidden_size', type=int, default=256)
-    parser.add_argument('--set_size', type=int, nargs=2, default=[10,15])
+    parser.add_argument('--latent_size', type=int, default=256)
+    parser.add_argument('--hidden_size', type=int, default=512)
+    parser.add_argument('--set_size', type=int, nargs=2, default=[6,10])
     parser.add_argument('--basedir', type=str, default="final-runs")
     parser.add_argument('--data_dir', type=str, default='./coco')
     parser.add_argument('--eval_every', type=int, default=500)
     parser.add_argument('--eval_steps', type=int, default=200)
     parser.add_argument('--text_model', type=str, choices=['bert', 'ft'], default='bert')
-    parser.add_argument('--img_model', type=str, choices=['vgg', 'base'], default='vgg')
+    parser.add_argument('--img_model', type=str, choices=['resnet', 'base'], default='resnet')
     parser.add_argument('--embed_path', type=str, default="cc.en.300.bin")
     parser.add_argument('--embed_dim', type=int, default=300)
     return parser.parse_args()
