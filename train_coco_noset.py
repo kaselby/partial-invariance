@@ -134,7 +134,7 @@ class LSTMEncoder(nn.Module):
 
 def build_model(latent_size, hidden_size, embed_size=300):
     #text_enc = LSTMEncoder(nn.LSTM(embed_size, latent_size, batch_first=True, bidirectional=True))
-    text_enc = BertEncoder(BertModel.from_pretrained("bert-base-uncased"), latent_size)
+    text_enc = BERTEncoder(BertModel.from_pretrained("bert-base-uncased"), latent_size)
     
     #img_enc = ConvEncoder.make_coco_model(latent_size)
     resnet = resnet101(pretrained=True)
@@ -211,10 +211,10 @@ def train(model, optimizer, processor, train_dataset, val_dataset, epochs, batch
 
 
 if __name__ == "__main__":
-    lr = 1e-4
+    lr = 1e-5
     bs = 64
-    ls = 512
-    hs = 1024
+    ls = 1024
+    hs = 4096
     epochs = 5
     embed_dim=300
     embed_path="cc.en.300.bin"
@@ -234,7 +234,7 @@ if __name__ == "__main__":
     model = build_model(ls, hs, embed_dim).to(device)
     optimizer = optim.Adam(model.parameters(), lr)
 
-    train(model, optimizer, train_dataset, val_dataset, epochs, bs, device)
+    train(model, optimizer, processor, train_dataset, val_dataset, epochs, bs, device)
 
     
         
