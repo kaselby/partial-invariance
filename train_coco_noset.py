@@ -79,7 +79,7 @@ class BERTProcessor(Processor):
         self.tokenizer = tokenizer
     
     def collate_text(self, text_batch):
-        return tokenizer(text_batch, padding=True, truncation=True, return_tensors='pt')
+        return tokenizer([captions[0] for captions in batch], padding=True, truncation=True, return_tensors='pt')
 
 
 def load_caption_data(imgdir, anndir):
@@ -173,10 +173,10 @@ class CaptionMatchingDataset(IterableDataset):
         unaligned_map = {unaligned_pairs[i,0].item():unaligned_pairs[i,1].item() for i in range(unaligned_pairs.size(0))}
 
         for i in range(self.N):
-            j = indices[i]
+            j = indices[i].item()
             imgs, captions = self.dataset[j]
             if not aligned[j].item():
-                captions = self.dataset[unaligned_map[j.item()]][1]
+                captions = self.dataset[unaligned_map[j]][1]
             yield (imgs, captions), aligned[j].float()
     
     def __len__(self):
