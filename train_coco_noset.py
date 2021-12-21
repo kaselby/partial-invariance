@@ -106,8 +106,8 @@ class CaptionMatchingDataset(IterableDataset):
         self.embeddings = embeddings
 
     def __iter__(self, p=0.5):
-        indices = torch.randperm(N)
-        aligned = (torch.rand(N) > p)
+        indices = torch.randperm(self.N)
+        aligned = (torch.rand(self.N) > p)
         unaligned_indices = torch.nonzero(aligned.logical_not())
         unaligned_pairs = torch.cat([unaligned_indices, unaligned_indices.roll(-1, dims=0)], 1)
         unaligned_map = {unaligned_pairs[i,0].item():unaligned_pairs[i,1].item() for i in range(unaligned_pairs.size(0))}
