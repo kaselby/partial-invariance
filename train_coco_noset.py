@@ -83,10 +83,11 @@ class CocoMatchingModel(nn.Module):
 
 def build_model(latent_size, hidden_size, embed_size=300):
     text_enc = nn.LSTM(embed_size, latent_size, batch_first=True, bidirectional=True)
-    img_enc = ConvEncoder.make_coco_model(latent_size)
+    #img_enc = ConvEncoder.make_coco_model(latent_size)
 
     resnet = resnet101(pretrained=True)
     resnet.fc=nn.Linear(2048, latent_size)
+    img_enc=resnet
 
     model = CocoMatchingModel(text_enc, img_enc, latent_size, hidden_size, 1)
     return model
