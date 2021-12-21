@@ -639,7 +639,7 @@ class BertEncoderWrapper(nn.Module):
 
     def forward(self, inputs):
         ss, n_seqs, bert_inputs = inputs['set_size'], inputs['n_seqs'], inputs['inputs']
-        encoded_seqs = self.bert(**bert_inputs)[0]
+        encoded_seqs = self.bert(**bert_inputs).last_hidden_state
         if n_seqs == 1:
             out = encoded_seqs[:,0].reshape(-1, ss, encoded_seqs.size(-1))
         else:
