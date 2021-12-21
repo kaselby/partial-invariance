@@ -117,7 +117,7 @@ class BERTEncoder(nn.Module):
         self.proj = nn.Linear(bert.config.hidden_size, latent_size)
 
     def forward(self, inputs):
-        return self.bert(**inputs).last_hidden_state[:,0]
+        return self.proj(self.bert(**inputs).last_hidden_state[:,0])
 
 class LSTMEncoder(nn.Module):
     def __init__(self, lstm):
