@@ -100,19 +100,19 @@ def collate_with_padding(batch):
     return (torch.stack(imgs, 0), packed_text), torch.stack(labels, dim=0).float()
 
 class CaptionMatchingDataset(IterableDataset):
-    def __init__(self, dataset, embeddings):
+    def __init__(self, dataset, embeddings, N=-1):
         self.dataset=dataset
+        self.N = len(self.dataset) if N <= 0 else N
         self.embeddings = embeddings
 
     def __iter__(self, p=0.5):
-        N = len(self.dataset)
         indices = torch.randperm(N)
         aligned = (torch.rand(N) > p)
         unaligned_indices = torch.nonzero(aligned.logical_not())
         unaligned_pairs = torch.cat([unaligned_indices, unaligned_indices.roll(-1, dims=0)], 1)
         unaligned_map = {unaligned_pairs[i,0].item():unaligned_pairs[i,1].item() for i in range(unaligned_pairs.size(0))}
 
-        for i in range(N):
+        for i in range(self.N):
             j = indices[i]
             imgs, captions = self.dataset[j]
             if not aligned[j].item():
