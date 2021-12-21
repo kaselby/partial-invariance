@@ -27,3 +27,20 @@ if __name__ == '__main__':
         plt.yscale("log")
     
     plt.show()
+
+
+import matplotlib
+
+matplotlib.use('Qt5Agg')
+
+import matplotlib.pyplot as plt
+
+from train_coco import load_caption_data
+
+train,test=load_caption_data("coco/images","coco/annotations")
+
+def show(i):
+    img,text=train[i]
+    print(text)
+    plt.imshow(  img.permute(1, 2, 0)  )
+    plt.show()
