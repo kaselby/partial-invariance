@@ -120,7 +120,7 @@ class CaptionMatchingDataset(IterableDataset):
             yield (imgs, process_captions(self.embeddings, captions)), aligned[j]
     
     def __len__(self):
-        return len(self.dataset)
+        return self.N
 
 
 
