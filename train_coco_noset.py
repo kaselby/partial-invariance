@@ -79,7 +79,7 @@ class BERTProcessor(Processor):
         self.tokenizer = tokenizer
     
     def collate_text(self, text_batch):
-        return tokenizer([captions[0] for captions in batch], padding=True, truncation=True, return_tensors='pt')
+        return tokenizer([captions[0] for captions in text_batch], padding=True, truncation=True, return_tensors='pt')
 
 
 def load_caption_data(imgdir, anndir):
