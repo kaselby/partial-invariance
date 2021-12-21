@@ -67,7 +67,7 @@ class MetaDatasetGenerator():
             Y.append(torch.stack(Y_j, 0))
         X = torch.stack(X, 0)
         Y = torch.stack(Y, 0)
-        return (X.to(self.device),Y.to(self.device)), aligned.to(self.device)
+        return (X.to(self.device),Y.to(self.device)), aligned.to(self.device).float()
 
     def __call__(self, *args, **kwargs):
         return self._generate(*args, **kwargs)
