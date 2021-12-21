@@ -182,7 +182,6 @@ if __name__ == '__main__':
             'num_heads':args.num_heads,
             #'dropout':args.dropout,
             'equi':False,
-            'weight_sharing': args.weight_sharing
         }
         set_model = NaiveMultiSetModel(args.latent_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
     elif args.model == 'pine':
