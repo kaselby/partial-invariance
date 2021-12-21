@@ -118,7 +118,7 @@ def evaluate(model, eval_dataset, steps, batch_size=64, data_kwargs={}):
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('run_name', type=str)
-    parser.add_argument('--model', type=str, default='csab', choices=['csab', 'rn', 'pine'])
+    parser.add_argument('--model', type=str, default='csab', choices=['csab', 'rn', 'pine', 'naive'])
     parser.add_argument('--checkpoint_dir', type=str, default="/checkpoint/kaselby")
     parser.add_argument('--checkpoint_name', type=str, default=None)
     parser.add_argument('--num_blocks', type=int, default=2)
@@ -174,8 +174,19 @@ if __name__ == '__main__':
             'equi':False
         }
         set_model = MultiSetTransformer(args.latent_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
+    elif args.model == 'naive':
+        model_kwargs={
+            'ln':True,
+            'remove_diag':False,
+            'num_blocks':args.num_blocks,
+            'num_heads':args.num_heads,
+            #'dropout':args.dropout,
+            'equi':False,
+            'weight_sharing': args.weight_sharing
+        }
+        set_model = NaiveMultiSetModel(args.latent_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
     elif args.model == 'pine':
-        set_model = PINE(args.latent_size, args.latent_size/4, 16, 2, args.hidden_size, 1)
+        set_model = PINE(args.latent_size, int(args.latent_size/4), 16, 2, args.hidden_size, 1)
     else:
         raise NotImplementedError("Model type not recognized.")
     model = make_model(set_model, text_model=args.text_model, img_model=args.img_model, embed_dim=args.embed_dim).to(device)
