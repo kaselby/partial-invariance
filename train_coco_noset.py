@@ -47,9 +47,9 @@ def preprocess_text(document):
         return preprocessed_text
 
 def load_caption_data(imgdir, anndir):
-    #transforms = T.Compose([T.Resize(256), T.CenterCrop(224), T.ToTensor(), T.Normalize(mean=[0.485, 0.456, 0.406],
-    #                             std=[0.229, 0.224, 0.225])])
-    transforms = T.ToTensor()
+    transforms = T.Compose([T.Resize(256), T.CenterCrop(224), T.ToTensor(), T.Normalize(mean=[0.485, 0.456, 0.406],
+                                 std=[0.229, 0.224, 0.225])])
+    #transforms = T.ToTensor()
     train_dataset = CocoCaptions(root=os.path.join(imgdir, "train2014"), annFile=os.path.join(anndir, "captions_train2014.json"), transform=transforms)
     val_dataset = CocoCaptions(root=os.path.join(imgdir, "val2014"), annFile=os.path.join(anndir, "captions_val2014.json"), transform=transforms)
 
