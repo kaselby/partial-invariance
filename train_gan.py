@@ -225,9 +225,9 @@ if __name__ == '__main__':
         raise NotImplementedError
     discriminator = MultiSetImageModel(encoder, set_model).to(device)
 
-    train_generator = MetaDatasetGenerator(split=Split.TRAIN)
-    val_generator = MetaDatasetGenerator(split=Split.VALID)
-    test_generator = MetaDatasetGenerator(split=Split.TEST)
+    train_generator = MetaDatasetGenerator(split=Split.TRAIN, device=device)
+    val_generator = MetaDatasetGenerator(split=Split.VALID, device=device)
+    test_generator = MetaDatasetGenerator(split=Split.TEST, device=device)
     
     batch_size = args.batch_size
     steps = args.steps
