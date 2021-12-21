@@ -6,6 +6,7 @@ from train_omniglot import ConvEncoder
 
 import torchvision
 from torchvision.datasets import CocoCaptions
+from torchvision.models import resnet101
 import torchvision.transforms as T
 
 import os
@@ -84,6 +85,9 @@ def build_model(latent_size, hidden_size, embed_size=300):
     text_enc = nn.LSTM(embed_size, latent_size, batch_first=True, bidirectional=True)
     img_enc = ConvEncoder.make_coco_model(latent_size)
 
+    resnet = resnet101(pretrained=True)
+    resnet.fc=nn.Linear(2048, latent_size)
+
     model = CocoMatchingModel(text_enc, img_enc, latent_size, hidden_size, 1)
     return model
 
@@ -153,9 +157,9 @@ def train(model, optimizer, train_dataset, val_dataset, epochs, batch_size, devi
 if __name__ == "__main__":
     lr = 1e-4
     bs = 64
-    ls = 256
-    hs = 512
-    epochs = 10
+    ls = 512
+    hs = 1024
+    epochs = 5
     embed_dim=300
     embed_path="cc.en.300.bin"
     coco_path="./coco"
