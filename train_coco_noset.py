@@ -146,7 +146,7 @@ def train(model, optimizer, train_dataset, val_dataset, epochs, batch_size, devi
                 yhat = model(imgs.to(device), captions.to(device))
                 loss = criterion(yhat.squeeze(-1), aligned.to(device))
                 val_loss += loss.item()
-                acc += torch.eq((yhat >= 0), aligned.to(device)).sum().item()
+                acc += torch.eq((yhat.squeeze(-1) >= 0), aligned.to(device)).sum().item()
         print("Epoch: %d\tTraining Loss:%f\tValidation Loss:%f\tValidation Accuracy:%f" % (i, train_loss/len(train_loader), val_loss/len(val_loader), acc/len(val_dataset)))
 
 
