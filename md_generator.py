@@ -29,7 +29,7 @@ class MetaDatasetGenerator():
             datasets_by_class = reader.construct_class_datasets()
             if len(datasets_by_class) > 0:
                 split_classes = dataset_spec.get_classes(self.split)
-                datasets_by_class = [x for i, x in enumerate(datasets_by_class) if dataset_spec.images_per_class[split_classes[i]] >= min_class_examples]
+                datasets_by_class = [x for i, x in enumerate(datasets_by_class) if dataset_spec.get_total_images_per_class(split_classes[i]) >= min_class_examples]
                 datasets.append(datasets_by_class)
         return datasets
 
