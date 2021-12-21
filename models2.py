@@ -329,7 +329,7 @@ class SetTransformer(nn.Module):
 
 class MultiSetTransformer(nn.Module):
     def __init__(self, input_size, latent_size, hidden_size, output_size, num_heads=4, num_blocks=2, remove_diag=False, ln=False, equi=False, 
-            nn_attn=False, weight_sharing='none', k_neighbours=5, dropout=0.1, num_inds=-1):
+            nn_attn=False, weight_sharing='none', k_neighbours=5, dropout=0.1, num_inds=-1, decoder_layers=0):
         super(MultiSetTransformer, self).__init__()
         if equi:
             input_size = 1
@@ -344,14 +344,25 @@ class MultiSetTransformer(nn.Module):
                 equi=equi, nn_attn=nn_attn, weight_sharing=weight_sharing, dropout=dropout) for i in range(num_blocks)])
         self.pool_x = PMA(latent_size, hidden_size, num_heads, 1, ln=ln)
         self.pool_y = PMA(latent_size, hidden_size, num_heads, 1, ln=ln)
-        self.dec = nn.Sequential(
-                #SAB(dim_hidden, dim_hidden, num_heads, ln=ln),
-                #SAB(dim_hidden, dim_hidden, num_heads, ln=ln),
-                nn.Linear(2*latent_size, output_size),)
+        self.dec = self._make_decoder(latent_size, hidden_size, output_size, decoder_layers)
         self.remove_diag = remove_diag
         self.equi=equi
         self.nn_attn = nn_attn
         self.k_neighbours = k_neighbours
+
+    def _make_decoder(self, latent_size, hidden_size, output_size, n_layers):
+        if n_layers == 0:
+            return nn.Linear(2*latent_size, output_size)
+        else:
+            hidden_layers = []
+            for _ in range(n_layers-1): 
+                hidden_layers += [nn.Linear(hidden_size, hidden_size), nn.ReLU()]
+            return nn.Sequential(
+                nn.Linear(2*latent_size, hidden_size),
+                nn.ReLU(),
+                *hidden_layers,
+                nn.Linear(hidden_size, output_size)
+            )
 
     def forward(self, X, Y, masks=None):
         ZX, ZY = X, Y
