@@ -391,12 +391,20 @@ class NaiveMultiSetModel(nn.Module):
     def __init__(self, input_size, latent_size, hidden_size, output_size, num_blocks, num_heads, remove_diag=False, ln=False, equi=False, weight_sharing='none'):
         super().__init__()
         if weight_sharing == 'none':
-            self.encoder1 = SetTransformer(input_size, latent_size, hidden_size, latent_size, num_heads, num_blocks, remove_diag, ln, equi)
-            self.encoder2 = SetTransformer(input_size, latent_size, hidden_size, latent_size, num_heads, num_blocks, remove_diag, ln, equi)
+            self.encoder1 = nn.Sequential(*[SAB(input_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, equi=equi) for _ in range(num_blocks)])
+            self.encoder2 = nn.Sequential(*[SAB(input_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, equi=equi) for _ in range(num_blocks)])
+            self.pool1 = PMA(latent_size, hidden_size, num_heads, 1, ln=ln)
+            self.pool2 = PMA(latent_size, hidden_size, num_heads, 1, ln=ln)
+            #self.encoder1 = SetTransformer(input_size, latent_size, hidden_size, latent_size, num_heads, num_blocks, remove_diag, ln, equi)
+            #self.encoder2 = SetTransformer(input_size, latent_size, hidden_size, latent_size, num_heads, num_blocks, remove_diag, ln, equi)
         else:
-            encoder = SetTransformer(input_size, latent_size, hidden_size, latent_size, num_heads, num_blocks, remove_diag, ln, equi)
+            #encoder = SetTransformer(input_size, latent_size, hidden_size, latent_size, num_heads, num_blocks, remove_diag, ln, equi)
+            encoder = nn.Sequential(*[SAB(input_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, equi=equi) for _ in range(num_blocks)])
+            pool = PMA(latent_size, hidden_size, num_heads, 1, ln=ln)
             self.encoder1 = encoder
             self.encoder2 = encoder
+            self.pool1 = pool
+            self.pool2 = pool
         self.decoder = nn.Sequential(
             nn.Linear(2*latent_size, hidden_size),
             nn.Linear(hidden_size, output_size)
@@ -405,6 +413,8 @@ class NaiveMultiSetModel(nn.Module):
     def forward(self, X, Y):
         ZX = self.encoder1(X)
         ZY = self.encoder2(Y)
+        ZX = self.pool1(ZX)
+        ZY = self.pool2(ZY)
         out = self.decoder(torch.cat([ZX, ZY], dim=-1))
         return out.squeeze(-1)
 
