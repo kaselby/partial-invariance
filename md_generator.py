@@ -35,10 +35,10 @@ class MetaDatasetGenerator():
 
     @profile
     def _generate(self, batch_size, set_size=(10,15)):
-        def process_image(imgdict):
-            return self.transforms(parse_record(imgdict)['image'])
-        def sample_dataset(dataset, data_class, n_samples):
-            return [process_image(next(self.datasets_by_class[dataset][data_class])) for _ in range(n_samples)]
+        #def process_image(imgdict):
+        #    return self.transforms(parse_record(imgdict)['image'])
+        #def sample_dataset(dataset, data_class, n_samples):
+        #    return [process_image()) for _ in range(n_samples)]
 
         aligned = (torch.rand(batch_size) < self.p_aligned)
         n_samples = torch.randint(*set_size, (1,)).item()
@@ -61,8 +61,12 @@ class MetaDatasetGenerator():
                     dataset1, dataset2 = dataset1.item(), dataset2.item()
                     class1 = torch.randint(len(self.datasets_by_class[dataset1]), (1,)).item()
                     class2 = torch.randint(len(self.datasets_by_class[dataset2]), (1,)).item()
-            X_j = sample_dataset(dataset1, class1, n_samples)
-            Y_j = sample_dataset(dataset2, class2, n_samples)
+            X_j, Y_j = [], []
+            for _ in range(n_samples):
+                X_img = next(self.datasets_by_class[dataset1][class1])
+                X_j.append(self.transforms(parse_record(X_img)['image']))
+                Y_img = next(self.datasets_by_class[dataset2][class2])
+                Y_j.append(self.transforms(parse_record(Y_img)['image']))
             X.append(torch.stack(X_j, 0))
             Y.append(torch.stack(Y_j, 0))
         X = torch.stack(X, 0)
