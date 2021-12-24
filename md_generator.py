@@ -38,8 +38,7 @@ class MetaDatasetGenerator():
         def process_image(imgdict):
             return self.transforms(parse_record(imgdict)['image'])
         def sample_dataset(dataset, data_class, n_samples):
-            data_iter = iter(self.datasets_by_class[dataset][data_class])
-            return [process_image(next(data_iter)) for _ in range(n_samples)]
+            return [process_image(next(self.datasets_by_class[dataset][data_class])) for _ in range(n_samples)]
 
         aligned = (torch.rand(batch_size) < self.p_aligned)
         n_samples = torch.randint(*set_size, (1,)).item()
