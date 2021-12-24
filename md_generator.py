@@ -48,7 +48,7 @@ class MetaDatasetGenerator():
         try:
             sample_dic = next(self.datasets_by_class[dataset_id][class_id])
         except (StopIteration, TypeError) as e:
-            self.datasets_by_class[class_id] = cycle_(self.datasets_by_class[dataset_id][class_id])
+            self.datasets_by_class[dataset_id][class_id] = cycle_(self.datasets_by_class[dataset_id][class_id])
             sample_dic = next(self.datasets_by_class[dataset_id][class_id])
 
         return sample_dic
