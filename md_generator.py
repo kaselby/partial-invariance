@@ -9,6 +9,16 @@ import os
 DATASET_ROOT = "/ssd003/projects/meta-dataset"
 ALL_DATASETS=["aircraft", "cu_birds", "dtd", "fungi", "ilsvrc_2012", "mscoco", "omniglot", "quickdraw", "traffic_sign", "vgg_flower"]
 
+def cycle_(iterable):
+    # Creating custom cycle since itertools.cycle attempts to save all outputs in order to
+    # re-cycle through them, creating amazing memory leak
+    iterator = iter(iterable)
+    while True:
+        try:
+            yield next(iterator)
+        except StopIteration:
+            iterator = iter(iterable)
+
 
 class MetaDatasetGenerator():
     def __init__(self, image_size=84, p_aligned=0.5, p_sameset=0.5, dataset_path=DATASET_ROOT, split=Split.TRAIN, device=torch.device('cpu')):
@@ -26,12 +36,30 @@ class MetaDatasetGenerator():
         for dataset in ALL_DATASETS:
             dataset_spec = dataset_spec_lib.load_dataset_spec(os.path.join(DATASET_ROOT, dataset))
             reader = Reader(dataset_spec, self.split, False, 0) 
-            datasets_by_class = reader.construct_class_datasets()
+            class_datasets = reader.construct_class_datasets()
             if len(datasets_by_class) > 0:
                 split_classes = dataset_spec.get_classes(self.split)
-                datasets_by_class = [x for i, x in enumerate(datasets_by_class) if dataset_spec.get_total_images_per_class(split_classes[i]) >= min_class_examples]
-                datasets.append(datasets_by_class)
+                class_datasets = [x for i, x in enumerate(class_datasets) if dataset_spec.get_total_images_per_class(split_classes[i]) >= min_class_examples]
+                datasets.append(class_datasets)
         return datasets
+
+    def _get_next(self, dataset_id, class_id):
+        try:
+            sample_dic = next(self.datasets_by_class[dataset_id][class_id])
+        except (StopIteration, TypeError) as e:
+            self.datasets_by_class[class_id] = cycle_(self.datasets_by_class[dataset_id][class_id])
+            sample_dic = next(self.datasets_by_class[dataset_id][class_id])
+
+        return sample_dic
+
+    def _generate_set(self, dataset_id, class_id, n_samples):
+        set_data = []
+        for i in range(n_samples):
+            sample_dic = self._get_next(dataset_id, class_id)
+            sample_dic = parse_record(sample_dic)
+            transformed_image = self.transforms(sample_dic['image'])
+            set_data.append(transformed_image)
+        return set_data
 
     @profile
     def _generate(self, batch_size, set_size=(10,15)):
@@ -61,12 +89,8 @@ class MetaDatasetGenerator():
                     dataset1, dataset2 = dataset1.item(), dataset2.item()
                     class1 = torch.randint(len(self.datasets_by_class[dataset1]), (1,)).item()
                     class2 = torch.randint(len(self.datasets_by_class[dataset2]), (1,)).item()
-            X_j, Y_j = [], []
-            for _ in range(n_samples):
-                X_img = next(self.datasets_by_class[dataset1][class1])
-                X_j.append(self.transforms(parse_record(X_img)['image']))
-                Y_img = next(self.datasets_by_class[dataset2][class2])
-                Y_j.append(self.transforms(parse_record(Y_img)['image']))
+            X_j = self._generate_set(dataset1, class1, n_samples)
+            Y_j = self._generate_set(dataset2, class2, n_samples)
             X.append(torch.stack(X_j, 0))
             Y.append(torch.stack(Y_j, 0))
         X = torch.stack(X, 0)
