@@ -43,6 +43,7 @@ class MetaDatasetGenerator():
                 datasets.append(class_datasets)
         return datasets
 
+    @profile
     def _get_next(self, dataset_id, class_id):
         try:
             sample_dic = next(self.datasets_by_class[dataset_id][class_id])
@@ -52,6 +53,7 @@ class MetaDatasetGenerator():
 
         return sample_dic
 
+    @profile
     def _generate_set(self, dataset_id, class_id, n_samples):
         set_data = []
         for i in range(n_samples):
