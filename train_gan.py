@@ -70,10 +70,11 @@ def train_adv(discriminator, generator, d_opt, g_opt, dataset, steps, device, se
     return discriminator, generator, d_losses, g_losses
 
 @profile
-def train_disc(model, optimizer, train_dataset, val_dataset, test_dataset, steps, batch_size=64, eval_every=500, save_every=2000, eval_steps=100, checkpoint_dir=None, data_kwargs={}):
+def train_disc(model, optimizer, train_dataset, val_dataset, test_dataset, steps, batch_size=64, eval_every=500, save_every=2000, 
+    eval_steps=100, episode_classes=100, episode_datasets=5, episode_length=250, checkpoint_dir=None, data_kwargs={}):
     train_losses = []
     eval_accs = []
-    initial_step=1
+    step=0
     if checkpoint_dir is not None:
         if not os.path.exists(checkpoint_dir):
             os.makedirs(checkpoint_dir)
@@ -81,37 +82,45 @@ def train_disc(model, optimizer, train_dataset, val_dataset, test_dataset, steps
             checkpoint_path = os.path.join(checkpoint_dir, "checkpoint.pt")
             if os.path.exists(checkpoint_path):
                 load_dict = torch.load(checkpoint_path)
-                model, optimizer, initial_step, train_losses, eval_accs = load_dict['model'], load_dict['optimizer'], load_dict['step'], load_dict['losses'], load_dict['accs']
+                model, optimizer, step, train_losses, eval_accs = load_dict['model'], load_dict['optimizer'], load_dict['step'], load_dict['losses'], load_dict['accs']
     
+    n_episodes = (steps = initial_step) / episode_length
     avg_loss = 0
     loss_fct = nn.BCEWithLogitsLoss()
-    for i in tqdm.tqdm(range(steps)):
-        optimizer.zero_grad()
+    for j in range(n_episodes):
+        episode = train_dataset.get_episode(episode_classes, episode_datasets)
+        for i in tqdm.tqdm(range(episode_length)):
+            optimizer.zero_grad()
 
-        (X,Y), target = train_dataset(batch_size, **data_kwargs)
+            (X,Y), target = episode(batch_size, **data_kwargs)
 
-        out = model(X,Y)
-        loss = loss_fct(out.squeeze(-1), target)
-        loss.backward()
-        optimizer.step()
+            out = model(X,Y)
+            loss = loss_fct(out.squeeze(-1), target)
+            loss.backward()
+            optimizer.step()
 
-        avg_loss += loss.item()
-        train_losses.append(loss.item())
+            avg_loss += loss.item()
+            train_losses.append(loss.item())
 
-        if i % eval_every == 0 and i > 0:
-            acc = eval_disc(model, val_dataset, eval_steps, batch_size, data_kwargs)
-            eval_accs.append(acc)
-            avg_loss /= eval_every
-            print("Step: %d\tLoss: %f\tAccuracy: %f" % (i, avg_loss, acc))
-            avg_loss = 0
-
-        if i % save_every == 0 and i > 0 and checkpoint_dir is not None:
-            checkpoint_path = os.path.join(checkpoint_dir, "checkpoint.pt")
-            if os.path.exists(checkpoint_path):
-                os.remove(checkpoint_path)
-            torch.save({'model':model,'optimizer':optimizer, 'step': i, 'losses':train_losses, 'accs': eval_accs}, checkpoint_path)
+            if step >= steps:
+                break
+            elif step > 0:
+                if step % eval_every == 0:
+                    acc = eval_disc(model, val_dataset.get_episode(episode_classes, episode_datasets), eval_steps, batch_size, data_kwargs)
+                    eval_accs.append(acc)
+                    avg_loss /= eval_every
+                    print("Step: %d\tLoss: %f\tAccuracy: %f" % (i, avg_loss, acc))
+                    avg_loss = 0
+                if checkpoint_dir is not None and step % save_every == 0:
+                    checkpoint_path = os.path.join(checkpoint_dir, "checkpoint.pt")
+                    if os.path.exists(checkpoint_path):
+                        os.remove(checkpoint_path)
+                    torch.save({'model':model,'optimizer':optimizer, 'step': step, 'losses':train_losses, 'accs': eval_accs}, checkpoint_path)
+        else:
+            continue
+        break
     
-    test_acc = eval_disc(model, test_dataset, eval_steps, batch_size, data_kwargs)
+    test_acc = eval_disc(model, test_dataset.get_episode(episode_classes, episode_datasets), eval_steps, batch_size, data_kwargs)
     
     return model, (train_losses, accs, test_acc)
 
@@ -188,6 +197,9 @@ def parse_args():
     parser.add_argument('--basedir', type=str, default="final-runs")
     parser.add_argument('--eval_every', type=int, default=500)
     parser.add_argument('--eval_steps', type=int, default=200)
+    parser.add_argument('--episode_classes', type=int, default=100)
+    parser.add_argument('--episode_datasets', type=int, default=5)
+    parser.add_argument('--episode_length', type=int, default=250)
     parser.add_argument('--weight_sharing', type=str, choices=['none', 'cross', 'sym'], default='none')
     return parser.parse_args()
 
@@ -259,7 +271,8 @@ if __name__ == '__main__':
     optimizer = torch.optim.Adam(discriminator.parameters(), args.lr)
     checkpoint_dir = os.path.join(args.checkpoint_dir, args.checkpoint_name) if args.checkpoint_name is not None else None
     model, (losses, accs, test_acc) = train_disc(discriminator, optimizer, train_generator, val_generator, test_generator, steps, 
-        batch_size=batch_size, checkpoint_dir=checkpoint_dir, data_kwargs=data_kwargs, eval_every=eval_every, eval_steps=eval_steps)
+        batch_size=batch_size, checkpoint_dir=checkpoint_dir, data_kwargs=data_kwargs, eval_every=eval_every, eval_steps=eval_steps,
+        episode_classes=args.episode_classes, episode_datasets=args.episode_datasets, episode_length=args.episode_length)
 
     print("Test Accuracy:", test_acc)
 

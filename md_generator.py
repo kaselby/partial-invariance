@@ -21,10 +21,10 @@ def cycle_(iterable):
 
 
 class MetaDatasetGenerator():
-    def __init__(self, image_size=84, p_aligned=0.5, p_sameset=0.5, dataset_path=DATASET_ROOT, split=Split.TRAIN, device=torch.device('cpu')):
+    def __init__(self, image_size=84, p_aligned=0.5, dataset_path=DATASET_ROOT, split=Split.TRAIN, device=torch.device('cpu')):
         self.split=split
         self.p_aligned = p_aligned
-        self.p_sameset = p_sameset
+        #self.p_sameset = p_sameset
         self.image_size = image_size
         self.device=device
         self.datasets_by_class = self._build_datasets()
@@ -43,6 +43,21 @@ class MetaDatasetGenerator():
                 datasets.append(class_datasets)
         return datasets
 
+    def get_episode(self, n_classes, n_datasets):
+        class_datasets=[]
+        datasets = torch.multinomial(torch.ones(self.N), n_datasets) if n_datasets < self.N else torch.arange(self.N)
+        n_datasets = len(datasets)
+        classes_per_dataset = (torch.distributions.Dirichlet(torch.ones(n_datasets)/n_datasets).sample() * n_classes).round()
+        for i in range(n_datasets):
+            dataset_i = datasets[i].item()
+            N_i = len(self.datasets_by_class[dataset_i])
+            classes_i = torch.multinomial(torch.ones(N_i), classes_per_dataset[i].item())
+            class_datasets += [self.datasets_by_class[dataset_i][j.item()] for j in classes_i]
+        return Episode(class_datasets, self.transforms, p_aligned=self.p_aligned, device=self.device)
+
+        
+
+'''
     @profile
     def _get_next(self, dataset_id, class_id):
         try:
@@ -101,3 +116,51 @@ class MetaDatasetGenerator():
 
     def __call__(self, *args, **kwargs):
         return self._generate(*args, **kwargs)
+'''
+
+
+class Episode():
+    def __init__(self, datasets, transforms, p_aligned=0.5, device=torch.device('cpu')):
+        self.datasets = datasets
+        self.transforms = transforms
+        self.p_aligned = p_aligned
+        self.device = device
+
+    @profile
+    def _get_next(self, class_id):
+        try:
+            sample_dic = next(self.datasets[class_id])
+        except (StopIteration, TypeError) as e:
+            self.datasets[class_id] = cycle_(self.datasets[class_id])
+            sample_dic = next(self.datasets[class_id])
+        return sample_dic
+
+    @profile
+    def _generate_set(self, class_id, n_samples):
+        set_data = []
+        for i in range(n_samples):
+            sample_dic = self._get_next(class_id)
+            sample_dic = parse_record(sample_dic)
+            transformed_image = self.transforms(sample_dic['image'])
+            set_data.append(transformed_image)
+        return set_data
+
+    def generate(self, batch_size, set_size=(10,15)):
+        aligned = (torch.rand(batch_size) < self.p_aligned)
+        n_samples = torch.randint(*set_size, (1,)).item()
+        X = []
+        Y = []
+        for j in range(batch_size):
+            if aligned[j]:
+                class1 = torch.randint(len(self.datasets))
+                class2 = class1
+            else:
+                class1, class2 = torch.multinomial(torch.ones(len(self.datasets), 2)
+            X_j = self._generate_set(dataset1, class1, n_samples)
+            Y_j = self._generate_set(dataset2, class2, n_samples)
+            X.append(torch.stack(X_j, 0))
+            Y.append(torch.stack(Y_j, 0))
+        X = torch.stack(X, 0)
+        Y = torch.stack(Y, 0)
+        return (X.to(self.device),Y.to(self.device)), aligned.to(self.device).float()
+            
