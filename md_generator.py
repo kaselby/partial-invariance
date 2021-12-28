@@ -47,7 +47,7 @@ class MetaDatasetGenerator():
         class_datasets=[]
         datasets = torch.multinomial(torch.ones(self.N), n_datasets) if n_datasets < self.N else torch.arange(self.N)
         n_datasets = len(datasets)
-        classes_per_dataset = (torch.distributions.Dirichlet(torch.ones(n_datasets)/n_datasets).sample() * n_classes).round()
+        classes_per_dataset = (torch.distributions.Dirichlet(torch.ones(n_datasets)/n_datasets).sample() * n_classes).round().long()
         for i in range(n_datasets):
             dataset_i = datasets[i].item()
             N_i = len(self.datasets_by_class[dataset_i])
