@@ -84,7 +84,7 @@ def train_disc(model, optimizer, train_dataset, val_dataset, test_dataset, steps
                 load_dict = torch.load(checkpoint_path)
                 model, optimizer, step, train_losses, eval_accs = load_dict['model'], load_dict['optimizer'], load_dict['step'], load_dict['losses'], load_dict['accs']
     
-    n_episodes = int((steps - initial_step) / episode_length)
+    n_episodes = int((steps - step) / episode_length)
     avg_loss = 0
     loss_fct = nn.BCEWithLogitsLoss()
     while True:
