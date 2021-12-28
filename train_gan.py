@@ -69,7 +69,7 @@ def train_adv(discriminator, generator, d_opt, g_opt, dataset, steps, device, se
 
     return discriminator, generator, d_losses, g_losses
 
-@profile
+#@profile
 def train_disc(model, optimizer, train_dataset, val_dataset, test_dataset, steps, batch_size=64, eval_every=500, save_every=2000, 
     eval_steps=100, episode_classes=100, episode_datasets=5, episode_length=250, checkpoint_dir=None, data_kwargs={}):
     train_losses = []
