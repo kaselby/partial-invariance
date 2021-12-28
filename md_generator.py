@@ -49,10 +49,11 @@ class MetaDatasetGenerator():
         n_datasets = len(datasets)
         classes_per_dataset = (torch.distributions.Dirichlet(torch.ones(n_datasets)/n_datasets).sample() * n_classes).round().long()
         for i in range(n_datasets):
-            dataset_i = datasets[i].item()
-            N_i = len(self.datasets_by_class[dataset_i])
-            classes_i = torch.multinomial(torch.ones(N_i), classes_per_dataset[i].item())
-            class_datasets += [self.datasets_by_class[dataset_i][j.item()] for j in classes_i]
+            if classes_per_dataset[i] > 0:
+                dataset_i = datasets[i].item()
+                N_i = len(self.datasets_by_class[dataset_i])
+                classes_i = torch.multinomial(torch.ones(N_i), classes_per_dataset[i].item())
+                class_datasets += [self.datasets_by_class[dataset_i][j.item()] for j in classes_i]
         return Episode(class_datasets, self.transforms, p_aligned=self.p_aligned, device=self.device)
 
         
