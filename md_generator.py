@@ -126,7 +126,7 @@ class Episode():
         self.p_aligned = p_aligned
         self.device = device
 
-    @profile
+    #@profile
     def _get_next(self, class_id):
         try:
             sample_dic = next(self.datasets[class_id])
@@ -135,7 +135,7 @@ class Episode():
             sample_dic = next(self.datasets[class_id])
         return sample_dic
 
-    @profile
+    #@profile
     def _generate_set(self, class_id, n_samples):
         set_data = []
         for i in range(n_samples):
