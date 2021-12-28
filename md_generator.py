@@ -155,7 +155,7 @@ class Episode():
                 class1 = torch.randint(len(self.datasets))
                 class2 = class1
             else:
-                class1, class2 = torch.multinomial(torch.ones(len(self.datasets), 2)
+                class1, class2 = torch.multinomial(torch.ones(len(self.datasets)), 2)
             X_j = self._generate_set(dataset1, class1, n_samples)
             Y_j = self._generate_set(dataset2, class2, n_samples)
             X.append(torch.stack(X_j, 0))
