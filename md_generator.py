@@ -52,7 +52,7 @@ class MetaDatasetGenerator():
         for i in range(n_datasets):
             dataset_i = datasets[i].item()
             n_i = len(self.datasets_by_class[dataset_i])
-            m_i = torch.distributions.Binomial(n_i, torch.tensor([n_classes/n_datasets/n_i])).sample().item()
+            m_i = torch.distributions.Binomial(n_i, torch.tensor([n_classes/n_datasets/n_i])).sample().int().item()
             if m_i > 0:
                 classes_i = torch.multinomial(torch.ones(n_i), m_i)
                 class_datasets += [self.datasets_by_class[dataset_i][j.item()] for j in classes_i]
