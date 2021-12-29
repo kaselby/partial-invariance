@@ -163,7 +163,7 @@ class Episode():
             set_data.append(transformed_image)
         return set_data
 
-    def generate(self, batch_size, set_size=(10,15)):
+    def _generate(self, batch_size, set_size=(10,15)):
         aligned = (torch.rand(batch_size) < self.p_aligned)
         n_samples = torch.randint(*set_size, (1,)).item()
         X = []
