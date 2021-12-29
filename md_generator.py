@@ -170,12 +170,12 @@ class Episode():
         Y = []
         for j in range(batch_size):
             if aligned[j]:
-                class1 = torch.randint(len(self.datasets))
+                class1 = torch.randint(len(self.datasets), (1,))
                 class2 = class1
             else:
                 class1, class2 = torch.multinomial(torch.ones(len(self.datasets)), 2)
-            X_j = self._generate_set(class1, n_samples)
-            Y_j = self._generate_set(class2, n_samples)
+            X_j = self._generate_set(class1.item(), n_samples)
+            Y_j = self._generate_set(class2.item(), n_samples)
             X.append(torch.stack(X_j, 0))
             Y.append(torch.stack(Y_j, 0))
         X = torch.stack(X, 0)
