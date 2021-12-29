@@ -39,8 +39,9 @@ class MetaDatasetGenerator():
             class_datasets = reader.construct_class_datasets()
             if len(class_datasets) > 0:
                 split_classes = dataset_spec.get_classes(self.split)
-                class_datasets = [x for i, x in enumerate(class_datasets) if dataset_spec.get_total_images_per_class(split_classes[i]) >= min_class_examples]
-                datasets.append(class_datasets)
+                filtered_class_datasets = [x for i, x in enumerate(class_datasets) if dataset_spec.get_total_images_per_class(split_classes[i]) >= min_class_examples]
+                if len(class_datasets) > 0:
+                    datasets.append(class_datasets)
         return datasets
     
     def get_episode(self, n_classes, n_datasets):
