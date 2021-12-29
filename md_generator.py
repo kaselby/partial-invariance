@@ -43,6 +43,7 @@ class MetaDatasetGenerator():
                 datasets.append(class_datasets)
         return datasets
 
+'''
     def get_episode(self, n_classes, n_datasets):
         class_datasets=[]
         datasets = torch.multinomial(torch.ones(self.N), n_datasets) if n_datasets < self.N else torch.arange(self.N)
@@ -53,6 +54,22 @@ class MetaDatasetGenerator():
                 dataset_i = datasets[i].item()
                 N_i = len(self.datasets_by_class[dataset_i])
                 classes_i = torch.multinomial(torch.ones(N_i), classes_per_dataset[i].item())
+                class_datasets += [self.datasets_by_class[dataset_i][j.item()] for j in classes_i]
+        return Episode(class_datasets, self.transforms, p_aligned=self.p_aligned, device=self.device)
+'''
+
+    def get_episode(self, n_classes, n_datasets):
+        class_datasets=[]
+        datasets = torch.multinomial(torch.ones(self.N), n_datasets) if n_datasets < self.N else torch.arange(self.N)
+        n_datasets = len(datasets)
+        
+        N_selected = 0
+        for i in range(n_datasets):
+            dataset_i = datasets[i].item()
+            n_i = len(self.datasets_by_class[dataset_i])
+            m_i = torch.distributions.Binomial(n_i, torch.tensor([n_classes/n_datasets/n_i])).sample().item()
+            if m_i > 0:
+                classes_i = torch.multinomial(torch.ones(n_i), m_i)
                 class_datasets += [self.datasets_by_class[dataset_i][j.item()] for j in classes_i]
         return Episode(class_datasets, self.transforms, p_aligned=self.p_aligned, device=self.device)
 
