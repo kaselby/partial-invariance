@@ -58,6 +58,7 @@ class MetaDatasetGenerator():
             if m_i > 0:
                 classes_i = torch.multinomial(torch.ones(n_i), m_i)
                 class_datasets += [self.datasets_by_class[dataset_i][j.item()] for j in classes_i]
+            N_remaining -= m_i
         return Episode(class_datasets, self.transforms, p_aligned=self.p_aligned, device=self.device)
 
     '''
