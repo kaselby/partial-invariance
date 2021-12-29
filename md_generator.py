@@ -42,22 +42,7 @@ class MetaDatasetGenerator():
                 class_datasets = [x for i, x in enumerate(class_datasets) if dataset_spec.get_total_images_per_class(split_classes[i]) >= min_class_examples]
                 datasets.append(class_datasets)
         return datasets
-
-'''
-    def get_episode(self, n_classes, n_datasets):
-        class_datasets=[]
-        datasets = torch.multinomial(torch.ones(self.N), n_datasets) if n_datasets < self.N else torch.arange(self.N)
-        n_datasets = len(datasets)
-        classes_per_dataset = (torch.distributions.Dirichlet(torch.ones(n_datasets)/n_datasets).sample() * n_classes).round().long()
-        for i in range(n_datasets):
-            if classes_per_dataset[i] > 0:
-                dataset_i = datasets[i].item()
-                N_i = len(self.datasets_by_class[dataset_i])
-                classes_i = torch.multinomial(torch.ones(N_i), classes_per_dataset[i].item())
-                class_datasets += [self.datasets_by_class[dataset_i][j.item()] for j in classes_i]
-        return Episode(class_datasets, self.transforms, p_aligned=self.p_aligned, device=self.device)
-'''
-
+    
     def get_episode(self, n_classes, n_datasets):
         class_datasets=[]
         datasets = torch.multinomial(torch.ones(self.N), n_datasets) if n_datasets < self.N else torch.arange(self.N)
@@ -72,6 +57,21 @@ class MetaDatasetGenerator():
                 classes_i = torch.multinomial(torch.ones(n_i), m_i)
                 class_datasets += [self.datasets_by_class[dataset_i][j.item()] for j in classes_i]
         return Episode(class_datasets, self.transforms, p_aligned=self.p_aligned, device=self.device)
+
+    '''
+    def get_episode(self, n_classes, n_datasets):
+        class_datasets=[]
+        datasets = torch.multinomial(torch.ones(self.N), n_datasets) if n_datasets < self.N else torch.arange(self.N)
+        n_datasets = len(datasets)
+        classes_per_dataset = (torch.distributions.Dirichlet(torch.ones(n_datasets)/n_datasets).sample() * n_classes).round().long()
+        for i in range(n_datasets):
+            if classes_per_dataset[i] > 0:
+                dataset_i = datasets[i].item()
+                N_i = len(self.datasets_by_class[dataset_i])
+                classes_i = torch.multinomial(torch.ones(N_i), classes_per_dataset[i].item())
+                class_datasets += [self.datasets_by_class[dataset_i][j.item()] for j in classes_i]
+        return Episode(class_datasets, self.transforms, p_aligned=self.p_aligned, device=self.device)
+    '''
 
         
 
