@@ -390,6 +390,7 @@ class MultiSetTransformer(nn.Module):
 class NaiveMultiSetModel(nn.Module):
     def __init__(self, input_size, latent_size, hidden_size, output_size, num_blocks, num_heads, remove_diag=False, ln=False, equi=False, weight_sharing='none'):
         super().__init__()
+        self.input_size = input_size
         if weight_sharing == 'none':
             self.encoder1 = nn.Sequential(*[SAB(input_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, equi=equi) for _ in range(num_blocks)])
             self.encoder2 = nn.Sequential(*[SAB(input_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, equi=equi) for _ in range(num_blocks)])
