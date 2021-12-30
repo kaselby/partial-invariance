@@ -111,7 +111,7 @@ def train_disc(model, optimizer, train_dataset, val_dataset, test_dataset, steps
                     acc = eval_disc(model, val_dataset.get_episode(episode_classes, episode_datasets), eval_steps, batch_size, data_kwargs)
                     eval_accs.append(acc)
                     avg_loss /= eval_every
-                    print("Step: %d\tLoss: %f\tAccuracy: %f" % (i, avg_loss, acc))
+                    print("Step: %d\tLoss: %f\tAccuracy: %f" % (step, avg_loss, acc))
                     avg_loss = 0
                 if checkpoint_dir is not None and step % save_every == 0:
                     checkpoint_path = os.path.join(checkpoint_dir, "checkpoint.pt")
@@ -124,7 +124,7 @@ def train_disc(model, optimizer, train_dataset, val_dataset, test_dataset, steps
     
     test_acc = eval_disc(model, test_dataset.get_episode(episode_classes, episode_datasets), eval_steps, batch_size, data_kwargs)
     
-    return model, (train_losses, accs, test_acc)
+    return model, (train_losses, eval_accs, test_acc)
 
 def eval_disc(model, dataset, steps, batch_size, data_kwargs):
     with torch.no_grad():
