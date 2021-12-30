@@ -202,6 +202,7 @@ def parse_args():
     parser.add_argument('--episode_classes', type=int, default=100)
     parser.add_argument('--episode_datasets', type=int, default=5)
     parser.add_argument('--episode_length', type=int, default=250)
+    parser.add_argument('--img_encoder', choices=['cnn','resnet'], default='cnn')
     parser.add_argument('--weight_sharing', type=str, choices=['none', 'cross', 'sym'], default='cross')
     return parser.parse_args()
 
@@ -215,13 +216,20 @@ if __name__ == '__main__':
 
     device = torch.device("cuda")
 
-    layers = [
-        ConvLayer(3, 32, kernel_size=7, stride=2),
-        ConvBlock(32, 32, n_conv=2, pool='max'),
-        ConvBlock(32, 64, n_conv=2,pool='max'),
-        ConvBlock(64, 128, n_conv=2, pool='max')
-    ]
-    encoder = ConvEncoder(layers, 84, args.latent_size)
+    if args.img_encoder == "cnn":
+        image_size=84
+        layers = [
+            ConvLayer(3, 32, kernel_size=7, stride=2),
+            ConvBlock(32, 32, n_conv=2, pool='max'),
+            ConvBlock(32, 64, n_conv=2,pool='max'),
+            ConvBlock(64, 128, n_conv=2, pool='max')
+        ]
+        encoder = ConvEncoder(layers, image_size, args.latent_size)
+    else:
+        image_size=224
+        encoder = torchvision.models.resnet101(pretrained=False)
+        encoder.fc = nn.Linear(2048, args.latent_size)
+
     if args.model == 'csab':
         model_kwargs={
             'ln':True,
@@ -250,9 +258,9 @@ if __name__ == '__main__':
         raise NotImplementedError
     discriminator = MultiSetImageModel(encoder, set_model).to(device)
 
-    train_generator = MetaDatasetGenerator(split=Split.TRAIN, device=device)
-    val_generator = MetaDatasetGenerator(split=Split.VALID, device=device)
-    test_generator = MetaDatasetGenerator(split=Split.TEST, device=device)
+    train_generator = MetaDatasetGenerator(image_size=image_size, split=Split.TRAIN, device=device)
+    val_generator = MetaDatasetGenerator(image_size=image_size, split=Split.VALID, device=device)
+    test_generator = MetaDatasetGenerator(image_size=image_size, split=Split.TEST, device=device)
     
     batch_size = args.batch_size
     steps = args.steps
