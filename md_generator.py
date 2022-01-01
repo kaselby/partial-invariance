@@ -57,7 +57,7 @@ class MetaDatasetGenerator():
             m_i = torch.distributions.Binomial(n_i, torch.tensor([p_i])).sample().int().item()
             if m_i > 0:
                 classes_i = torch.multinomial(torch.ones(n_i), m_i)
-                class_datasets += [self.datasets_by_class[dataset_i][j.item()] for j in classes_i]
+                class_datasets.append([self.datasets_by_class[dataset_i][j.item()] for j in classes_i])
             N_remaining -= m_i
         return Episode(class_datasets, self.transforms, p_aligned=self.p_aligned, device=self.device)
 
@@ -141,23 +141,28 @@ class MetaDatasetGenerator():
 
 
 class Episode():
-    def __init__(self, datasets, transforms, p_aligned=0.5, device=torch.device('cpu')):
+    def __init__(self, datasets, transforms, device=torch.device('cpu')):
         self.datasets = datasets
+        self.sizes = [len(d) for d in datasets]
+        self.flattened_datasets = [x for d in datasets for x in d]
         self.transforms = transforms
-        self.p_aligned = p_aligned
         self.device = device
 
     #@profile
-    def _get_next(self, class_id):
+    def _get_next(self, class_id, dataset_id=None):
+        if dataset_id is None:
+            dataset = self.flattened_datasets[class_id]
+        else:
+            dataset = self.datasets[dataset_id][class_id]
         try:
-            sample_dic = next(self.datasets[class_id])
+            sample_dic = next(dataset)
         except (StopIteration, TypeError) as e:
-            self.datasets[class_id] = cycle_(self.datasets[class_id])
-            sample_dic = next(self.datasets[class_id])
+            self.datasets[class_id] = cycle_(dataset)
+            sample_dic = next(dataset)
         return sample_dic
 
     #@profile
-    def _generate_set(self, class_id, n_samples):
+    def _generate_set_from_class(self, class_id, n_samples):
         set_data = []
         for i in range(n_samples):
             sample_dic = self._get_next(class_id)
@@ -165,25 +170,55 @@ class Episode():
             transformed_image = self.transforms(sample_dic['image'])
             set_data.append(transformed_image)
         return set_data
+    
+    def _generate_set_from_dataset(self, dataset_id, n_samples):
+        set_data = []
+        for i in range(n_samples):
+            class_id = torch.randint(len(self.datasets[dataset_id]))
+            sample_dic = self._get_next(class_id, dataset_id)
+            sample_dic = parse_record(sample_dic)
+            transformed_image = self.transforms(sample_dic['image'])
+            set_data.append(transformed_image)
+        return set_data
 
-    def _generate(self, batch_size, set_size=(10,15)):
-        aligned = (torch.rand(batch_size) < self.p_aligned)
+    def _generate(self, batch_size, set_size=(10,15), p_aligned=0.5, p_dataset=0.3, p_same=0.5, eval=False):
+        dataset_level = (torch.rand(batch_size) < p_aligned)
+        aligned = (torch.rand(batch_size) < p_aligned)
+        same_dataset = (torch.rand(batch_size) < p_same)
         n_samples = torch.randint(*set_size, (1,)).item()
         X = []
         Y = []
         for j in range(batch_size):
-            if aligned[j]:
-                class1 = torch.randint(len(self.datasets), (1,))
-                class2 = class1
+            if dataset_level[j]:
+                if aligned[j]:
+                    dataset1 = torch.randint(len(self.datasets), (1,))
+                    dataset2 = dataset1
+                else:
+                    dataset1, dataset2 = torch.multinomial(torch.ones(len(self.datasets)), 2)
+                    X_j = self._generate_set_from_dataset(dataset1.item(), n_samples)
+                    Y_j = self._generate_set_from_dataset(dataset2.item(), n_samples)
             else:
-                class1, class2 = torch.multinomial(torch.ones(len(self.datasets)), 2)
-            X_j = self._generate_set(class1.item(), n_samples)
-            Y_j = self._generate_set(class2.item(), n_samples)
+                if aligned[j]:
+                    class1 = torch.randint(len(self.flattened_datasets), (1,))
+                    class2 = class1
+                else:
+                    if same_dataset[j]:
+                        dataset = torch.randint(len(self.datasets), (1,)).item()
+                        class1, class2 = torch.multinomial(torch.ones(self.sizes[dataset]), 2)
+                    else:
+                        dataset1, dataset2 = torch.multinomial(torch.ones(len(self.datasets)), 2)
+                        class1 = torch.randint(len(self.datasets[dataset1]), (1,))
+                        class2 = torch.randint(len(self.datasets[dataset2]), (1,))
+                X_j = self._generate_set_from_class(class1.item(), n_samples)
+                Y_j = self._generate_set_from_class(class2.item(), n_samples)
             X.append(torch.stack(X_j, 0))
             Y.append(torch.stack(Y_j, 0))
         X = torch.stack(X, 0)
         Y = torch.stack(Y, 0)
-        return (X.to(self.device),Y.to(self.device)), aligned.to(self.device).float()
+        if eval:
+            return (X.to(self.device),Y.to(self.device)), aligned.to(self.device), (dataset_level, same_dataset)
+        else:
+            return (X.to(self.device),Y.to(self.device)), aligned.to(self.device).float()
 
     def __call__(self, *args, **kwargs):
         return self._generate(*args, **kwargs)

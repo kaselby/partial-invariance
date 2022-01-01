@@ -84,10 +84,10 @@ def train_disc(model, optimizer, train_dataset, val_dataset, test_dataset, steps
                 load_dict = torch.load(checkpoint_path)
                 model, optimizer, step, train_losses, eval_accs = load_dict['model'], load_dict['optimizer'], load_dict['step'], load_dict['losses'], load_dict['accs']
     
-    n_episodes = int((steps - step) / episode_length)
+    n_episodes = math.ceil((steps - step) / episode_length)
     avg_loss = 0
     loss_fct = nn.BCEWithLogitsLoss()
-    while True:
+    for _ in tqdm.tqdm(range(n_episodes))
         episode = train_dataset.get_episode(episode_classes, episode_datasets)
         for i in tqdm.tqdm(range(episode_length)):
             optimizer.zero_grad()
@@ -106,34 +106,100 @@ def train_disc(model, optimizer, train_dataset, val_dataset, test_dataset, steps
 
             if step >= steps:
                 break
-            elif step > 0:
-                if step % eval_every == 0:
-                    acc = eval_disc(model, val_dataset.get_episode(episode_classes, episode_datasets), eval_steps, batch_size, data_kwargs)
-                    eval_accs.append(acc)
-                    avg_loss /= eval_every
-                    print("Step: %d\tLoss: %f\tAccuracy: %f" % (step, avg_loss, acc))
-                    avg_loss = 0
-                if checkpoint_dir is not None and step % save_every == 0:
-                    checkpoint_path = os.path.join(checkpoint_dir, "checkpoint.pt")
-                    if os.path.exists(checkpoint_path):
-                        os.remove(checkpoint_path)
-                    torch.save({'model':model,'optimizer':optimizer, 'step': step, 'losses':train_losses, 'accs': eval_accs}, checkpoint_path)
         else:
+            del episode 
+            # eval
+            acc = eval_disc(model, val_dataset, eval_steps, batch_size, episode_classes, episode_datasets, data_kwargs)
+            eval_accs.append(acc)
+            avg_loss /= eval_every
+            print("Step: %d\tLoss: %f\tAccuracy: %f" % (step, avg_loss, acc))
+            avg_loss = 0
+            
+            # save
+            if checkpoint_dir is not None:
+                checkpoint_path = os.path.join(checkpoint_dir, "checkpoint.pt")
+                if os.path.exists(checkpoint_path):
+                    os.remove(checkpoint_path)
+                torch.save({'model':model,'optimizer':optimizer, 'step': step, 'losses':train_losses, 'accs': eval_accs}, checkpoint_path)
+
             continue
         break
     
-    test_acc = eval_disc(model, test_dataset.get_episode(episode_classes, episode_datasets), eval_steps, batch_size, data_kwargs)
+    test_acc = eval_disc(model, test_dataset, eval_steps, batch_size, episode_classes, episode_datasets, data_kwargs)
     
     return model, (train_losses, eval_accs, test_acc)
 
-def eval_disc(model, dataset, steps, batch_size, data_kwargs):
+
+def eval_disc(model, episode, steps, batch_size, data_kwargs, return_all=False):
+    N = batch_size * steps
     with torch.no_grad():
-        n_correct = 0
-        for i in tqdm.tqdm(range(steps)):
-            (X,Y), target = dataset(batch_size, **data_kwargs)
+        y,yhat,dl,sd=[],[],[],[]
+        for i in range(steps):
+            (X,Y), target, (dataset_level, same_dataset) = episode(batch_size, eval=True, **kwargs)
             out = model(X,Y).squeeze(-1)
-            n_correct += torch.eq((out > 0), target).sum().item()
-    return n_correct / (batch_size * steps)
+            y.append(target)
+            yhat.append(out>0)
+            dl.append(dataset_level)
+            sd.append(same_dataset)
+            #n_correct += torch.eq((out > 0), target).sum().item()
+        y=torch.cat(y, dim=0)
+        yhat=torch.cat(y, dim=0)
+        dl=torch.cat(dl, dim=0)
+        sd=torch.cat(sd, dim=0)
+
+    return summarize_eval(y, yhat, dl, sd, return_all)
+
+
+
+def summarize_eval(y, yhat, dl, sd, return_all=False):
+    correct = y==yhat
+    acc = (y==yhat).sum().item() / N
+    #prec = (y & yhat).sum().item() / yhat.sum().item()
+
+    if not return_all:
+        return acc
+    
+    def get_acc(labels):
+        n = labels.sum().item()
+        return (labels & correct).sum().item() / n, n
+
+    dl_acc, n_dl = get_acc(dl)
+    #dl_pos_acc, n_dl_pos = get_acc(dl & y)
+    #dl_neg_acc, n_dl_neg = get_acc(dl & ~y)
+    cl_acc, n_cl = get_acc(~dl)
+    cl_pos_acc, n_cl_pos = get_acc(~dl & y)
+    cl_neg_acc, n_cl_neg = get_acc(~dl & ~y)
+    cl_neg_sd_acc, n_cl_neg_sd = get_acc(~dl & y & sd)
+    cl_neg_dd_acc, n_cl_neg_dd = get_acc(~dl & ~y & ~sd)
+
+    #dl_prec = (dl & y & yhat).sum().item() / (dl & yhat).sum().item()
+    #cl_prec = (~dl & y & yhat).sum().item() / (~dl & yhat).sum().item()
+
+    return acc, (dl_acc, cl_acc, cl_pos_acc, cl_neg_acc, cl_neg_sd_acc, cl_neg_dd_acc), (N, n_dl, n_cl, n_cl_pos, n_cl_neg, n_cl_neg_sd, n_cl_neg_dd)
+
+def eval_disc(model, dataset, steps, batch_size, episode_classes, episode_datasets, data_kwargs):
+    def eval_episode(episode, **kwargs)
+        n = batch_size * steps
+        with torch.no_grad():
+            y,yhat=[],[]
+            for i in tqdm.tqdm(range(steps)):
+                (X,Y), target = episode(batch_size, **kwargs)
+                out = model(X,Y).squeeze(-1)
+                y.append(target)
+                yhat.append(out>0)
+                #n_correct += torch.eq((out > 0), target).sum().item()
+            y=torch.cat(y, dim=0).bool()
+            yhat=torch.cat(y, dim=0)
+            acc = torch.eq(y, yhat).sum().item() / n
+            tp = torch.logical_and(y, yhat).sum().item()
+            fp = torch.logical_and(y.logical_not(), yhat).sum().item()
+            tn = torch.logical_and(y.logical_not(), yhat.logical_not()).sum().item()
+            fn = torch.logical_and(y, yhat.logical_not()).sum().item()
+        return acc, tp/(tp+fp) (tp/(tp+fn), tn/(fp+tn))
+    episode = dataset.get_episode(episode_classes, episode_datasets)
+    dataset_level_acc, dataset_level_prec, (dataset_level_pos_acc, dataset_level_neg_acc) = eval_episode(episode, p_dataset=1, **data_kwargs)
+    aligned_acc, aligned_prec, (aligned_pos_acc, aligned_neg_acc) = eval_episode(episode, p_aligned=0, p_dataset=0, **data_kwargs)
+    
 
 
 
