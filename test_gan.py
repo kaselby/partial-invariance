@@ -20,14 +20,14 @@ def eval_disc(model, episode, steps, batch_size, data_kwargs):
         yhat=torch.cat(y, dim=0)
         dl=torch.cat(dl, dim=0)
         sd=torch.cat(sd, dim=0)
-
     return y, yhat, (dl, sd)
 
+device=torch.device("cuda")
 
 basedir="final-runs"
 dataset="meta-dataset/discriminator"
 
-run_name = test_gan_1
+run_name = "test_gan_1"
 image_size=84
 episode_classes=200
 episode_datasets=11
@@ -43,5 +43,5 @@ model = torch.load(os.path.join(basedir, dataset, run_name, "model.pt"))
 test_generator = MetaDatasetGenerator(image_size=image_size, split=Split.TEST, device=device)
 
 episode = test_generator.get_episode(episode_classes, episode_datasets)
-y,yhat = eval_disc(model, episode, 500, 16, **data_kwargs)
+y,yhat = eval_disc(model, episode, 200, 16, **data_kwargs)
 

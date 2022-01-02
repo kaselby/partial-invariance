@@ -21,10 +21,8 @@ def cycle_(iterable):
 
 
 class MetaDatasetGenerator():
-    def __init__(self, image_size=84, p_aligned=0.5, dataset_path=DATASET_ROOT, split=Split.TRAIN, device=torch.device('cpu')):
+    def __init__(self, image_size=84, dataset_path=DATASET_ROOT, split=Split.TRAIN, device=torch.device('cpu')):
         self.split=split
-        self.p_aligned = p_aligned
-        #self.p_sameset = p_sameset
         self.image_size = image_size
         self.device=device
         self.datasets_by_class = self._build_datasets()
@@ -59,7 +57,7 @@ class MetaDatasetGenerator():
                 classes_i = torch.multinomial(torch.ones(n_i), m_i)
                 class_datasets.append([self.datasets_by_class[dataset_i][j.item()] for j in classes_i])
             N_remaining -= m_i
-        return Episode(class_datasets, self.transforms, p_aligned=self.p_aligned, device=self.device)
+        return Episode(class_datasets, self.transforms, device=self.device)
 
     '''
     def get_episode(self, n_classes, n_datasets):
