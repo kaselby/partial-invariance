@@ -200,8 +200,8 @@ class Episode():
                     dataset2 = dataset1
                 else:
                     dataset1, dataset2 = torch.multinomial(torch.ones(len(self.datasets)), 2)
-                    X_j = self._generate_set_from_dataset(dataset1.item(), n_samples)
-                    Y_j = self._generate_set_from_dataset(dataset2.item(), n_samples)
+                X_j = self._generate_set_from_dataset(dataset1.item(), n_samples)
+                Y_j = self._generate_set_from_dataset(dataset2.item(), n_samples)
             else:
                 if aligned[j]:
                     class1 = torch.randint(self.N, (1,))
