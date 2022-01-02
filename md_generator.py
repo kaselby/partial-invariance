@@ -159,13 +159,11 @@ class Episode():
     def _get_next(self, class_id, dataset_id=None):
         if dataset_id is None:
             dataset_id, class_id = self._class_to_dataset(class_id)
-        
-        dataset = self.datasets[dataset_id][class_id]
         try:
-            sample_dic = next(dataset)
+            sample_dic = next(self.datasets[dataset_id][class_id])
         except (StopIteration, TypeError) as e:
-            self.datasets[dataset_id][class_id] = cycle_(dataset)
-            sample_dic = next(dataset)
+            self.datasets[dataset_id][class_id] = cycle_(self.datasets[dataset_id][class_id])
+            sample_dic = next(self.datasets[dataset_id][class_id])
         return sample_dic
 
     #@profile
