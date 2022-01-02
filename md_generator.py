@@ -181,7 +181,7 @@ class Episode():
     def _generate_set_from_dataset(self, dataset_id, n_samples):
         set_data = []
         for i in range(n_samples):
-            class_id = torch.randint(len(self.datasets[dataset_id]))
+            class_id = torch.randint(len(self.datasets[dataset_id]), (1,)).item()
             sample_dic = self._get_next(class_id, dataset_id)
             sample_dic = parse_record(sample_dic)
             transformed_image = self.transforms(sample_dic['image'])
