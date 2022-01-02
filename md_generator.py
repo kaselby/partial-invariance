@@ -150,7 +150,7 @@ class Episode():
         assert class_id < self.N
         N=0
         for j, n_j in enumerate(self.sizes):
-            if j > N + n_j:
+            if class_id > N + n_j:
                 N += n_j
             else:
                 return j, class_id - N

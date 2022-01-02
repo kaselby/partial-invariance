@@ -36,7 +36,7 @@ data_kwargs={
     'set_size':(6,10),
     'p_aligned': 0.5,
     'p_dataset': 0.3,
-    'p_sameset': 0.5
+    'p_same': 0.5
 }
 
 model = torch.load(os.path.join(basedir, dataset, run_name, "model.pt"))
