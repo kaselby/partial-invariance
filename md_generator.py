@@ -142,7 +142,7 @@ class Episode():
     def __init__(self, datasets, transforms, device=torch.device('cpu')):
         self.datasets = datasets
         self.sizes = [len(d) for d in datasets]
-        self.N = sum(sizes)
+        self.N = sum(self.sizes)
         self.transforms = transforms
         self.device = device
 
@@ -206,7 +206,7 @@ class Episode():
                     Y_j = self._generate_set_from_dataset(dataset2.item(), n_samples)
             else:
                 if aligned[j]:
-                    class1 = torch.randint(len(self.flattened_datasets), (1,))
+                    class1 = torch.randint(self.N, (1,))
                     class2 = class1
                 else:
                     if same_dataset[j]:
