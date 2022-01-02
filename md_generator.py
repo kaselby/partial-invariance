@@ -142,20 +142,29 @@ class Episode():
     def __init__(self, datasets, transforms, device=torch.device('cpu')):
         self.datasets = datasets
         self.sizes = [len(d) for d in datasets]
-        self.flattened_datasets = [x for d in datasets for x in d]
+        self.N = sum(sizes)
         self.transforms = transforms
         self.device = device
+
+    def _class_to_dataset(self, class_id):
+        assert class_id < self.N
+        N=0
+        for j, n_j in enumerate(self.sizes):
+            if j > N + n_j:
+                N += n_j
+            else:
+                return j, class_id - N
 
     #@profile
     def _get_next(self, class_id, dataset_id=None):
         if dataset_id is None:
-            dataset = self.flattened_datasets[class_id]
-        else:
-            dataset = self.datasets[dataset_id][class_id]
+            dataset_id, class_id = self._class_to_dataset(class_id)
+        
+        dataset = self.datasets[dataset_id][class_id]
         try:
             sample_dic = next(dataset)
         except (StopIteration, TypeError) as e:
-            self.datasets[class_id] = cycle_(dataset)
+            self.datasets[dataset_id][class_id] = cycle_(dataset)
             sample_dic = next(dataset)
         return sample_dic
 
