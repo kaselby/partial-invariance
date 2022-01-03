@@ -167,10 +167,10 @@ class Episode():
         return sample_dic
 
     #@profile
-    def _generate_set_from_class(self, class_id, n_samples):
+    def _generate_set_from_class(self, class_id, n_samples, dataset_id=None):
         set_data = []
         for i in range(n_samples):
-            sample_dic = self._get_next(class_id)
+            sample_dic = self._get_next(class_id, dataset_id=dataset_id)
             sample_dic = parse_record(sample_dic)
             transformed_image = self.transforms(sample_dic['image'])
             set_data.append(transformed_image)
@@ -206,16 +206,20 @@ class Episode():
                 if aligned[j]:
                     class1 = torch.randint(self.N, (1,))
                     class2 = class1
+                    X_j = self._generate_set_from_class(class1.item(), n_samples)
+                    Y_j = self._generate_set_from_class(class2.item(), n_samples)
                 else:
                     if same_dataset[j]:
-                        dataset = torch.randint(len(self.datasets), (1,)).item()
+                        dataset1 = torch.randint(len(self.datasets), (1,)).item()
+                        dataset2=dataset1
                         class1, class2 = torch.multinomial(torch.ones(self.sizes[dataset]), 2)
                     else:
                         dataset1, dataset2 = torch.multinomial(torch.ones(len(self.datasets)), 2)
                         class1 = torch.randint(len(self.datasets[dataset1]), (1,))
                         class2 = torch.randint(len(self.datasets[dataset2]), (1,))
-                X_j = self._generate_set_from_class(class1.item(), n_samples)
-                Y_j = self._generate_set_from_class(class2.item(), n_samples)
+                    X_j = self._generate_set_from_class(class1.item(), n_samples, dataset_id=dataset1)
+                    Y_j = self._generate_set_from_class(class2.item(), n_samples, dataset_id=dataset2)
+
             X.append(torch.stack(X_j, 0))
             Y.append(torch.stack(Y_j, 0))
         X = torch.stack(X, 0)

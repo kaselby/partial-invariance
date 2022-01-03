@@ -17,7 +17,7 @@ def eval_disc(model, episode, steps, batch_size, data_kwargs):
             sd.append(same_dataset)
             #n_correct += torch.eq((out > 0), target).sum().item()
         y=torch.cat(y, dim=0)
-        yhat=torch.cat(y, dim=0)
+        yhat=torch.cat(yhat, dim=0)
         dl=torch.cat(dl, dim=0)
         sd=torch.cat(sd, dim=0)
     return y, yhat, (dl, sd)
@@ -43,5 +43,5 @@ model = torch.load(os.path.join(basedir, dataset, run_name, "model.pt"))
 test_generator = MetaDatasetGenerator(image_size=image_size, split=Split.TEST, device=device)
 
 episode = test_generator.get_episode(episode_classes, episode_datasets)
-y,yhat = eval_disc(model, episode, 200, 16, data_kwargs)
+y,yhat, (dl, sd) = eval_disc(model, episode, 200, 16, data_kwargs)
 
