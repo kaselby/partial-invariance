@@ -212,7 +212,7 @@ class Episode():
                     if same_dataset[j]:
                         dataset1 = torch.randint(len(self.datasets), (1,)).item()
                         dataset2=dataset1
-                        class1, class2 = torch.multinomial(torch.ones(self.sizes[dataset]), 2)
+                        class1, class2 = torch.multinomial(torch.ones(self.sizes[dataset1]), 2)
                     else:
                         dataset1, dataset2 = torch.multinomial(torch.ones(len(self.datasets)), 2)
                         class1 = torch.randint(len(self.datasets[dataset1]), (1,))

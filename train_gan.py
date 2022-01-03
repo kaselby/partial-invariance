@@ -152,6 +152,7 @@ def eval_disc(model, episode, steps, batch_size, data_kwargs, return_all=False):
 
 
 def summarize_eval(y, yhat, dl, sd, return_all=False):
+    N = y.size(0)
     correct = y==yhat
     acc = (y==yhat).sum().item() / N
     #prec = (y & yhat).sum().item() / yhat.sum().item()
