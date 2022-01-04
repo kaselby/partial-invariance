@@ -109,7 +109,7 @@ def train_disc(model, optimizer, train_dataset, val_dataset, test_dataset, steps
         else:
             del episode 
             # eval
-            acc = eval_disc(model, val_dataset, eval_steps, batch_size, episode_classes, episode_datasets, data_kwargs)
+            acc = eval_disc(model, val_dataset.get_episode(episode_classes, episode_datasets), eval_steps, batch_size, data_kwargs)
             eval_accs.append(acc)
             avg_loss /= eval_every
             print("Step: %d\tLoss: %f\tAccuracy: %f" % (step, avg_loss, acc))
@@ -125,7 +125,7 @@ def train_disc(model, optimizer, train_dataset, val_dataset, test_dataset, steps
             continue
         break
     
-    test_acc = eval_disc(model, test_dataset, eval_steps, batch_size, episode_classes, episode_datasets, data_kwargs)
+    test_acc = eval_disc(model, test_dataset.get_episode(episode_classes, episode_datasets), eval_steps, batch_size, data_kwargs)
     
     return model, (train_losses, eval_accs, test_acc)
 
@@ -157,8 +157,8 @@ def summarize_eval(y, yhat, dl, sd, return_all=False):
     acc = (y==yhat).sum().item() / N
     #prec = (y & yhat).sum().item() / yhat.sum().item()
 
-    #if not return_all:
-    #    return acc
+    if not return_all:
+        return acc
 
     def get_acc(labels):
         n = labels.sum().item()
@@ -178,8 +178,9 @@ def summarize_eval(y, yhat, dl, sd, return_all=False):
 
     return acc, (dl_acc, cl_acc, cl_pos_acc, cl_neg_acc, cl_neg_sd_acc, cl_neg_dd_acc), (N, n_dl, n_cl, n_cl_pos, n_cl_neg, n_cl_neg_sd, n_cl_neg_dd)
 
+'''
 def eval_disc(model, dataset, steps, batch_size, episode_classes, episode_datasets, data_kwargs):
-    def eval_episode(episode, **kwargs)
+    def eval_episode(episode, **kwargs):
         n = batch_size * steps
         with torch.no_grad():
             y,yhat=[],[]
@@ -200,7 +201,7 @@ def eval_disc(model, dataset, steps, batch_size, episode_classes, episode_datase
     episode = dataset.get_episode(episode_classes, episode_datasets)
     dataset_level_acc, dataset_level_prec, (dataset_level_pos_acc, dataset_level_neg_acc) = eval_episode(episode, p_dataset=1, **data_kwargs)
     aligned_acc, aligned_prec, (aligned_pos_acc, aligned_neg_acc) = eval_episode(episode, p_aligned=0, p_dataset=0, **data_kwargs)
-    
+'''    
 
 
 
