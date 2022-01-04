@@ -87,7 +87,7 @@ def train_disc(model, optimizer, train_dataset, val_dataset, test_dataset, steps
     n_episodes = math.ceil((steps - step) / episode_length)
     avg_loss = 0
     loss_fct = nn.BCEWithLogitsLoss()
-    for _ in tqdm.tqdm(range(n_episodes))
+    for _ in tqdm.tqdm(range(n_episodes)):
         episode = train_dataset.get_episode(episode_classes, episode_datasets)
         for i in tqdm.tqdm(range(episode_length)):
             optimizer.zero_grad()
@@ -157,9 +157,9 @@ def summarize_eval(y, yhat, dl, sd, return_all=False):
     acc = (y==yhat).sum().item() / N
     #prec = (y & yhat).sum().item() / yhat.sum().item()
 
-    if not return_all:
-        return acc
-    
+    #if not return_all:
+    #    return acc
+
     def get_acc(labels):
         n = labels.sum().item()
         return (labels & correct).sum().item() / n, n
