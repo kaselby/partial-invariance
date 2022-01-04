@@ -10,6 +10,7 @@ from models2 import MultiSetTransformer, PINE, NaiveMultiSetModel
 import argparse
 import os
 import tqdm
+import math
 
 def train_adv(discriminator, generator, d_opt, g_opt, dataset, steps, device, set_size=(10,15),batch_size=64, save_every=2000, checkpoint_dir=None, data_kwargs={}):
     d_losses = []
