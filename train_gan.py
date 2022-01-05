@@ -136,7 +136,7 @@ def eval_disc(model, episode, steps, batch_size, data_kwargs, return_all=False):
     with torch.no_grad():
         y,yhat,dl,sd=[],[],[],[]
         for i in range(steps):
-            (X,Y), target, (dataset_level, same_dataset) = episode(batch_size, eval=True, **kwargs)
+            (X,Y), target, (dataset_level, same_dataset) = episode(batch_size, eval=True, **data_kwargs)
             out = model(X,Y).squeeze(-1)
             y.append(target)
             yhat.append(out>0)
