@@ -220,44 +220,44 @@ class MultipleEnvironmentImageFolder(MultipleDomainDataset):
 class VLCS(MultipleEnvironmentImageFolder):
     CHECKPOINT_FREQ = 300
     ENVIRONMENTS = ["C", "L", "S", "V"]
-    def __init__(self, root, test_envs, hparams, img_size):
+    def __init__(self, root, test_envs, augment, img_size):
         self.dir = os.path.join(root, "VLCS/")
-        super().__init__(self.dir, test_envs, hparams['data_augmentation'], hparams, img_size)
+        super().__init__(self.dir, test_envs, augment, None, img_size)
 
 class PACS(MultipleEnvironmentImageFolder):
     CHECKPOINT_FREQ = 300
     ENVIRONMENTS = ["A", "C", "P", "S"]
-    def __init__(self, root, test_envs, hparams, img_size):
+    def __init__(self, root, test_envs, augment, img_size):
         self.dir = os.path.join(root, "PACS/")
-        super().__init__(self.dir, test_envs, hparams['data_augmentation'], hparams, img_size)
+        super().__init__(self.dir, test_envs, augment, None, img_size)
 
 class DomainNet(MultipleEnvironmentImageFolder):
     CHECKPOINT_FREQ = 1000
     ENVIRONMENTS = ["clip", "info", "paint", "quick", "real", "sketch"]
-    def __init__(self, root, test_envs, hparams, img_size):
+    def __init__(self, root, test_envs, augment, img_size):
         self.dir = os.path.join(root, "domain_net/")
-        super().__init__(self.dir, test_envs, hparams['data_augmentation'], hparams, img_size)
+        super().__init__(self.dir, test_envs, augment, None, img_size)
 
 class OfficeHome(MultipleEnvironmentImageFolder):
     CHECKPOINT_FREQ = 300
     ENVIRONMENTS = ["A", "C", "P", "R"]
-    def __init__(self, root, test_envs, hparams, img_size):
+    def __init__(self, root, test_envs, augment, img_size):
         self.dir = os.path.join(root, "office_home/")
-        super().__init__(self.dir, test_envs, hparams['data_augmentation'], hparams, img_size)
+        super().__init__(self.dir, test_envs, augment, None, img_size)
 
 class TerraIncognita(MultipleEnvironmentImageFolder):
     CHECKPOINT_FREQ = 300
     ENVIRONMENTS = ["L100", "L38", "L43", "L46"]
-    def __init__(self, root, test_envs, hparams, img_size):
+    def __init__(self, root, test_envs, augment, img_size):
         self.dir = os.path.join(root, "terra_incognita/")
-        super().__init__(self.dir, test_envs, hparams['data_augmentation'], hparams, img_size)
+        super().__init__(self.dir, test_envs, augment, None, img_size)
 
 class SVIRO(MultipleEnvironmentImageFolder):
     CHECKPOINT_FREQ = 300
     ENVIRONMENTS = ["aclass", "escape", "hilux", "i3", "lexus", "tesla", "tiguan", "tucson", "x5", "zoe"]
-    def __init__(self, root, test_envs, hparams, img_size):
+    def __init__(self, root, test_envs, augment, img_size):
         self.dir = os.path.join(root, "sviro/")
-        super().__init__(self.dir, test_envs, hparams['data_augmentation'], hparams, img_size)
+        super().__init__(self.dir, test_envs, augment, None, img_size)
 
 
 class WILDSEnvironment:

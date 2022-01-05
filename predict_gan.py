@@ -35,7 +35,7 @@ device = torch.device("cuda")
 dataset_cls = vars(datasets)[args.dataset]
 n_envs = len(dataset_cls.ENVIRONMENTS)
 test_envs = list(range(n_envs))
-dataset = dataset_cls(args.data_dir, test_envs, None, args.img_size)
+dataset = dataset_cls(args.data_dir, test_envs, False, args.img_size)
 
 
 model = torch.load(args.model_path)
