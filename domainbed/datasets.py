@@ -177,13 +177,13 @@ class RotatedMNIST(MultipleEnvironmentMNIST):
 
 
 class MultipleEnvironmentImageFolder(MultipleDomainDataset):
-    def __init__(self, root, test_envs, augment, hparams):
+    def __init__(self, root, test_envs, augment, hparams, img_size):
         super().__init__()
         environments = [f.name for f in os.scandir(root) if f.is_dir()]
         environments = sorted(environments)
 
         transform = transforms.Compose([
-            transforms.Resize((224,224)),
+            transforms.Resize((img_size,img_size)),
             transforms.ToTensor(),
             transforms.Normalize(
                 mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
@@ -191,7 +191,7 @@ class MultipleEnvironmentImageFolder(MultipleDomainDataset):
 
         augment_transform = transforms.Compose([
             # transforms.Resize((224,224)),
-            transforms.RandomResizedCrop(224, scale=(0.7, 1.0)),
+            transforms.RandomResizedCrop(img_size, scale=(0.7, 1.0)),
             transforms.RandomHorizontalFlip(),
             transforms.ColorJitter(0.3, 0.3, 0.3, 0.3),
             transforms.RandomGrayscale(),
@@ -214,50 +214,50 @@ class MultipleEnvironmentImageFolder(MultipleDomainDataset):
 
             self.datasets.append(env_dataset)
 
-        self.input_shape = (3, 224, 224,)
+        self.input_shape = (3, img_size, img_size,)
         self.num_classes = len(self.datasets[-1].classes)
 
 class VLCS(MultipleEnvironmentImageFolder):
     CHECKPOINT_FREQ = 300
     ENVIRONMENTS = ["C", "L", "S", "V"]
-    def __init__(self, root, test_envs, hparams):
+    def __init__(self, root, test_envs, hparams, img_size):
         self.dir = os.path.join(root, "VLCS/")
-        super().__init__(self.dir, test_envs, hparams['data_augmentation'], hparams)
+        super().__init__(self.dir, test_envs, hparams['data_augmentation'], hparams, img_size)
 
 class PACS(MultipleEnvironmentImageFolder):
     CHECKPOINT_FREQ = 300
     ENVIRONMENTS = ["A", "C", "P", "S"]
-    def __init__(self, root, test_envs, hparams):
+    def __init__(self, root, test_envs, hparams, img_size):
         self.dir = os.path.join(root, "PACS/")
-        super().__init__(self.dir, test_envs, hparams['data_augmentation'], hparams)
+        super().__init__(self.dir, test_envs, hparams['data_augmentation'], hparams, img_size)
 
 class DomainNet(MultipleEnvironmentImageFolder):
     CHECKPOINT_FREQ = 1000
     ENVIRONMENTS = ["clip", "info", "paint", "quick", "real", "sketch"]
-    def __init__(self, root, test_envs, hparams):
+    def __init__(self, root, test_envs, hparams, img_size):
         self.dir = os.path.join(root, "domain_net/")
-        super().__init__(self.dir, test_envs, hparams['data_augmentation'], hparams)
+        super().__init__(self.dir, test_envs, hparams['data_augmentation'], hparams, img_size)
 
 class OfficeHome(MultipleEnvironmentImageFolder):
     CHECKPOINT_FREQ = 300
     ENVIRONMENTS = ["A", "C", "P", "R"]
-    def __init__(self, root, test_envs, hparams):
+    def __init__(self, root, test_envs, hparams, img_size):
         self.dir = os.path.join(root, "office_home/")
-        super().__init__(self.dir, test_envs, hparams['data_augmentation'], hparams)
+        super().__init__(self.dir, test_envs, hparams['data_augmentation'], hparams, img_size)
 
 class TerraIncognita(MultipleEnvironmentImageFolder):
     CHECKPOINT_FREQ = 300
     ENVIRONMENTS = ["L100", "L38", "L43", "L46"]
-    def __init__(self, root, test_envs, hparams):
+    def __init__(self, root, test_envs, hparams, img_size):
         self.dir = os.path.join(root, "terra_incognita/")
-        super().__init__(self.dir, test_envs, hparams['data_augmentation'], hparams)
+        super().__init__(self.dir, test_envs, hparams['data_augmentation'], hparams, img_size)
 
 class SVIRO(MultipleEnvironmentImageFolder):
     CHECKPOINT_FREQ = 300
     ENVIRONMENTS = ["aclass", "escape", "hilux", "i3", "lexus", "tesla", "tiguan", "tucson", "x5", "zoe"]
-    def __init__(self, root, test_envs, hparams):
+    def __init__(self, root, test_envs, hparams, img_size):
         self.dir = os.path.join(root, "sviro/")
-        super().__init__(self.dir, test_envs, hparams['data_augmentation'], hparams)
+        super().__init__(self.dir, test_envs, hparams['data_augmentation'], hparams, img_size)
 
 
 class WILDSEnvironment:
