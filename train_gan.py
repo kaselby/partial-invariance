@@ -144,7 +144,7 @@ def eval_disc(model, episode, steps, batch_size, data_kwargs, return_all=False):
             sd.append(same_dataset)
             #n_correct += torch.eq((out > 0), target).sum().item()
         y=torch.cat(y, dim=0)
-        yhat=torch.cat(y, dim=0)
+        yhat=torch.cat(yhat, dim=0)
         dl=torch.cat(dl, dim=0)
         sd=torch.cat(sd, dim=0)
 
@@ -192,7 +192,7 @@ def eval_disc(model, dataset, steps, batch_size, episode_classes, episode_datase
                 yhat.append(out>0)
                 #n_correct += torch.eq((out > 0), target).sum().item()
             y=torch.cat(y, dim=0).bool()
-            yhat=torch.cat(y, dim=0)
+            yhat=torch.cat(yhat, dim=0)
             acc = torch.eq(y, yhat).sum().item() / n
             tp = torch.logical_and(y, yhat).sum().item()
             fp = torch.logical_and(y.logical_not(), yhat).sum().item()
