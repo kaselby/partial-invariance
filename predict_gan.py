@@ -41,10 +41,10 @@ dataset = dataset_cls(args.data_dir, test_envs, False, args.img_size)
 model = torch.load(args.model_path)
 
 table=[]
-for i, source_name in dataset_cls.ENVIRONMENTS:
+for i, source_name in enumerate(dataset_cls.ENVIRONMENTS):
     record = [source_name]
     print("Source:", source_name)
-    for j, target_name in dataset_cls.ENVIRONMENTS:
+    for j, target_name in enumerate(dataset_cls.ENVIRONMENTS):
         dists = []
         print("Target:", target_name)
         for k in range(args.num_sets):
