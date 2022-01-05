@@ -26,6 +26,7 @@ parser.add_argument('--dataset', type=str)
 parser.add_argument('--output_path', type=str)
 parser.add_argument('--num_samples', type=int)
 parser.add_argument('--num_sets', type=int)
+parser.add_argument('--img_size', type=int)
 
 args = parser.parse_args()
 
@@ -34,7 +35,7 @@ device = torch.device("cuda")
 dataset_cls = vars(datasets)[args.dataset]
 n_envs = len(dataset_cls.ENVIRONMENTS)
 test_envs = list(range(n_envs))
-dataset = dataset_cls(args.data_dir, test_envs, None)
+dataset = dataset_cls(args.data_dir, test_envs, None, args.img_size)
 
 
 model = torch.load(args.model_path)
