@@ -11,7 +11,7 @@ def predict(model, dataset1, dataset2, num_samples, device):
     def sample(dataset, N):
         N = min(N, len(dataset))
         indices = torch.randperm(len(dataset))
-        return torch.stack([dataset[indices[i] for i in range(N)], dim=0).unsqueeze(0)
+        return torch.stack([dataset[indices[i]] for i in range(N)], dim=0).unsqueeze(0)
     X = sample(dataset1, set_size)
     Y = sample(dataset2, set_size)
     out = model(X.to(device), Y.to(device))
