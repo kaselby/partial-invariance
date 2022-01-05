@@ -22,11 +22,11 @@ def predict(model, dataset1, dataset2, num_samples, device):
 parser = argparse.ArgumentParser()
 parser.add_argument('--model_path', type=str)
 parser.add_argument('--data_dir', type=str)
-parser.add_argument('--dataset', type=str)
-parser.add_argument('--output_path', type=str)
-parser.add_argument('--num_samples', type=int)
-parser.add_argument('--num_sets', type=int)
-parser.add_argument('--img_size', type=int)
+parser.add_argument('--dataset', type=str, default='VLCS')
+parser.add_argument('--output_dir', type=str, default='final-runs/DomainBed/')
+parser.add_argument('--num_samples', type=int, default=500)
+parser.add_argument('--num_sets', type=int, default=5)
+parser.add_argument('--img_size', type=int, default=224)
 
 args = parser.parse_args()
 
@@ -43,17 +43,25 @@ model = torch.load(args.model_path)
 table=[]
 for i, source_name in dataset_cls.ENVIRONMENTS:
     record = [source_name]
+    print("Source:", source_name)
     for j, target_name in dataset_cls.ENVIRONMENTS:
         dists = []
-        for _ in range(args.num_sets):
-            dists.append(predict(model, dataset[i], dataset[j], args.num_samples, device))
+        print("Target:", target_name)
+        for k in range(args.num_sets):
+            dist_ijk = predict(model, dataset[i], dataset[j], args.num_samples, device)
+            dists.append(dist_ijk)
+            print("Distance:", str(dist_ijk))
         record.append(sum(dists)/len(dists))
     table.append(record)
 
 results = tabulate.tabulate(table, headers=dataset_cls.ENVIRONMENTS, tablefmt='rst')
 print(results)
 
-with open(args.output_path, 'w') as outfile:
+output_dir = os.path.join(args.output_dir, args.dataset)
+if not os.path.exists(output_dir):
+    os.makedirs(output_dir)
+
+with open(os.path.join(output_dir,"results.txt"), 'w') as outfile:
     outfile.write(results)
 
 
