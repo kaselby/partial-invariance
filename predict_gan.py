@@ -7,7 +7,7 @@ import tabulate
 
 import domainbed.datasets as datasets
 
-def predict(model, dataset1, dataset2, num_samples, device):
+def predict(model, dataset1, dataset2, set_size, device):
     def sample(dataset, N):
         N = min(N, len(dataset))
         indices = torch.randperm(len(dataset))
