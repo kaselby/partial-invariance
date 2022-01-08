@@ -4,6 +4,7 @@ import torch
 import torch.nn.functional as F
 import math
 import tabulate
+import csv
 
 import domainbed.datasets as datasets
 
@@ -12,10 +13,11 @@ def predict(model, dataset1, dataset2, set_size, device):
         N = min(N, len(dataset))
         indices = torch.randperm(len(dataset))
         return torch.stack([dataset[indices[i]][0] for i in range(N)], dim=0).unsqueeze(0)
-    X = sample(dataset1, set_size)
-    Y = sample(dataset2, set_size)
-    out = model(X.to(device), Y.to(device))
-    dist = -1 * F.logsigmoid(out)[0].item()
+    with torch.no_grad():
+        X = sample(dataset1, set_size)
+        Y = sample(dataset2, set_size)
+        out = model(X.to(device), Y.to(device))
+        dist = -1 * F.logsigmoid(out)[0].item()
     return dist
 
 
@@ -54,15 +56,20 @@ for i, source_name in enumerate(dataset_cls.ENVIRONMENTS):
         record.append(sum(dists)/len(dists))
     table.append(record)
 
-results = tabulate.tabulate(table, headers=dataset_cls.ENVIRONMENTS, tablefmt='rst')
-print(results)
+tablestr = tabulate.tabulate(table, headers=dataset_cls.ENVIRONMENTS, tablefmt='rst')
+print(tablestr)
 
 output_dir = os.path.join(args.output_dir, args.dataset)
 if not os.path.exists(output_dir):
     os.makedirs(output_dir)
 
-with open(os.path.join(output_dir,"results.txt"), 'w') as outfile:
-    outfile.write(results)
+with open(os.path.join(output_dir,"results.csv"), 'w') as outfile:
+    csvwriter = csv.writer(outfile, delimiter=',')
+    csvwriter.write([""] + dataset_cls.ENVIRONMENTS)
+    for line in table:
+        csvwriter.write(line)
 
 
 
+#def corr(l1, l2):
+#    return ( (l1-l1.mean()) * (l2-l2.mean()) ).mean() / l1.std(unbiased=False) / l2.std(unbiased=False)
