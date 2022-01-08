@@ -25,6 +25,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--model_path', type=str)
 parser.add_argument('--data_dir', type=str)
 parser.add_argument('--dataset', type=str, default='VLCS')
+parser.add_argument('--model_prefix', type=str, default=None)
 parser.add_argument('--output_dir', type=str, default='final-runs/DomainBed/')
 parser.add_argument('--num_samples', type=int, default=500)
 parser.add_argument('--num_sets', type=int, default=5)
@@ -63,8 +64,11 @@ output_dir = os.path.join(args.output_dir, args.dataset)
 if not os.path.exists(output_dir):
     os.makedirs(output_dir)
 
-with open(os.path.join(output_dir,"results.csv"), 'w') as outfile:
-    csvwriter = csv.writer(outfile, delimiter=',')
+output_file = args.model_prefix + "_results.csv" if args.model_prefix is not None else "results.csv"
+output_path = os.path.join(output_dir, output_file) 
+
+with open(output_path, 'w') as writer:
+    csvwriter = csv.writer(writer, delimiter=',')
     csvwriter.write([""] + dataset_cls.ENVIRONMENTS)
     for line in table:
         csvwriter.write(line)
