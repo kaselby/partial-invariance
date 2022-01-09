@@ -69,7 +69,7 @@ output_path = os.path.join(output_dir, output_file)
 
 with open(output_path, 'w') as writer:
     csvwriter = csv.writer(writer, delimiter=',')
-    csvwriter.write([""] + dataset_cls.ENVIRONMENTS)
+    csvwriter.writerow([""] + dataset_cls.ENVIRONMENTS)
     for line in table:
         csvwriter.writerow(line)
 
