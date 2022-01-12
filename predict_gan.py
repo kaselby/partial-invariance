@@ -67,7 +67,7 @@ if not os.path.exists(output_dir):
 output_file = args.model_prefix + "_results.csv" if args.model_prefix is not None else "results.csv"
 output_path = os.path.join(output_dir, output_file) 
 
-with open(output_path, 'w') as writer:
+with open(output_path, 'a') as writer:
     csvwriter = csv.writer(writer, delimiter=',')
     csvwriter.writerow([""] + dataset_cls.ENVIRONMENTS)
     for line in table:
