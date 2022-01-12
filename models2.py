@@ -329,21 +329,22 @@ class SetTransformer(nn.Module):
 
 class MultiSetTransformer(nn.Module):
     def __init__(self, input_size, latent_size, hidden_size, output_size, num_heads=4, num_blocks=2, remove_diag=False, ln=False, equi=False, 
-            nn_attn=False, weight_sharing='none', k_neighbours=5, dropout=0.1, num_inds=-1, decoder_layers=0):
+            nn_attn=False, weight_sharing='none', k_neighbours=5, dropout=0.1, num_inds=-1, decoder_layers=0, pool='pma'):
         super(MultiSetTransformer, self).__init__()
         if equi:
             input_size = 1
         self.input_size = input_size
         self.proj = None if input_size == latent_size else nn.Linear(input_size, latent_size) 
-            
         if num_inds > 0:
             self.enc = EncoderStack(*[ICSAB(latent_size, latent_size, hidden_size, num_heads, num_inds, ln=ln, remove_diag=remove_diag, 
                 equi=equi, weight_sharing=weight_sharing, dropout=dropout) for i in range(num_blocks)])
         else:
             self.enc = EncoderStack(*[CSAB(latent_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, 
                 equi=equi, nn_attn=nn_attn, weight_sharing=weight_sharing, dropout=dropout) for i in range(num_blocks)])
-        self.pool_x = PMA(latent_size, hidden_size, num_heads, 1, ln=ln)
-        self.pool_y = PMA(latent_size, hidden_size, num_heads, 1, ln=ln)
+        self.pool_method = pool
+        if self.pool_method == "pma":
+            self.pool_x = PMA(latent_size, hidden_size, num_heads, 1, ln=ln)
+            self.pool_y = PMA(latent_size, hidden_size, num_heads, 1, ln=ln)
         self.dec = self._make_decoder(latent_size, hidden_size, output_size, decoder_layers)
         self.remove_diag = remove_diag
         self.equi=equi
@@ -381,8 +382,17 @@ class MultiSetTransformer(nn.Module):
         if self.equi:
             ZX = ZX.max(dim=2)[0]
             ZY = ZY.max(dim=2)[0]
-        ZX = self.pool_x(ZX)
-        ZY = self.pool_y(ZY)
+        
+        if self.pool_method == "pma":
+            ZX = self.pool_x(ZX)
+            ZY = self.pool_y(ZY)
+        elif self.pool_method == "max":
+            ZX = torch.max(ZX, dim=1)
+            ZY = torch.max(ZY, dim=1)
+        elif self.pool_method == "mean":
+            ZX = torch.mean(ZX, dim=1)
+            ZY = torch.mean(ZY, dim=1)
+
         out = self.dec(torch.cat([ZX, ZY], dim=-1))
         return out.squeeze(-1)
 

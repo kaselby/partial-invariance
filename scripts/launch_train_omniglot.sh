@@ -9,7 +9,10 @@ n_runs=3
 
 for (( i = 0 ; i < $n_runs ; i++ ))
 do
-    sbatch scripts/train_omniglot.sh "${run_name}_csab/${i}" $dataset $pretrain "csab" $lr
-    sbatch scripts/train_omniglot.sh "${run_name}_naive/${i}" $dataset $pretrain "naive" $lr
-    sbatch scripts/train_omniglot.sh "${run_name}_pine/${i}" $dataset $pretrain "pine" $lr
+    sbatch scripts/train_omniglot.sh "${run_name}_csab_cross/${i}" $dataset $pretrain $lr "csab" "cross"
+#    sbatch scripts/train_omniglot.sh "${run_name}_naive/${i}" $dataset $pretrain $lr "naive" "cross"
+#    sbatch scripts/train_omniglot.sh "${run_name}_pine/${i}" $dataset $pretrain $lr "pine" "cross"
+
+    sbatch scripts/train_omniglot.sh "${run_name}_csab_none/${i}" $dataset $pretrain $lr "csab" "none"
+    sbatch scripts/train_omniglot.sh "${run_name}_csab_sym/${i}" $dataset $pretrain $lr "csab" "sym"
 done
