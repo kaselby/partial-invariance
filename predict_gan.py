@@ -45,7 +45,7 @@ model = torch.load(args.model_path)
 
 table=[]
 for i, source_name in enumerate(dataset_cls.ENVIRONMENTS):
-    record = [source_name]
+    record = []#[source_name]
     print("Source:", source_name)
     for j, target_name in enumerate(dataset_cls.ENVIRONMENTS):
         dists = []
@@ -67,13 +67,38 @@ if not os.path.exists(output_dir):
 output_file = args.model_prefix + "_results.csv" if args.model_prefix is not None else "results.csv"
 output_path = os.path.join(output_dir, output_file) 
 
-with open(output_path, 'a') as writer:
+with open(output_path, 'w') as writer:
     csvwriter = csv.writer(writer, delimiter=',')
-    csvwriter.writerow([""] + dataset_cls.ENVIRONMENTS)
+    #csvwriter.writerow([""] + dataset_cls.ENVIRONMENTS)
     for line in table:
         csvwriter.writerow(line)
 
 
 
-#def corr(l1, l2):
-#    return ( (l1-l1.mean()) * (l2-l2.mean()) ).mean() / l1.std(unbiased=False) / l2.std(unbiased=False)
+def corr(l1, l2):
+    return ( (l1-l1.mean()) * (l2-l2.mean()) ).mean() / l1.std(unbiased=False) / l2.std(unbiased=False)
+
+
+'''
+import os
+import csv
+import torch
+
+basedir="final-runs/DomainBed/"
+
+with open(os.path.join(basedir, "VLCS", "tg1_results.csv"), 'r') as reader:
+    csvreader=csv.reader(reader,delimiter=',')
+    tg1_vlcs_results = [line for line in csvreader]
+    
+
+with open('/h/kaselby/DomainBed/results/summary/VLCS_ERM_summary.csv', 'r') as reader:
+    csvreader=csv.reader(reader,delimiter=',')
+    vlcs_gen_results = [line for line in csvreader]
+
+
+dists=[]
+for line in tg1_vlcs_results:
+    dists.append([float(x) for x in line[1:]])
+
+dists = torch.tensor(dists)
+'''
