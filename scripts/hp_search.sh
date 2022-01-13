@@ -20,7 +20,7 @@ do
     do
         for (( i = 0 ; i < $n_runs ; i++ ))
         do
-            sbatch scripts/train.sh "${run_name}_${lr}_${nb}/${i}" $target $data -1 1 $dim $latent_size $hidden_size $lr $clip "csab" $basedir $nb
+            sbatch scripts/train.sh "${run_name}_${lr}_${nb}/${i}" $target $data -1 1 $dim $latent_size $hidden_size $lr $clip "csab" $basedir 0 $nb
         done
     done
 done
