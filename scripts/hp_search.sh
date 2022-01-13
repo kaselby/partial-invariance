@@ -11,8 +11,8 @@ clip=-1
 basedir="final-runs/hptest"
 run_name=$1
 
-lrs=["1e-3" "1e-4"]
-nblocks=[1 2]
+lrs=("1e-3" "1e-4")
+nblocks=(1 2)
 
 for lr in "${lrs[@]}"
 do
@@ -20,7 +20,7 @@ do
     do
         for (( i = 0 ; i < $n_runs ; i++ ))
         do
-            sbatch scripts/train.sh "${run_name}_equi/${i}" $target $data -1 1 $dim $latent_size $hidden_size $lr $clip "csab" $basedir
+            sbatch scripts/train.sh "${run_name}_equi/${i}" $target $data -1 1 $dim $latent_size $hidden_size $lr $clip "csab" $basedir $nb
         done
     done
 done
