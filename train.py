@@ -42,7 +42,8 @@ def parse_args():
     parser.add_argument('--clip', type=int, default=-1)
     parser.add_argument('--basedir', type=str, default="final-runs")
     parser.add_argument('--nn', action='store_true')
-    parser.add_argument('--k_neighbours', type=int, default=5)
+    parser.add_argument('--k_neighbours', type=int, default=-1)
+    parser.add_argument('--weight_sharing', type=str, choices=['none', 'cross', 'sym'], default='none')
     return parser.parse_args()
 
 
@@ -224,7 +225,8 @@ if __name__ == '__main__':
                 'latent_size':args.latent_size,
                 'hidden_size':args.hidden_size,
                 'nn_attn':args.nn,
-                'k_neighbours':args.k_neighbours
+                'k_neighbours':args.k_neighbours,
+                'weight_sharing':args.weight_sharing
             }
             model=MultiSetTransformer(**model_kwargs).to(device)
         elif args.model == 'rn':
