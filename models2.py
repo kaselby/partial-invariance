@@ -383,7 +383,8 @@ class MultiSetTransformer(nn.Module):
             ZX = ZX.max(dim=2)[0]
             ZY = ZY.max(dim=2)[0]
         
-        if self.pool_method == "pma":
+        #backwards compatibility
+        if getattr(self, "pool_method", True) or self.pool_method == "pma":
             ZX = self.pool_x(ZX)
             ZY = self.pool_y(ZY)
         elif self.pool_method == "max":
