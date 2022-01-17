@@ -12,7 +12,7 @@ import argparse
 import math
 import tqdm
 
-from models2 import MultiSetTransformer, PINE, MultiSetModel, NaiveMultiSetModel
+from models2 import MultiSetTransformer, PINE, MultiSetModel, NaiveMultiSetModel, CrossOnlyModel, MultiRNModel
 from generators import ImageCooccurenceGenerator, OmniglotCooccurenceGenerator, CIFARCooccurenceGenerator
 
 
