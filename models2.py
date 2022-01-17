@@ -175,12 +175,44 @@ class ISAB(nn.Module):
         return self.mab1(X, H)
 
 
-class CSAB(nn.Module):
-    def __init__(self, input_size, latent_size, hidden_size, num_heads, remove_diag=False, nn_attn=False, weight_sharing='none', **kwargs):
+class CSABSimple(nn.Module):
+    def __init__(self, input_size, latent_size, hidden_size, num_heads, remove_diag=False, nn_attn=False, weight_sharing='none', merge='concat', **kwargs):
         super(CSAB, self).__init__()
         self._init_blocks(input_size, latent_size, hidden_size, num_heads, remove_diag, nn_attn, weight_sharing, **kwargs)
-        self.fc_X = nn.Linear(latent_size * 2, latent_size)
-        self.fc_Y = nn.Linear(latent_size * 2, latent_size)
+        self.merge = merge
+        self.fc_X = nn.Linear(latent_size, latent_size)
+        self.fc_Y = nn.Linear(latent_size, latent_size)
+        self.remove_diag = remove_diag
+        self.nn_attn = nn_attn
+
+    def _init_blocks(self, input_size, latent_size, hidden_size, num_heads, remove_diag=False, nn_attn=False, weight_sharing='none', **kwargs):
+        if weight_sharing == 'none':
+            self.MAB_XY = MAB(input_size, latent_size, hidden_size, num_heads, nn_attn=nn_attn, **kwargs)
+            self.MAB_YX = MAB(input_size, latent_size, hidden_size, num_heads, nn_attn=nn_attn, **kwargs)
+        else:
+            MAB_cross = MAB(input_size, latent_size, hidden_size, num_heads, nn_attn=nn_attn, **kwargs)
+            self.MAB_XY = MAB_cross
+            self.MAB_YX = MAB_cross
+
+    def forward(self, inputs, masks=None, neighbours=None):
+        X, Y = inputs
+        XY = self.MAB_XY(X, Y)
+        YX = self.MAB_YX(Y, X)
+        X_out = X + self.fc_X(XY)
+        Y_out = Y + self.fc_Y(YX)
+        return (X_out, Y_out)
+
+class CSAB(nn.Module):
+    def __init__(self, input_size, latent_size, hidden_size, num_heads, remove_diag=False, nn_attn=False, weight_sharing='none', merge='concat', **kwargs):
+        super(CSAB, self).__init__()
+        self._init_blocks(input_size, latent_size, hidden_size, num_heads, remove_diag, nn_attn, weight_sharing, **kwargs)
+        self.merge = merge
+        if self.merge == 'concat':
+            self.fc_X = nn.Linear(latent_size * 2, latent_size)
+            self.fc_Y = nn.Linear(latent_size * 2, latent_size)
+        else:
+            self.fc_X = nn.Linear(latent_size, latent_size)
+            self.fc_Y = nn.Linear(latent_size, latent_size)
         self.remove_diag = remove_diag
         self.nn_attn = nn_attn
 
@@ -242,8 +274,12 @@ class CSAB(nn.Module):
             XY = self.MAB_XY(X, Y, mask=mask_xy)
             YX = self.MAB_YX(Y, X, mask=mask_yx)
             YY = self.MAB_YY(Y, Y, mask=mask_yy)
-        X_out = X + self.fc_X(torch.cat([XX, XY], dim=-1))
-        Y_out = Y + self.fc_Y(torch.cat([YY, YX], dim=-1))
+        if self.merge == "concat":
+            X_out = X + self.fc_X(torch.cat([XX, XY], dim=-1))
+            Y_out = Y + self.fc_Y(torch.cat([YY, YX], dim=-1))
+        else:
+            X_out = X + self.fc_X(XX + XY)
+            Y_out = Y + self.fc_Y(YX + YY)
         return (X_out, Y_out)
 
 
@@ -329,7 +365,7 @@ class SetTransformer(nn.Module):
 
 class MultiSetTransformer(nn.Module):
     def __init__(self, input_size, latent_size, hidden_size, output_size, num_heads=4, num_blocks=2, remove_diag=False, ln=False, equi=False, 
-            nn_attn=False, weight_sharing='none', k_neighbours=5, dropout=0.1, num_inds=-1, decoder_layers=0, pool='pma'):
+            nn_attn=False, weight_sharing='none', k_neighbours=5, dropout=0.1, num_inds=-1, decoder_layers=0, pool='pma', merge='concat'):
         super(MultiSetTransformer, self).__init__()
         if equi:
             input_size = 1
@@ -340,7 +376,7 @@ class MultiSetTransformer(nn.Module):
                 equi=equi, weight_sharing=weight_sharing, dropout=dropout) for i in range(num_blocks)])
         else:
             self.enc = EncoderStack(*[CSAB(latent_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, 
-                equi=equi, nn_attn=nn_attn, weight_sharing=weight_sharing, dropout=dropout) for i in range(num_blocks)])
+                equi=equi, nn_attn=nn_attn, weight_sharing=weight_sharing, dropout=dropout, merge='concat') for i in range(num_blocks)])
         self.pool_method = pool
         if self.pool_method == "pma":
             self.pool_x = PMA(latent_size, hidden_size, num_heads, 1, ln=ln)
@@ -367,7 +403,6 @@ class MultiSetTransformer(nn.Module):
 
     def forward(self, X, Y, masks=None):
         ZX, ZY = X, Y
-
         if self.equi:
             ZX, ZY = ZX.unsqueeze(-1), ZY.unsqueeze(-1)
         if self.proj is not None:
@@ -398,7 +433,7 @@ class MultiSetTransformer(nn.Module):
         return out.squeeze(-1)
 
 
-class NaiveMultiSetModel(nn.Module):
+class NaiveMultiSetModel1(nn.Module):
     def __init__(self, input_size, latent_size, hidden_size, output_size, num_blocks, num_heads, remove_diag=False, ln=False, equi=False, weight_sharing='none'):
         super().__init__()
         self.input_size = input_size
@@ -421,6 +456,28 @@ class NaiveMultiSetModel(nn.Module):
             nn.Linear(2*latent_size, hidden_size),
             nn.Linear(hidden_size, output_size)
         )
+
+    def forward(self, X, Y):
+        ZX = self.encoder1(X)
+        ZY = self.encoder2(Y)
+        ZX = self.pool1(ZX)
+        ZY = self.pool2(ZY)
+        out = self.decoder(torch.cat([ZX, ZY], dim=-1))
+        return out.squeeze(-1)
+
+
+class NaiveMultiSetModel2(nn.Module):
+    def __init__(self, input_size, latent_size, hidden_size, output_size, num_blocks, num_heads, remove_diag=False, ln=False, equi=False, weight_sharing='none'):
+        super().__init__()
+        self.input_size = input_size
+        self.encoder = EncoderStack(*[CSAB(latent_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, 
+                equi=equi, nn_attn=nn_attn, weight_sharing=weight_sharing, dropout=dropout) for i in range(num_blocks)])
+        self.decoder = nn.Sequential(
+            nn.Linear(2*latent_size, hidden_size),
+            nn.Linear(hidden_size, output_size)
+        )
+        self.pool_x = PMA(latent_size, hidden_size, num_heads, 1, ln=ln)
+        self.pool_y = PMA(latent_size, hidden_size, num_heads, 1, ln=ln)
 
     def forward(self, X, Y):
         ZX = self.encoder1(X)

@@ -229,6 +229,32 @@ class Episode():
         else:
             return (X.to(self.device),Y.to(self.device)), aligned.to(self.device).float()
 
+    def compare_datasets(self, i, j, batch_size=1, set_size=(10,15)):
+        n_samples = torch.randint(*set_size, (1,)).item()
+        if batch_size == 1:
+            X = self._generate_set_from_dataset(i, n_samples)
+            Y = self._generate_set_from_dataset(j, n_samples)
+        else:
+            X = torch.stack([self._generate_set_from_dataset(i, n_samples) for _ in range(batch_size)], dim=0)
+            Y = torch.stack([self._generate_set_from_dataset(j, n_samples) for _ in range(batch_size)], dim=0)
+        return X.to(self.device), Y.to(self.device)
+
+    def compare_classes(self, d_i, d_j, c_i=None, c_j=None, batch_size=1, set_size=(10,15)):
+        if d_i == d_j and c_i is None and c_j is None:
+            c_i, c_j = torch.multinomial(torch.ones(self.sizes[d_i]), 2)
+            c_i, c_j = c_i.item(), c_j.item()
+        else:
+            c_i = torch.randint(self.sizes(d_i), (1,)).item() if c_i is None else c_i
+            c_j = torch.randint(self.sizes(d_j), (1,)).item() if c_j is None else c_j
+        n_samples = torch.randint(*set_size, (1,)).item()
+        if batch_size == 1:
+            X = self._generate_set_from_class(c_i, n_samples, dataset_id=d_i)
+            Y = self._generate_set_from_class(c_j, n_samples, dataset_id=d_)j
+        else:
+            X = torch.stack([self._generate_set_from_class(c_i, n_samples, dataset_id=d_i) for _ in range(batch_size)], dim=0)
+            Y = torch.stack([self._generate_set_from_class(c_j, n_samples, dataset_id=d_j) for _ in range(batch_size)], dim=0)
+        return X.to(self.device), Y.to(self.device)
+
     def __call__(self, *args, **kwargs):
         return self._generate(*args, **kwargs)
             

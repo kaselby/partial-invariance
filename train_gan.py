@@ -166,8 +166,8 @@ def summarize_eval(y, yhat, dl, sd, return_all=False):
         return (labels & correct).sum().item() / n, n
 
     dl_acc, n_dl = get_acc(dl)
-    #dl_pos_acc, n_dl_pos = get_acc(dl & y)
-    #dl_neg_acc, n_dl_neg = get_acc(dl & ~y)
+    dl_pos_acc, n_dl_pos = get_acc(dl & y)
+    dl_neg_acc, n_dl_neg = get_acc(dl & ~y)
     cl_acc, n_cl = get_acc(~dl)
     cl_pos_acc, n_cl_pos = get_acc(~dl & y)
     cl_neg_acc, n_cl_neg = get_acc(~dl & ~y)
@@ -177,7 +177,7 @@ def summarize_eval(y, yhat, dl, sd, return_all=False):
     #dl_prec = (dl & y & yhat).sum().item() / (dl & yhat).sum().item()
     #cl_prec = (~dl & y & yhat).sum().item() / (~dl & yhat).sum().item()
 
-    return acc, (dl_acc, cl_acc, cl_pos_acc, cl_neg_acc, cl_neg_sd_acc, cl_neg_dd_acc), (N, n_dl, n_cl, n_cl_pos, n_cl_neg, n_cl_neg_sd, n_cl_neg_dd)
+    return (acc, dl_acc, dl_pos_acc, dl_neg_acc, cl_acc, cl_pos_acc, cl_neg_acc, cl_neg_sd_acc, cl_neg_dd_acc), (N, n_dl, n_dl_pos, n_dl_neg, n_cl, n_cl_pos, n_cl_neg, n_cl_neg_sd, n_cl_neg_dd)
 
 '''
 def eval_disc(model, dataset, steps, batch_size, episode_classes, episode_datasets, data_kwargs):
