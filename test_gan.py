@@ -97,7 +97,7 @@ run_name = "baseline_1_csab/0"
 image_size=84
 episode_classes=200
 episode_datasets=11
-steps=1000
+steps=500
 batch_size=16
 
 data_kwargs={

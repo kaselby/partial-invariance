@@ -335,6 +335,18 @@ if __name__ == '__main__':
         set_model = NaiveMultiSetModel(args.latent_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
     elif args.model == 'pine':
         set_model = PINE(args.latent_size, int(args.latent_size/4), 16, 2, 4*args.hidden_size, 1)
+    elif args.model == 'rn':
+        model_kwargs={
+            'ln':True,
+            'remove_diag':False,
+            'num_blocks':args.num_blocks,
+            'dropout':args.dropout,
+            'equi':False,
+            'weight_sharing': args.weight_sharing,
+            'pool1': 'max',
+            'pool2': 'max'
+        }
+        set_model = MultiRNModel(args.latent_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
     else:
         raise NotImplementedError
     discriminator = MultiSetImageModel(encoder, set_model).to(device)
@@ -361,7 +373,7 @@ if __name__ == '__main__':
     data_kwargs = {'set_size':args.set_size}
     optimizer = torch.optim.Adam(discriminator.parameters(), args.lr)
     checkpoint_dir = os.path.join(args.checkpoint_dir, args.checkpoint_name) if args.checkpoint_name is not None else None
-    model, (losses, accs, test_acc) = train_disc(discriminator, optimizer, train_generator, val_generator, test_generator, steps, 
+    discriminator, (losses, accs, test_acc) = train_disc(discriminator, optimizer, train_generator, val_generator, test_generator, steps, 
         batch_size=batch_size, checkpoint_dir=checkpoint_dir, data_kwargs=data_kwargs, eval_every=eval_every, eval_steps=eval_steps,
         episode_classes=args.episode_classes, episode_datasets=args.episode_datasets, episode_length=args.episode_length)
 
