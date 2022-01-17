@@ -621,18 +621,15 @@ class RNBlock(nn.Module):
         return Z
 
 class MultiRNBlock(nn.Module):
-    def __init__(self, latent_size, hidden_size, remove_diag=False, pool='max', ln=False):
+    def __init__(self, latent_size, hidden_size, remove_diag=False, pool='max', ln=False, weight_sharing='none', **kwargs):
         super().__init__()
-        self.e_xx = RNBlock(latent_size, hidden_size, pool=pool, ln=ln)
-        self.e_xy = RNBlock(latent_size, hidden_size, pool=pool, ln=ln)
-        self.e_yx = RNBlock(latent_size, hidden_size, pool=pool, ln=ln)
-        self.e_yy = RNBlock(latent_size, hidden_size, pool=pool, ln=ln)
+        self._init_blocks(latent_size, hidden_size, weight_sharing=weight_sharing, ln=ln, pool=pool, **kwargs)
         self.fc_X = nn.Linear(2*latent_size, latent_size)
         self.fc_Y = nn.Linear(2*latent_size, latent_size)
         self.remove_diag = remove_diag
         self.pool = pool
 
-    def _init_blocks(self, input_size, latent_size, hidden_size, weight_sharing='none', **kwargs):
+    def _init_blocks(self, latent_size, hidden_size, weight_sharing='none', ln=False, pool='max', **kwargs):
         if weight_sharing == 'none':
             self.e_xx = RNBlock(latent_size, hidden_size, pool=pool, ln=ln, **kwargs)
             self.e_xy = RNBlock(latent_size, hidden_size, pool=pool, ln=ln, **kwargs)
@@ -689,7 +686,7 @@ class MultiRNBlock(nn.Module):
 
 
 class RNModel(nn.Module):
-    def __init__(self, input_size, latent_size, hidden_size, output_size, num_blocks=2, remove_diag=False, ln=False, pool1='sum', pool2='sum', equi=False):
+    def __init__(self, input_size, latent_size, hidden_size, output_size, num_blocks=2, remove_diag=False, ln=False, pool1='sum', pool2='sum', equi=False, dropout=0.1):
         super().__init__()
         if equi:
             input_size = 1
