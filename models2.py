@@ -274,7 +274,8 @@ class CSAB(nn.Module):
             XY = self.MAB_XY(X, Y, mask=mask_xy)
             YX = self.MAB_YX(Y, X, mask=mask_yx)
             YY = self.MAB_YY(Y, Y, mask=mask_yy)
-        if self.merge == "concat":
+        #backwards compatibility
+        if getattr(self, "merge", True) or self.merge == "concat":
             X_out = X + self.fc_X(torch.cat([XX, XY], dim=-1))
             Y_out = Y + self.fc_Y(torch.cat([YY, YX], dim=-1))
         else:

@@ -52,10 +52,24 @@ def summarize_eval(y, yhat, dl, sd, return_all=False):
 
 def eval_by_dataset(model, episode, steps, batch_size, data_kwargs):
     n_datasets = len(episode.datasets)
+    dists = torch.zeros(n_datasets, n_datasets)
+    accs = torch.zeros(n_datasets, n_datasets)
     for i in range(n_datasets):
         for j in range(n_datasets):
             for _ in range(steps):
                 X, Y = episode.compare_datasets(i, j, batch_size=batch_size, **data_kwargs)
+                out = model(X,Y).squeeze(-1)
+                dist = -1 * F.logsigmoid(out)[0].mean()
+
+                label = int(i==j)
+                acc = ((out > 0) == label).mean()
+                dists[i][j] += dist
+                accs[i][j] += acc
+            dists[i][j] /= steps
+            accs[i][j] /= steps
+    return dists, accs
+                
+
 
 
 device=torch.device("cuda")
