@@ -342,7 +342,7 @@ class EncoderStack(nn.Sequential):
         return input
 
 class SetTransformer(nn.Module):
-    def __init__(self, input_size, latent_size, hidden_size, output_size, num_heads=4, num_blocks=2, remove_diag=False, ln=False, equi=False, dropout=dropout):
+    def __init__(self, input_size, latent_size, hidden_size, output_size, num_heads=4, num_blocks=2, remove_diag=False, ln=False, equi=False, dropout=0.1):
         super(SetTransformer, self).__init__()
         if equi:
             input_size = 1
