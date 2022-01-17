@@ -249,7 +249,7 @@ class Episode():
         n_samples = torch.randint(*set_size, (1,)).item()
         if batch_size == 1:
             X = self._generate_set_from_class(c_i, n_samples, dataset_id=d_i)
-            Y = self._generate_set_from_class(c_j, n_samples, dataset_id=d_)j
+            Y = self._generate_set_from_class(c_j, n_samples, dataset_id=d_j)
         else:
             X = torch.stack([self._generate_set_from_class(c_i, n_samples, dataset_id=d_i) for _ in range(batch_size)], dim=0)
             Y = torch.stack([self._generate_set_from_class(c_j, n_samples, dataset_id=d_j) for _ in range(batch_size)], dim=0)
