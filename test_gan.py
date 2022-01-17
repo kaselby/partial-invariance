@@ -116,13 +116,22 @@ y,yhat, (dl, sd) = eval_disc(model, episode, steps, batch_size, data_kwargs)
 
 (acc, dl_acc, dl_pos_acc, dl_neg_acc, cl_acc, cl_pos_acc, cl_neg_acc, cl_neg_sd_acc, cl_neg_dd_acc), _ = summarize_eval(y, yhat, dl, sd, return_all=True)
 
+print("Overall Acc:", str(acc))
+print("Dataset-level Acc:", str(dl_acc))
+print("\tPositive Acc:", str(dl_pos_acc))
+print("\tNegative Acc:", str(dl_neg_acc))
+print("Class-level Acc:", str(cl_acc))
+print("\tPositive Acc:", str(cl_pos_acc))
+print("\tNegative Acc:", str(cl_neg_acc))
+print("\t\tSame-Dataset Acc:", str(cl_neg_sd_acc))
+print("\t\tCross-Dataset Acc:", str(cl_neg_dd_acc))
 
 data_kwargs={
     'set_size':(6,10)
 }
 steps=16
 
-dists,accs = eval_by_dataset(model, episode, steps, batch_size, data_kwargs)
+dists,accs = eval_by_dataset(model, episode, steps, batch_size, (10,30))
 
 out_path = os.path.join(basedir, dataset, run_name)
 
