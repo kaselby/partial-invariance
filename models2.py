@@ -433,7 +433,7 @@ class MultiSetTransformer(nn.Module):
         return out.squeeze(-1)
 
 
-class NaiveMultiSetModel1(nn.Module):
+class NaiveMultiSetModel(nn.Module):
     def __init__(self, input_size, latent_size, hidden_size, output_size, num_blocks, num_heads, remove_diag=False, ln=False, equi=False, weight_sharing='none'):
         super().__init__()
         self.input_size = input_size
@@ -466,11 +466,11 @@ class NaiveMultiSetModel1(nn.Module):
         return out.squeeze(-1)
 
 
-class NaiveMultiSetModel2(nn.Module):
+class CrossOnlyModel(nn.Module):
     def __init__(self, input_size, latent_size, hidden_size, output_size, num_blocks, num_heads, remove_diag=False, ln=False, equi=False, weight_sharing='none'):
         super().__init__()
         self.input_size = input_size
-        self.encoder = EncoderStack(*[CSAB(latent_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, 
+        self.encoder = EncoderStack(*[CSABSimple(latent_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, 
                 equi=equi, nn_attn=nn_attn, weight_sharing=weight_sharing, dropout=dropout) for i in range(num_blocks)])
         self.decoder = nn.Sequential(
             nn.Linear(2*latent_size, hidden_size),
