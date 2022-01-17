@@ -14,7 +14,7 @@ import tqdm
 import json
 import fasttext
 
-from models2 import MultiSetTransformer, PINE, MultiSetModel, NaiveMultiSetModel, BertEncoderWrapper, ImageEncoderWrapper, EmbeddingEncoderWrapper
+from models2 import MultiSetTransformer, PINE, MultiSetModel, NaiveMultiSetModel, BertEncoderWrapper, ImageEncoderWrapper, EmbeddingEncoderWrapper, CrossOnlyModel, MultiRNModel
 from generators import CaptionGenerator, bert_tokenize_batch, fasttext_tokenize_batch
 from train_omniglot import ConvEncoder
 
