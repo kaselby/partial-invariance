@@ -477,7 +477,7 @@ def pretrain(encoder, n_classes, train_dataset, val_dataset, steps, lr, batch_si
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('run_name', type=str)
-    parser.add_argument('--model', type=str, default='csab', choices=['csab', 'rn', 'pine', 'naive'])
+    parser.add_argument('--model', type=str, default='csab', choices=['csab', 'rn', 'pine', 'naive', 'cross-only'])
     parser.add_argument('--checkpoint_dir', type=str, default="/checkpoint/kaselby")
     parser.add_argument('--checkpoint_name', type=str, default=None)
     parser.add_argument('--num_blocks', type=int, default=2)
@@ -498,6 +498,7 @@ def parse_args():
     parser.add_argument('--val_split', type=float, default=0.1)
     parser.add_argument('--eval_every', type=int, default=500)
     parser.add_argument('--eval_steps', type=int, default=200)
+    parser.add_argument('--merge_type', type=str, default='concat', choices=['concat', 'sum'])
     return parser.parse_args()
 
 if __name__ == '__main__':
@@ -558,22 +559,45 @@ if __name__ == '__main__':
             'num_heads':args.num_heads,
             'dropout':args.dropout,
             'equi':False,
-            'weight_sharing': args.weight_sharing
+            'weight_sharing': args.weight_sharing,
+            'merge': args.merge_type
         }
         set_model = MultiSetTransformer(args.latent_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
+    elif args.model == 'cross-only':
+        model_kwargs={
+            'ln':True,
+            'num_blocks':args.num_blocks,
+            'num_heads':args.num_heads,
+            'dropout':args.dropout,
+            'equi':False,
+            'weight_sharing': args.weight_sharing
+        }
+        set_model = CrossOnlyModel(args.latent_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
     elif args.model == 'naive':
         model_kwargs={
             'ln':True,
             'remove_diag':False,
             'num_blocks':args.num_blocks,
             'num_heads':args.num_heads,
-            #'dropout':args.dropout,
+            'dropout':args.dropout,
             'equi':False,
             'weight_sharing': args.weight_sharing
         }
         set_model = NaiveMultiSetModel(args.latent_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
     elif args.model == 'pine':
         set_model = PINE(args.latent_size, int(args.latent_size/4), 16, 2, args.hidden_size, 1)
+    elif args.model == 'rn':
+        model_kwargs={
+            'ln':True,
+            'remove_diag':False,
+            'num_blocks':args.num_blocks,
+            'dropout':args.dropout,
+            'equi':False,
+            'weight_sharing': args.weight_sharing,
+            'pool1': 'max',
+            'pool2': 'max'
+        }
+        set_model = MultiRNModel(args.latent_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
     else:
         raise NotImplementedError("Model type not recognized.")
     model = MultiSetImageModel(conv_encoder, set_model).to(device)

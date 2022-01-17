@@ -1,6 +1,8 @@
 import torch
 import os
 import tqdm
+import numpy as np
+import pandas as pd
 
 from md_generator import MetaDatasetGenerator, Split
 
@@ -51,21 +53,36 @@ def summarize_eval(y, yhat, dl, sd, return_all=False):
     return (acc, dl_acc, dl_pos_acc, dl_neg_acc, cl_acc, cl_pos_acc, cl_neg_acc, cl_neg_sd_acc, cl_neg_dd_acc), (N, n_dl, n_dl_pos, n_dl_neg, n_cl, n_cl_pos, n_cl_neg, n_cl_neg_sd, n_cl_neg_dd)
 
 
-def eval_by_dataset(model, episode, steps, batch_size, data_kwargs):
+def eval_by_dataset(model, episode, steps, batch_size, set_size):
     n_datasets = len(episode.datasets)
-    dists = torch.zeros(n_datasets, n_datasets)
-    accs = torch.zeros(n_datasets, n_datasets)
-    for i in range(n_datasets):
-        for j in range(n_datasets):
+    with torch.no_grad():
+        accs = torch.zeros(n_datasets)
+        for i in range(n_datasets):
             for _ in range(steps):
-                X, Y = episode.compare_datasets(i, j, batch_size=batch_size, **data_kwargs)
-                out = model(X,Y).squeeze(-1)
-                dist = -1 * F.logsigmoid(out)[0].mean()
-                acc = ((out > 0) == (i==j)).mean()
-                dists[i][j] += dist
-                accs[i][j] += acc
-            dists[i][j] /= steps
-            accs[i][j] /= steps
+                (X, Y), target = episode(batch_size, dataset_id=i, set_size=set_size)
+                out = model(X,Y).squeeze(-1).cpu()
+                accs[i] += ((out > 0) == target).float().sum()
+            accs[i] /= (steps * batch_size)
+    return accs
+                 
+
+
+def eval_cross_dataset(model, episode, steps, batch_size, set_size):
+    n_datasets = len(episode.datasets)
+    with torch.no_grad():
+        dists = torch.zeros(n_datasets, n_datasets)
+        accs = torch.zeros(n_datasets, n_datasets)
+        for i in range(n_datasets):
+            for j in range(n_datasets):
+                for _ in range(steps):
+                    X, Y = episode.compare_datasets(i, j, batch_size=batch_size, set_size=set_size)
+                    out = model(X,Y).squeeze(-1).cpu()
+                    dist = -1 * F.logsigmoid(out)[0].sum()
+                    acc = ((out > 0) == (i==j)).float().sum()
+                    dists[i][j] += dist
+                    accs[i][j] += acc
+                dists[i][j] /= (steps * batch_size)
+                accs[i][j] /= (steps * batch_size)
     return dists, accs
                 
 
@@ -100,9 +117,18 @@ y,yhat, (dl, sd) = eval_disc(model, episode, steps, batch_size, data_kwargs)
 (acc, dl_acc, dl_pos_acc, dl_neg_acc, cl_acc, cl_pos_acc, cl_neg_acc, cl_neg_sd_acc, cl_neg_dd_acc), _ = summarize_eval(y, yhat, dl, sd, return_all=True)
 
 
-#data_kwargs={
-#    'set_size':(6,10)
-#}
-#steps=16
+data_kwargs={
+    'set_size':(6,10)
+}
+steps=16
 
-#dists,accs = eval_by_dataset(model, episode, steps, batch_size, data_kwargs)
+dists,accs = eval_by_dataset(model, episode, steps, batch_size, data_kwargs)
+
+out_path = os.path.join(basedir, dataset, run_name)
+
+def save_csv(tensor, path):
+    df=pd.Dataframe(tensor.numpy())
+    df.to_csv(path, index=False)
+
+save_csv(dists, os.path.join(out_path, "dataset_dists.csv"))
+save_csv(dists, os.path.join(out_path, "dataset_accs.csv"))

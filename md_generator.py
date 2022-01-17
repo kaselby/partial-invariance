@@ -225,18 +225,37 @@ class Episode():
         X = torch.stack(X, 0)
         Y = torch.stack(Y, 0)
         if eval:
-            return (X.to(self.device),Y.to(self.device)), aligned.to(self.device), (dataset_level, same_dataset)
+            return (X.to(self.device),Y.to(self.device)), aligned.to(self.device), (dataset_level.to(self.device), same_dataset.to(self.device))
         else:
             return (X.to(self.device),Y.to(self.device)), aligned.to(self.device).float()
 
+    def _generate_from_dataset(self, batch_size, dataset_id, set_size=(10,15), p_aligned=0.5):
+        aligned = (torch.rand(batch_size) < p_aligned)
+        n_samples = torch.randint(*set_size, (1,)).item()
+        X = []
+        Y = []
+        for j in range(batch_size):
+            if aligned[j]:
+                class1 = torch.randint(self.sizes[dataset_id], (1,))
+                class2 = class1
+            else:
+                class1, class2 = torch.multinomial(torch.ones(self.sizes[dataset_id]), 2)
+            X_j = self._generate_set_from_class(class1.item(), n_samples, dataset_id=dataset_id)
+            Y_j = self._generate_set_from_class(class2.item(), n_samples, dataset_id=dataset_id)
+            X.append(torch.stack(X_j, 0))
+            Y.append(torch.stack(Y_j, 0))
+        X = torch.stack(X, 0)
+        Y = torch.stack(Y, 0)
+        return (X.to(self.device),Y.to(self.device)), aligned.to(self.device).float()
+        
     def compare_datasets(self, i, j, batch_size=1, set_size=(10,15)):
         n_samples = torch.randint(*set_size, (1,)).item()
         if batch_size == 1:
-            X = self._generate_set_from_dataset(i, n_samples)
-            Y = self._generate_set_from_dataset(j, n_samples)
+            X = torch.stack(self._generate_set_from_dataset(i, n_samples), dim=0)
+            Y = torch.stack(self._generate_set_from_dataset(j, n_samples), dim=0)
         else:
-            X = torch.stack([self._generate_set_from_dataset(i, n_samples) for _ in range(batch_size)], dim=0)
-            Y = torch.stack([self._generate_set_from_dataset(j, n_samples) for _ in range(batch_size)], dim=0)
+            X = torch.stack([torch.stack(self._generate_set_from_dataset(i, n_samples), dim=0) for _ in range(batch_size)], dim=0)
+            Y = torch.stack([torch.stack(self._generate_set_from_dataset(j, n_samples), dim=0) for _ in range(batch_size)], dim=0)
         return X.to(self.device), Y.to(self.device)
 
     def compare_classes(self, d_i, d_j, c_i=None, c_j=None, batch_size=1, set_size=(10,15)):
@@ -248,13 +267,16 @@ class Episode():
             c_j = torch.randint(self.sizes(d_j), (1,)).item() if c_j is None else c_j
         n_samples = torch.randint(*set_size, (1,)).item()
         if batch_size == 1:
-            X = self._generate_set_from_class(c_i, n_samples, dataset_id=d_i)
-            Y = self._generate_set_from_class(c_j, n_samples, dataset_id=d_j)
+            X = torch.stack(self._generate_set_from_class(c_i, n_samples, dataset_id=d_i), dim=0)
+            Y = torch.stack(self._generate_set_from_class(c_j, n_samples, dataset_id=d_j), dim=0)
         else:
-            X = torch.stack([self._generate_set_from_class(c_i, n_samples, dataset_id=d_i) for _ in range(batch_size)], dim=0)
-            Y = torch.stack([self._generate_set_from_class(c_j, n_samples, dataset_id=d_j) for _ in range(batch_size)], dim=0)
+            X = torch.stack([torch.stack(self._generate_set_from_class(c_i, n_samples, dataset_id=d_i), dim=0) for _ in range(batch_size)], dim=0)
+            Y = torch.stack([torch.stack(self._generate_set_from_class(c_j, n_samples, dataset_id=d_j), dim=0) for _ in range(batch_size)], dim=0)
         return X.to(self.device), Y.to(self.device)
 
     def __call__(self, *args, **kwargs):
-        return self._generate(*args, **kwargs)
+        if 'dataset_id' in kwargs:
+            return self._generate_from_dataset(*args, **kwargs)
+        else:
+            return self._generate(*args, **kwargs)
             

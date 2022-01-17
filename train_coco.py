@@ -118,7 +118,7 @@ def evaluate(model, eval_dataset, steps, batch_size=64, data_kwargs={}):
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('run_name', type=str)
-    parser.add_argument('--model', type=str, default='csab', choices=['csab', 'rn', 'pine', 'naive'])
+    parser.add_argument('--model', type=str, default='csab', choices=['csab', 'rn', 'pine', 'naive', 'cross-only'])
     parser.add_argument('--checkpoint_dir', type=str, default="/checkpoint/kaselby")
     parser.add_argument('--checkpoint_name', type=str, default=None)
     parser.add_argument('--num_blocks', type=int, default=2)
@@ -138,6 +138,7 @@ def parse_args():
     parser.add_argument('--img_model', type=str, choices=['resnet', 'base'], default='resnet')
     parser.add_argument('--embed_path', type=str, default="cc.en.300.bin")
     parser.add_argument('--embed_dim', type=int, default=300)
+    parser.add_argument('--merge_type', type=str, default='concat', choices=['concat', 'sum'])
     return parser.parse_args()
 
 #IMG_SIZE=105
@@ -172,9 +173,20 @@ if __name__ == '__main__':
             'num_heads':args.num_heads,
             'dropout':args.dropout,
             'equi':False,
-            'decoder_layers': 1
+            'decoder_layers': 1,
+            'merge': args.merge_type
         }
         set_model = MultiSetTransformer(args.latent_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
+    elif args.model == 'cross-only':
+        model_kwargs={
+            'ln':True,
+            'num_blocks':args.num_blocks,
+            'num_heads':args.num_heads,
+            'dropout':args.dropout,
+            'equi':False,
+            'weight_sharing': args.weight_sharing
+        }
+        set_model = CrossOnlyModel(args.latent_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
     elif args.model == 'naive':
         model_kwargs={
             'ln':True,
@@ -187,6 +199,18 @@ if __name__ == '__main__':
         set_model = NaiveMultiSetModel(args.latent_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
     elif args.model == 'pine':
         set_model = PINE(args.latent_size, int(args.latent_size/4), 16, 2, args.hidden_size, 1)
+    elif args.model == 'rn':
+        model_kwargs={
+            'ln':True,
+            'remove_diag':False,
+            'num_blocks':args.num_blocks,
+            'dropout':args.dropout,
+            'equi':False,
+            'weight_sharing': args.weight_sharing,
+            'pool1': 'max',
+            'pool2': 'max'
+        }
+        set_model = MultiRNModel(args.latent_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
     else:
         raise NotImplementedError("Model type not recognized.")
     model = make_model(set_model, text_model=args.text_model, img_model=args.img_model, embed_dim=args.embed_dim).to(device)

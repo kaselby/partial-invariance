@@ -253,7 +253,7 @@ def train_gen(generator, discriminator, optimizer, train_dataset, steps, batch_s
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('run_name', type=str)
-    parser.add_argument('--model', type=str, default='csab', choices=['csab', 'naive', 'pine'])
+    parser.add_argument('--model', type=str, default='csab', choices=['csab', 'naive', 'cross-only', 'pine'])
     parser.add_argument('--checkpoint_dir', type=str, default="/checkpoint/kaselby")
     parser.add_argument('--checkpoint_name', type=str, default=None)
     parser.add_argument('--num_blocks', type=int, default=1)
@@ -273,6 +273,7 @@ def parse_args():
     parser.add_argument('--episode_length', type=int, default=250)
     parser.add_argument('--img_encoder', choices=['cnn','resnet'], default='cnn')
     parser.add_argument('--weight_sharing', type=str, choices=['none', 'cross', 'sym'], default='cross')
+    parser.add_argument('--merge_type', type=str, default='concat', choices=['concat', 'sum'])
     return parser.parse_args()
 
 
@@ -307,16 +308,27 @@ if __name__ == '__main__':
             'num_heads':args.num_heads,
             'dropout':args.dropout,
             'equi':False,
-            'weight_sharing': args.weight_sharing
+            'weight_sharing': args.weight_sharing,
+            'merge': args.merge_type
         }
         set_model = MultiSetTransformer(args.latent_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
+    elif args.model == 'cross-only':
+        model_kwargs={
+            'ln':True,
+            'num_blocks':args.num_blocks,
+            'num_heads':args.num_heads,
+            'dropout':args.dropout,
+            'equi':False,
+            'weight_sharing': args.weight_sharing
+        }
+        set_model = CrossOnlyModel(args.latent_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
     elif args.model == 'naive':
         model_kwargs={
             'ln':True,
             'remove_diag':False,
             'num_blocks':args.num_blocks,
             'num_heads':args.num_heads,
-            #'dropout':args.dropout,
+            'dropout':args.dropout,
             'equi':False,
             'weight_sharing': args.weight_sharing
         }

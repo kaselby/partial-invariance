@@ -155,9 +155,9 @@ class MAB(nn.Module):
         return X
 
 class SAB(nn.Module):
-    def __init__(self, input_size, latent_size, hidden_size, num_heads, ln=False, remove_diag=False, equi=False, nn=False):
+    def __init__(self, input_size, latent_size, hidden_size, num_heads, ln=False, remove_diag=False, equi=False, nn=False, dropout=0.1):
         super(SAB, self).__init__()
-        self.mab = MAB(input_size, latent_size, hidden_size, num_heads, ln=ln, equi=equi)
+        self.mab = MAB(input_size, latent_size, hidden_size, num_heads, ln=ln, equi=equi, dropout=dropout)
 
     def forward(self, X, mask=None):
         return self.mab(X, X, mask=mask)
@@ -176,25 +176,25 @@ class ISAB(nn.Module):
 
 
 class CSABSimple(nn.Module):
-    def __init__(self, input_size, latent_size, hidden_size, num_heads, remove_diag=False, nn_attn=False, weight_sharing='none', merge='concat', **kwargs):
+    def __init__(self, input_size, latent_size, hidden_size, num_heads, weight_sharing='none', merge='concat', **kwargs):
         super(CSAB, self).__init__()
-        self._init_blocks(input_size, latent_size, hidden_size, num_heads, remove_diag, nn_attn, weight_sharing, **kwargs)
+        self._init_blocks(input_size, latent_size, hidden_size, num_heads, weight_sharing, **kwargs)
         self.merge = merge
         self.fc_X = nn.Linear(latent_size, latent_size)
         self.fc_Y = nn.Linear(latent_size, latent_size)
         self.remove_diag = remove_diag
         self.nn_attn = nn_attn
 
-    def _init_blocks(self, input_size, latent_size, hidden_size, num_heads, remove_diag=False, nn_attn=False, weight_sharing='none', **kwargs):
+    def _init_blocks(self, input_size, latent_size, hidden_size, num_heads, weight_sharing='none', **kwargs):
         if weight_sharing == 'none':
-            self.MAB_XY = MAB(input_size, latent_size, hidden_size, num_heads, nn_attn=nn_attn, **kwargs)
-            self.MAB_YX = MAB(input_size, latent_size, hidden_size, num_heads, nn_attn=nn_attn, **kwargs)
+            self.MAB_XY = MAB(input_size, latent_size, hidden_size, num_heads, **kwargs)
+            self.MAB_YX = MAB(input_size, latent_size, hidden_size, num_heads, **kwargs)
         else:
-            MAB_cross = MAB(input_size, latent_size, hidden_size, num_heads, nn_attn=nn_attn, **kwargs)
+            MAB_cross = MAB(input_size, latent_size, hidden_size, num_heads, **kwargs)
             self.MAB_XY = MAB_cross
             self.MAB_YX = MAB_cross
 
-    def forward(self, inputs, masks=None, neighbours=None):
+    def forward(self, inputs):
         X, Y = inputs
         XY = self.MAB_XY(X, Y)
         YX = self.MAB_YX(Y, X)
@@ -342,13 +342,13 @@ class EncoderStack(nn.Sequential):
         return input
 
 class SetTransformer(nn.Module):
-    def __init__(self, input_size, latent_size, hidden_size, output_size, num_heads=4, num_blocks=2, remove_diag=False, ln=False, equi=False):
+    def __init__(self, input_size, latent_size, hidden_size, output_size, num_heads=4, num_blocks=2, remove_diag=False, ln=False, equi=False, dropout=dropout):
         super(SetTransformer, self).__init__()
         if equi:
             input_size = 1
         self.equi=equi
         self.proj = None if input_size == latent_size else nn.Linear(input_size, latent_size) 
-        self.enc = nn.Sequential(*[SAB(input_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, equi=equi) for _ in range(num_blocks)])
+        self.enc = nn.Sequential(*[SAB(input_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, equi=equi, dropout=dropout) for _ in range(num_blocks)])
         self.pool = PMA(latent_size, hidden_size, num_heads, 1, ln=ln)
         self.dec = nn.Linear(latent_size, output_size)
                 
@@ -435,19 +435,19 @@ class MultiSetTransformer(nn.Module):
 
 
 class NaiveMultiSetModel(nn.Module):
-    def __init__(self, input_size, latent_size, hidden_size, output_size, num_blocks, num_heads, remove_diag=False, ln=False, equi=False, weight_sharing='none'):
+    def __init__(self, input_size, latent_size, hidden_size, output_size, num_blocks, num_heads, remove_diag=False, ln=False, equi=False, weight_sharing='none', dropout=0.1):
         super().__init__()
         self.input_size = input_size
         if weight_sharing == 'none':
-            self.encoder1 = nn.Sequential(*[SAB(input_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, equi=equi) for _ in range(num_blocks)])
-            self.encoder2 = nn.Sequential(*[SAB(input_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, equi=equi) for _ in range(num_blocks)])
+            self.encoder1 = nn.Sequential(*[SAB(input_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, equi=equi, dropout=dropout) for _ in range(num_blocks)])
+            self.encoder2 = nn.Sequential(*[SAB(input_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, equi=equi, dropout=dropout) for _ in range(num_blocks)])
             self.pool1 = PMA(latent_size, hidden_size, num_heads, 1, ln=ln)
             self.pool2 = PMA(latent_size, hidden_size, num_heads, 1, ln=ln)
             #self.encoder1 = SetTransformer(input_size, latent_size, hidden_size, latent_size, num_heads, num_blocks, remove_diag, ln, equi)
             #self.encoder2 = SetTransformer(input_size, latent_size, hidden_size, latent_size, num_heads, num_blocks, remove_diag, ln, equi)
         else:
             #encoder = SetTransformer(input_size, latent_size, hidden_size, latent_size, num_heads, num_blocks, remove_diag, ln, equi)
-            encoder = nn.Sequential(*[SAB(input_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, equi=equi) for _ in range(num_blocks)])
+            encoder = nn.Sequential(*[SAB(input_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, equi=equi, dropout=dropout) for _ in range(num_blocks)])
             pool = PMA(latent_size, hidden_size, num_heads, 1, ln=ln)
             self.encoder1 = encoder
             self.encoder2 = encoder
@@ -468,11 +468,11 @@ class NaiveMultiSetModel(nn.Module):
 
 
 class CrossOnlyModel(nn.Module):
-    def __init__(self, input_size, latent_size, hidden_size, output_size, num_blocks, num_heads, remove_diag=False, ln=False, equi=False, weight_sharing='none'):
+    def __init__(self, input_size, latent_size, hidden_size, output_size, num_blocks, num_heads, ln=False, equi=False, weight_sharing='none', dropout=0.1):
         super().__init__()
         self.input_size = input_size
-        self.encoder = EncoderStack(*[CSABSimple(latent_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, 
-                equi=equi, nn_attn=nn_attn, weight_sharing=weight_sharing, dropout=dropout) for i in range(num_blocks)])
+        self.encoder = EncoderStack(*[CSABSimple(latent_size, latent_size, hidden_size, num_heads, ln=ln, equi=equi, 
+            weight_sharing=weight_sharing, dropout=dropout) for i in range(num_blocks)])
         self.decoder = nn.Sequential(
             nn.Linear(2*latent_size, hidden_size),
             nn.Linear(hidden_size, output_size)
@@ -600,19 +600,23 @@ class RelationNetwork(nn.Module):
         return Z
 
 class RNBlock(nn.Module):
-    def __init__(self, latent_size, hidden_size, ln=False, pool='sum'):
+    def __init__(self, latent_size, hidden_size, ln=False, pool='sum', dropout=0.1):
         super().__init__()
         net = nn.Sequential(nn.Linear(2*latent_size, hidden_size), nn.ReLU(), nn.Linear(hidden_size, latent_size))
         self.rn = RelationNetwork(net, pool)
-        self.fc = nn.Sequential(nn.Linear(latent_size, hidden_size), nn.ReLU(), nn.Linear(hidden_size, latent_size))
+        self.fc = nn.Sequential(nn.Linear(latent_size, hidden_size), nn.ReLU(), nn.Linear(hidden_size, latent_size)) 
+        if dropout > 0:
+            self.dropout = nn.Dropout(dropout)
         if ln:
             self.ln0 = nn.LayerNorm(latent_size)
             self.ln1 = nn.LayerNorm(latent_size)
 
     def forward(self, X, Y, mask=None):
         Z = X + self.rn(X, Y, mask=mask)
+        Z = Z if getattr(self, 'dropout', None) is None else self.dropout(Z)
         Z = Z if getattr(self, 'ln0', None) is None else self.ln0(Z)
         Z = Z + self.fc(Z)
+        Z = Z if getattr(self, 'dropout', None) is None else self.dropout(Z)
         Z = Z if getattr(self, 'ln1', None) is None else self.ln1(Z)
         return Z
 
@@ -627,6 +631,28 @@ class MultiRNBlock(nn.Module):
         self.fc_Y = nn.Linear(2*latent_size, latent_size)
         self.remove_diag = remove_diag
         self.pool = pool
+
+    def _init_blocks(self, input_size, latent_size, hidden_size, weight_sharing='none', **kwargs):
+        if weight_sharing == 'none':
+            self.e_xx = RNBlock(latent_size, hidden_size, pool=pool, ln=ln, **kwargs)
+            self.e_xy = RNBlock(latent_size, hidden_size, pool=pool, ln=ln, **kwargs)
+            self.e_yx = RNBlock(latent_size, hidden_size, pool=pool, ln=ln, **kwargs)
+            self.e_yy = RNBlock(latent_size, hidden_size, pool=pool, ln=ln, **kwargs)
+        elif weight_sharing == 'cross':
+            self.e_xx = RNBlock(latent_size, hidden_size, pool=pool, ln=ln, **kwargs)
+            self.e_yy = RNBlock(latent_size, hidden_size, pool=pool, ln=ln, **kwargs)
+            e_cross = RNBlock(latent_size, hidden_size, pool=pool, ln=ln, **kwargs)
+            self.e_xy = e_cross
+            self.e_yx = e_cross
+        elif weight_sharing == 'sym':
+            e_cross = RNBlock(latent_size, hidden_size, pool=pool, ln=ln, **kwargs)
+            e_self = RNBlock(latent_size, hidden_size, pool=pool, ln=ln, **kwargs)
+            self.e_xx = e_self
+            self.e_yy = e_self
+            self.e_xy = e_cross
+            self.e_yx = e_cross
+        else:
+            raise NotImplementedError("weight sharing must be none, cross or sym")
 
     def _get_masks(self, N, M, masks):
         if self.remove_diag:
@@ -685,12 +711,12 @@ class RNModel(nn.Module):
         return self.dec(ZX).squeeze(-1)
 
 class MultiRNModel(nn.Module):
-    def __init__(self, input_size, latent_size, hidden_size, output_size, num_blocks=2, remove_diag=False, ln=False, pool1='sum', pool2='sum', equi=False):
+    def __init__(self, input_size, latent_size, hidden_size, output_size, num_blocks=2, remove_diag=False, ln=False, pool1='sum', pool2='sum', equi=False, dropout=0.1, weight_sharing='none'):
         super().__init__()
         if equi:
             input_size = 1
         self.proj = nn.Linear(input_size, latent_size)
-        self.enc = EncoderStack(*[MultiRNBlock(latent_size, hidden_size, ln=ln, remove_diag=remove_diag, pool=pool1) for i in range(num_blocks)])
+        self.enc = EncoderStack(*[MultiRNBlock(latent_size, hidden_size, ln=ln, remove_diag=remove_diag, pool=pool1, dropout=dropout, weight_sharing=weight_sharing) for i in range(num_blocks)])
         self.dec = nn.Linear(2*latent_size, output_size)
         self.remove_diag = remove_diag
         self.equi=equi
