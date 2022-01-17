@@ -488,6 +488,7 @@ class CrossOnlyModel(nn.Module):
         self.encoder = EncoderStack(*[CSABSimple(latent_size, latent_size, hidden_size, num_heads, ln=ln, equi=equi, 
             weight_sharing=weight_sharing, dropout=dropout) for i in range(num_blocks)])
         self.decoder = self._make_decoder(latent_size, hidden_size, output_size, decoder_layers)
+        self.proj = None if input_size == latent_size else nn.Linear(input_size, latent_size)
         self.pool_x = PMA(latent_size, hidden_size, num_heads, 1, ln=ln)
         self.pool_y = PMA(latent_size, hidden_size, num_heads, 1, ln=ln)
 

@@ -1,9 +1,9 @@
 import torchvision
-from torchvision.datasets import CocoCaptions
+from torchvision.datasets import CocoCaptions, Flickr30k
 import torchvision.transforms as T
 import torch
 import torch.nn as nn
-from torch.utils.data import IterableDataset, Dataset
+from torch.utils.data import IterableDataset, Dataset, Subset
 
 from transformers import BertModel, BertTokenizer
 
@@ -23,14 +23,33 @@ from train_omniglot import ConvEncoder
 
 
 
-def load_caption_data(imgdir, anndir):
+def load_coco_data(imgdir, anndir):
     transforms = T.Compose([T.Resize(256), T.CenterCrop(224), T.ToTensor(), T.Normalize(mean=[0.485, 0.456, 0.406],
                                  std=[0.229, 0.224, 0.225])])
     
     train_dataset = CocoCaptions(root=os.path.join(imgdir, "train2014"), annFile=os.path.join(anndir, "captions_train2014.json"), transform=transforms)
     val_dataset = CocoCaptions(root=os.path.join(imgdir, "val2014"), annFile=os.path.join(anndir, "captions_val2014.json"), transform=transforms)
 
-    return train_dataset, val_dataset
+    return train_dataset, train_dataset, val_dataset
+
+def load_flickr_data(imgdir, annfile, split_file):
+    transforms = T.Compose([T.Resize(256), T.CenterCrop(224), T.ToTensor(), T.Normalize(mean=[0.485, 0.456, 0.406],
+                                 std=[0.229, 0.224, 0.225])])
+    
+    dataset = Flickr30k(root=os.path.join(imgdir), annFile=annfile, transform=transforms)
+
+    with open(split_file, 'r') as f:
+        splits_dict=json.load(f)
+    splits = {'train':[], 'val':[], 'test':[]}
+    for i in range(len(splits_dict['images'])):
+        img_dict = splits_dict['images'][i]
+        splits[img_dict["split"]].append(img_dict["img_id"])
+
+    train_dataset = Subset(dataset, splits["train"])
+    val_dataset = Subset(dataset, splits["val"])
+    test_dataset = Subset(dataset, splits["test"])
+
+    return train_dataset, val_dataset, test_dataset
 
 
 def make_model(set_model, text_model='bert', img_model='vgg', embed_dim=300):
@@ -119,6 +138,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('run_name', type=str)
     parser.add_argument('--model', type=str, default='csab', choices=['csab', 'rn', 'pine', 'naive', 'cross-only'])
+    parser.add_argument('--dataset', type=str, default='coco', choices=['coco', 'flickr'])
     parser.add_argument('--checkpoint_dir', type=str, default="/checkpoint/kaselby")
     parser.add_argument('--checkpoint_name', type=str, default=None)
     parser.add_argument('--num_blocks', type=int, default=2)
@@ -131,7 +151,7 @@ def parse_args():
     parser.add_argument('--hidden_size', type=int, default=512)
     parser.add_argument('--set_size', type=int, nargs=2, default=[6,10])
     parser.add_argument('--basedir', type=str, default="final-runs")
-    parser.add_argument('--data_dir', type=str, default='./coco')
+    parser.add_argument('--data_dir', type=str, default='./data')
     parser.add_argument('--eval_every', type=int, default=500)
     parser.add_argument('--eval_steps', type=int, default=200)
     parser.add_argument('--text_model', type=str, choices=['bert', 'ft'], default='bert')
@@ -161,8 +181,13 @@ if __name__ == '__main__':
         tokenize_fct = fasttext_tokenize_batch
         tokenize_args = (ft,)
 
-    train_dataset, test_dataset = load_caption_data(os.path.join(args.data_dir, "images"), os.path.join(args.data_dir, "annotations"))
+    dataset_dir = os.path.join(args.data_dir, args.dataset)
+    if args.dataset == "coco":
+        train_dataset, val_dataset, test_dataset = load_coco_data(os.path.join(dataset_dir, "images"), os.path.join(dataset_dir, "annotations"))
+    else:
+        train_dataset, val_dataset, test_dataset = load_flickr_data(os.path.join(dataset_dir, "images"), os.path.join(dataset_dir, "annotations.token"), os.path.join(dataset_dir, "splits.json"))
     train_generator = CaptionGenerator(train_dataset, tokenize_fct, tokenize_args, device=device)
+    train_generator = CaptionGenerator(val_dataset, tokenize_fct, tokenize_args, device=device)
     test_generator = CaptionGenerator(test_dataset, tokenize_fct, tokenize_args, device=device)
     
     if args.model == 'csab':
