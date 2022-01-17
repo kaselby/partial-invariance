@@ -50,19 +50,27 @@ def summarize_eval(y, yhat, dl, sd, return_all=False):
     return (acc, dl_acc, dl_pos_acc, dl_neg_acc, cl_acc, cl_pos_acc, cl_neg_acc, cl_neg_sd_acc, cl_neg_dd_acc), (N, n_dl, n_dl_pos, n_dl_neg, n_cl, n_cl_pos, n_cl_neg, n_cl_neg_sd, n_cl_neg_dd)
 
 
+def eval_by_dataset(model, episode, steps, batch_size, data_kwargs):
+    n_datasets = len(episode.datasets)
+    for i in range(n_datasets):
+        for j in range(n_datasets):
+            for _ in range(steps):
+                X, Y = episode.compare_datasets(i, j, batch_size=batch_size, **data_kwargs)
+
+
 device=torch.device("cuda")
 
 basedir="final-runs"
 dataset="meta-dataset/discriminator"
 
-run_name = "test_gan_1"
+run_name = "baseline_1_csab/0"
 image_size=84
 episode_classes=200
 episode_datasets=11
 steps=1000
 
 data_kwargs={
-    'set_size':(6,10),
+    'set_size':(10,30),
     'p_aligned': 0.5,
     'p_dataset': 0.3,
     'p_same': 0.5
@@ -76,3 +84,8 @@ y,yhat, (dl, sd) = eval_disc(model, episode, steps, 16, data_kwargs)
 
 
 (acc, dl_acc, dl_pos_acc, dl_neg_acc, cl_acc, cl_pos_acc, cl_neg_acc, cl_neg_sd_acc, cl_neg_dd_acc), _ = summarize_eval(y, yhat, dl, sd, return_all=True)
+
+
+#data_kwargs={
+#    'set_size':(6,10)
+#}
