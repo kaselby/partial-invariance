@@ -176,14 +176,11 @@ class ISAB(nn.Module):
 
 
 class CSABSimple(nn.Module):
-    def __init__(self, input_size, latent_size, hidden_size, num_heads, weight_sharing='none', merge='concat', **kwargs):
+    def __init__(self, input_size, latent_size, hidden_size, num_heads, weight_sharing='none', **kwargs):
         super(CSABSimple, self).__init__()
         self._init_blocks(input_size, latent_size, hidden_size, num_heads, weight_sharing, **kwargs)
-        self.merge = merge
         self.fc_X = nn.Linear(latent_size, latent_size)
         self.fc_Y = nn.Linear(latent_size, latent_size)
-        self.remove_diag = remove_diag
-        self.nn_attn = nn_attn
 
     def _init_blocks(self, input_size, latent_size, hidden_size, num_heads, weight_sharing='none', **kwargs):
         if weight_sharing == 'none':
