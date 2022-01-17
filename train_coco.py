@@ -166,7 +166,7 @@ def parse_args():
 if __name__ == '__main__':
     args = parse_args()
 
-    run_dir = os.path.join(args.basedir, "coco", args.run_name)
+    run_dir = os.path.join(args.basedir, args.dataset, args.run_name)
     if not os.path.exists(run_dir):
         os.makedirs(run_dir)
 
