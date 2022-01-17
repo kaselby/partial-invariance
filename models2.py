@@ -511,8 +511,8 @@ class CrossOnlyModel(nn.Module):
         if self.proj is not None:
             ZX, ZY = self.proj(ZX), self.proj(ZY)
         ZX, ZY = self.encoder((ZX, ZY))
-        ZX = self.pool1(ZX)
-        ZY = self.pool2(ZY)
+        ZX = self.pool_x(ZX)
+        ZY = self.pool_x(ZY)
         out = self.decoder(torch.cat([ZX, ZY], dim=-1))
         return out.squeeze(-1)
 
