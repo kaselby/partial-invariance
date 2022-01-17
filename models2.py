@@ -177,7 +177,7 @@ class ISAB(nn.Module):
 
 class CSABSimple(nn.Module):
     def __init__(self, input_size, latent_size, hidden_size, num_heads, weight_sharing='none', merge='concat', **kwargs):
-        super(CSAB, self).__init__()
+        super(CSABSimple, self).__init__()
         self._init_blocks(input_size, latent_size, hidden_size, num_heads, weight_sharing, **kwargs)
         self.merge = merge
         self.fc_X = nn.Linear(latent_size, latent_size)
