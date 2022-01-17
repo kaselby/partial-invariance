@@ -432,9 +432,11 @@ class MultiSetTransformer(nn.Module):
 
 
 class NaiveMultiSetModel(nn.Module):
-    def __init__(self, input_size, latent_size, hidden_size, output_size, num_blocks, num_heads, remove_diag=False, ln=False, equi=False, weight_sharing='none', dropout=0.1):
+    def __init__(self, input_size, latent_size, hidden_size, output_size, num_blocks, num_heads, remove_diag=False, ln=False,
+            equi=False, weight_sharing='none', dropout=0.1, decoder_layers=1):
         super().__init__()
         self.input_size = input_size
+        self.proj = None if input_size == latent_size else nn.Linear(input_size, latent_size)
         if weight_sharing == 'none':
             self.encoder1 = nn.Sequential(*[SAB(input_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, equi=equi, dropout=dropout) for _ in range(num_blocks)])
             self.encoder2 = nn.Sequential(*[SAB(input_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, equi=equi, dropout=dropout) for _ in range(num_blocks)])
@@ -450,14 +452,28 @@ class NaiveMultiSetModel(nn.Module):
             self.encoder2 = encoder
             self.pool1 = pool
             self.pool2 = pool
-        self.decoder = nn.Sequential(
-            nn.Linear(2*latent_size, hidden_size),
-            nn.Linear(hidden_size, output_size)
-        )
+        self.decoder = self._make_decoder(latent_size, hidden_size, output_size, decoder_layers)
+
+    def _make_decoder(self, latent_size, hidden_size, output_size, n_layers):
+        if n_layers == 0:
+            return nn.Linear(2*latent_size, output_size)
+        else:
+            hidden_layers = []
+            for _ in range(n_layers-1): 
+                hidden_layers += [nn.Linear(hidden_size, hidden_size), nn.ReLU()]
+            return nn.Sequential(
+                nn.Linear(2*latent_size, hidden_size),
+                nn.ReLU(),
+                *hidden_layers,
+                nn.Linear(hidden_size, output_size)
+            )
 
     def forward(self, X, Y):
-        ZX = self.encoder1(X)
-        ZY = self.encoder2(Y)
+        ZX, ZY = X, Y
+        if self.proj is not None:
+            ZX, ZY = self.proj(ZX), self.proj(ZY)
+        ZX = self.encoder1(ZX)
+        ZY = self.encoder2(ZY)
         ZX = self.pool1(ZX)
         ZY = self.pool2(ZY)
         out = self.decoder(torch.cat([ZX, ZY], dim=-1))
@@ -465,21 +481,35 @@ class NaiveMultiSetModel(nn.Module):
 
 
 class CrossOnlyModel(nn.Module):
-    def __init__(self, input_size, latent_size, hidden_size, output_size, num_blocks, num_heads, ln=False, equi=False, weight_sharing='none', dropout=0.1):
+    def __init__(self, input_size, latent_size, hidden_size, output_size, num_blocks, num_heads, ln=False, 
+            equi=False, weight_sharing='none', dropout=0.1, decoder_layers=1):
         super().__init__()
         self.input_size = input_size
         self.encoder = EncoderStack(*[CSABSimple(latent_size, latent_size, hidden_size, num_heads, ln=ln, equi=equi, 
             weight_sharing=weight_sharing, dropout=dropout) for i in range(num_blocks)])
-        self.decoder = nn.Sequential(
-            nn.Linear(2*latent_size, hidden_size),
-            nn.Linear(hidden_size, output_size)
-        )
+        self.decoder = self._make_decoder(latent_size, hidden_size, output_size, decoder_layers)
         self.pool_x = PMA(latent_size, hidden_size, num_heads, 1, ln=ln)
         self.pool_y = PMA(latent_size, hidden_size, num_heads, 1, ln=ln)
 
+    def _make_decoder(self, latent_size, hidden_size, output_size, n_layers):
+        if n_layers == 0:
+            return nn.Linear(2*latent_size, output_size)
+        else:
+            hidden_layers = []
+            for _ in range(n_layers-1): 
+                hidden_layers += [nn.Linear(hidden_size, hidden_size), nn.ReLU()]
+            return nn.Sequential(
+                nn.Linear(2*latent_size, hidden_size),
+                nn.ReLU(),
+                *hidden_layers,
+                nn.Linear(hidden_size, output_size)
+            )
+
     def forward(self, X, Y):
-        ZX = self.encoder1(X)
-        ZY = self.encoder2(Y)
+        ZX, ZY = X, Y
+        if self.proj is not None:
+            ZX, ZY = self.proj(ZX), self.proj(ZY)
+        ZX, ZY = self.encoder((ZX, ZY))
         ZX = self.pool1(ZX)
         ZY = self.pool2(ZY)
         out = self.decoder(torch.cat([ZX, ZY], dim=-1))
@@ -705,16 +735,30 @@ class RNModel(nn.Module):
         return self.dec(ZX).squeeze(-1)
 
 class MultiRNModel(nn.Module):
-    def __init__(self, input_size, latent_size, hidden_size, output_size, num_blocks=2, remove_diag=False, ln=False, pool1='sum', pool2='sum', equi=False, dropout=0.1, weight_sharing='none'):
+    def __init__(self, input_size, latent_size, hidden_size, output_size, num_blocks=2, remove_diag=False, ln=False, 
+            pool1='sum', pool2='sum', equi=False, dropout=0.1, weight_sharing='none', decoder_layers=0):
         super().__init__()
         if equi:
             input_size = 1
         self.proj = nn.Linear(input_size, latent_size)
         self.enc = EncoderStack(*[MultiRNBlock(latent_size, hidden_size, ln=ln, remove_diag=remove_diag, pool=pool1, dropout=dropout, weight_sharing=weight_sharing) for i in range(num_blocks)])
-        self.dec = nn.Linear(2*latent_size, output_size)
+        self.dec = self._make_decoder(latent_size, hidden_size, output_size, decoder_layers)
         self.remove_diag = remove_diag
         self.equi=equi
-        
+
+    def _make_decoder(self, latent_size, hidden_size, output_size, n_layers):
+        if n_layers == 0:
+            return nn.Linear(2*latent_size, output_size)
+        else:
+            hidden_layers = []
+            for _ in range(n_layers-1): 
+                hidden_layers += [nn.Linear(hidden_size, hidden_size), nn.ReLU()]
+            return nn.Sequential(
+                nn.Linear(2*latent_size, hidden_size),
+                nn.ReLU(),
+                *hidden_layers,
+                nn.Linear(hidden_size, output_size)
+            )
 
     def forward(self, X, Y, masks=None):
         if self.equi:
