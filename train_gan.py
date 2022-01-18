@@ -367,6 +367,7 @@ if __name__ == '__main__':
         steps = int(steps/n_gpus)
         eval_every = int(eval_every/n_gpus)
         eval_steps = int(eval_steps/n_gpus)
+        episode_length = int(episode_length / n_gpus)
 
     print("Beginning Training...")
 
