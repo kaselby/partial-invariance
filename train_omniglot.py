@@ -393,7 +393,7 @@ def train(model, optimizer, train_generator, val_generator, test_generator, step
     
     loss_fct = nn.MSELoss() if not poisson else poisson_loss
     avg_loss=0
-    for i in tqdm.tqdm(range(steps)):
+    for i in tqdm.tqdm(range(initial_step, steps)):
         optimizer.zero_grad()
 
         (X,Y), target = train_generator(batch_size, **data_kwargs)
