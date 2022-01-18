@@ -359,6 +359,7 @@ if __name__ == '__main__':
     steps = args.steps
     eval_every=args.eval_every
     eval_steps=args.eval_steps
+    episode_length = args.episode_length
     if torch.cuda.device_count() > 1:
         n_gpus = torch.cuda.device_count()
         print("Let's use", n_gpus, "GPUs!")
@@ -376,7 +377,7 @@ if __name__ == '__main__':
     checkpoint_dir = os.path.join(args.checkpoint_dir, args.checkpoint_name) if args.checkpoint_name is not None else None
     discriminator, (losses, accs, test_acc) = train_disc(discriminator, optimizer, train_generator, val_generator, test_generator, steps, 
         batch_size=batch_size, checkpoint_dir=checkpoint_dir, data_kwargs=data_kwargs, eval_every=eval_every, eval_steps=eval_steps,
-        episode_classes=args.episode_classes, episode_datasets=args.episode_datasets, episode_length=args.episode_length)
+        episode_classes=args.episode_classes, episode_datasets=args.episode_datasets, episode_length=episode_length)
 
     print("Test Accuracy:", test_acc)
 
