@@ -605,15 +605,19 @@ class EquiPINE(nn.Module):
 #
 
 class RelationNetwork(nn.Module):
-    def __init__(self, net, pool='sum'):
+    def __init__(self, net, pool='sum', equi=False):
         super().__init__()
         self.net = net
         self.pool = pool
+        self.equi=equi
     
     def forward(self, X, Y, mask=None):
         N = X.size(1)
         M = Y.size(1)
-        pairs = torch.cat([Y.unsqueeze(1).expand(-1,N,-1,*Y.size()[2:]), X.unsqueeze(2).expand(-1,-1,M,*X.size()[2:])], dim=-1)
+        if equi:
+            pairs = torch.cat([Y.unsqueeze(1).expand(-1,N,-1,-1,*Y.size()[3:]), X.unsqueeze(2).expand(-1,-1, M,-1,*X.size()[3:])], dim=-1)
+        else:
+            pairs = torch.cat([Y.unsqueeze(1).expand(-1,N,-1,*Y.size()[2:]), X.unsqueeze(2).expand(-1,-1,M,*X.size()[2:])], dim=-1)
         Z = self.net(pairs)
         if self.pool == 'sum':
             if mask is not None:
@@ -628,10 +632,10 @@ class RelationNetwork(nn.Module):
         return Z
 
 class RNBlock(nn.Module):
-    def __init__(self, latent_size, hidden_size, ln=False, pool='sum', dropout=0.1):
+    def __init__(self, latent_size, hidden_size, ln=False, pool='sum', dropout=0.1, equi=False):
         super().__init__()
         net = nn.Sequential(nn.Linear(2*latent_size, hidden_size), nn.ReLU(), nn.Linear(hidden_size, latent_size))
-        self.rn = RelationNetwork(net, pool)
+        self.rn = RelationNetwork(net, pool, equi)
         self.fc = nn.Sequential(nn.Linear(latent_size, hidden_size), nn.ReLU(), nn.Linear(hidden_size, latent_size)) 
         if dropout > 0:
             self.dropout = nn.Dropout(dropout)
@@ -742,7 +746,7 @@ class MultiRNModel(nn.Module):
         if equi:
             input_size = 1
         self.proj = nn.Linear(input_size, latent_size)
-        self.enc = EncoderStack(*[MultiRNBlock(latent_size, hidden_size, ln=ln, remove_diag=remove_diag, pool=pool1, dropout=dropout, weight_sharing=weight_sharing) for i in range(num_blocks)])
+        self.enc = EncoderStack(*[MultiRNBlock(latent_size, hidden_size, ln=ln, remove_diag=remove_diag, pool=pool1, dropout=dropout, weight_sharing=weight_sharing, equi=equi) for i in range(num_blocks)])
         self.dec = self._make_decoder(latent_size, hidden_size, output_size, decoder_layers)
         self.remove_diag = remove_diag
         self.equi=equi
