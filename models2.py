@@ -621,11 +621,15 @@ class RelationNetwork(nn.Module):
         Z = self.net(pairs)
         if self.pool == 'sum':
             if mask is not None:
-                Z = Z * mask.unsqueeze(0).expand_as(Z)
+                if self.equi:
+                    mask = mask.unsqueeze(-1)
+                Z = Z * mask.unsqueeze(-1).expand_as(Z)
             Z = torch.sum(Z, dim=2)
         elif self.pool == 'max':
             if mask is not None:
-                Z = Z + mask * -99999999
+                if self.equi:
+                    mask = mask.unsqueeze(-1)
+                Z = Z + mask.unsqueeze(-1).expand_as(Z) * -99999999
             Z = torch.max(Z, dim=2)[0]
         else:
             raise NotImplementedError()
