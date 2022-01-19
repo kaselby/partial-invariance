@@ -88,7 +88,7 @@ def train_disc(model, optimizer, train_dataset, val_dataset, test_dataset, steps
     n_episodes = math.ceil((steps - step) / episode_length)
     avg_loss = 0
     loss_fct = nn.BCEWithLogitsLoss()
-    for _ in tqdm.tqdmrange(n_episodes)):
+    for _ in tqdm.tqdm(range(n_episodes)):
         episode = train_dataset.get_episode(episode_classes, episode_datasets)
         for i in range(episode_length):
             optimizer.zero_grad()
@@ -253,7 +253,7 @@ def train_gen(generator, discriminator, optimizer, train_dataset, steps, batch_s
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('run_name', type=str)
-    parser.add_argument('--model', type=str, default='csab', choices=['csab', 'naive', 'cross-only', 'pine', 'rn', 'sum-merge'])
+    parser.add_argument('--model', type=str, default='csab', choices=['csab', 'naive', 'cross-only', 'pine', 'rn'])
     parser.add_argument('--checkpoint_dir', type=str, default="/checkpoint/kaselby")
     parser.add_argument('--checkpoint_name', type=str, default=None)
     parser.add_argument('--num_blocks', type=int, default=1)
