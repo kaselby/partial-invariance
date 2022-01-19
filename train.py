@@ -238,7 +238,9 @@ if __name__ == '__main__':
                 'output_size':1,
                 'input_size':args.dim,
                 'latent_size':args.latent_size,
-                'hidden_size':args.hidden_size
+                'hidden_size':args.hidden_size,
+                'pool1': 'max',
+                'pool2': 'max'
             }
             model=MultiRNModel(**model_kwargs).to(device)
         elif args.model == 'pine':
