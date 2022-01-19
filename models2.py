@@ -614,7 +614,7 @@ class RelationNetwork(nn.Module):
     def forward(self, X, Y, mask=None):
         N = X.size(1)
         M = Y.size(1)
-        if equi:
+        if self.equi:
             pairs = torch.cat([Y.unsqueeze(1).expand(-1,N,-1,-1,*Y.size()[3:]), X.unsqueeze(2).expand(-1,-1, M,-1,*X.size()[3:])], dim=-1)
         else:
             pairs = torch.cat([Y.unsqueeze(1).expand(-1,N,-1,*Y.size()[2:]), X.unsqueeze(2).expand(-1,-1,M,*X.size()[2:])], dim=-1)
