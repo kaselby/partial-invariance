@@ -1,4 +1,4 @@
-from models2 import MultiSetTransformer, PINE
+from models2 import MultiSetTransformer, PINE, MultiRNBlock, CrossOnlyModel
 from models import MultiSetTransformer1, EquiMultiSetTransformer1
 from utils import *
 from generators import *
