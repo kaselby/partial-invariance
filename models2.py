@@ -122,15 +122,16 @@ class MHA(nn.Module):
 
     def forward(self, *args, **kwargs):
         if getattr(self, 'equi', False):
-            if getattr(self, 'nn_attn', None) is not None and self.nn_attn:
-                return self._nn_equi_mha(*args, **kwargs)
-            else:
+            if not getattr(self, 'nn_attn', False):
                 return self._equi_mha(*args, **kwargs)
-        else:
-            if getattr(self, 'nn_attn', None) is not None and self.nn_attn:
-                return self._nn_mha(*args, **kwargs)
             else:
+                return self._nn_equi_mha(*args, **kwargs)
+        else:
+            if not getattr(self, 'nn_attn', False):
                 return self._mha(*args, **kwargs)
+            else:
+                return self._nn_mha(*args, **kwargs)
+                
 
 
 class MAB(nn.Module):
@@ -258,19 +259,19 @@ class CSAB(nn.Module):
 
     def forward(self, inputs, masks=None, neighbours=None):
         X, Y = inputs
-        if getattr(self, 'nn_attn', None) is not None and self.nn_attn:
+        if not getattr(self, 'nn_attn', False):
+            mask_xx, mask_xy, mask_yx, mask_yy = self._get_masks(X.size(1), Y.size(1), masks)
+            XX = self.MAB_XX(X, X, mask=mask_xx)
+            XY = self.MAB_XY(X, Y, mask=mask_xy)
+            YX = self.MAB_YX(Y, X, mask=mask_yx)
+            YY = self.MAB_YY(Y, Y, mask=mask_yy)
+        else:
             assert neighbours is not None and masks is None
             N_XX, N_XY, N_YX, N_YY = neighbours
             XX = self.MAB_XX(X, X, neighbours=N_XX)
             XY = self.MAB_XY(X, Y, neighbours=N_XY)
             YX = self.MAB_YX(Y, X, neighbours=N_YX)
             YY = self.MAB_YY(Y, Y, neighbours=N_YY)
-        else:
-            mask_xx, mask_xy, mask_yx, mask_yy = self._get_masks(X.size(1), Y.size(1), masks)
-            XX = self.MAB_XX(X, X, mask=mask_xx)
-            XY = self.MAB_XY(X, Y, mask=mask_xy)
-            YX = self.MAB_YX(Y, X, mask=mask_yx)
-            YY = self.MAB_YY(Y, Y, mask=mask_yy)
         #backwards compatibility
         if getattr(self, "merge", None) is None or self.merge == "concat":
             X_out = X + self.fc_X(torch.cat([XX, XY], dim=-1))
@@ -406,12 +407,12 @@ class MultiSetTransformer(nn.Module):
         if self.proj is not None:
             ZX, ZY = self.proj(ZX), self.proj(ZY)
             
-        if getattr(self, "nn_attn", None) is not None and self.nn_attn:
+        if not getattr(self, "nn_attn", False):
+            ZX, ZY = self.enc((ZX, ZY), masks=masks)
+        else:
             neighbours = cross_knn_inds(X, Y, self.k_neighbours)
             ZX, ZY = self.enc((ZX, ZY), neighbours=neighbours)
-        else:
-            ZX, ZY = self.enc((ZX, ZY), masks=masks)
-
+            
         if self.equi:
             ZX = ZX.max(dim=2)[0]
             ZY = ZY.max(dim=2)[0]
