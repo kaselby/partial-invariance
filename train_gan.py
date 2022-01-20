@@ -72,7 +72,7 @@ def train_adv(discriminator, generator, d_opt, g_opt, dataset, steps, device, se
 
 #@profile
 def train_disc(model, optimizer, train_dataset, val_dataset, test_dataset, steps, batch_size=64, eval_every=500, 
-    eval_steps=100, episode_classes=100, episode_datasets=5, episode_length=250, checkpoint_dir=None, data_kwargs={}):
+    eval_steps=100, save_every=100, episode_classes=100, episode_datasets=5, episode_length=250, checkpoint_dir=None, data_kwargs={}):
     train_losses = []
     eval_accs = []
     step=0
@@ -112,6 +112,8 @@ def train_disc(model, optimizer, train_dataset, val_dataset, test_dataset, steps
                 avg_loss /= eval_every
                 print("Step: %d\tLoss: %f\tAccuracy: %f" % (step, avg_loss, acc))
                 avg_loss = 0
+
+            if step % eval_every == 0 and step > 0:
                 # save
                 if checkpoint_dir is not None:
                     checkpoint_path = os.path.join(checkpoint_dir, "checkpoint.pt")
@@ -265,8 +267,9 @@ def parse_args():
     parser.add_argument('--hidden_size', type=int, default=1024)
     parser.add_argument('--set_size', type=int, nargs=2, default=[3,10])
     parser.add_argument('--basedir', type=str, default="final-runs")
+    parser.add_argument('--save_every', type=int, default=50)
     parser.add_argument('--eval_every', type=int, default=500)
-    parser.add_argument('--eval_steps', type=int, default=200)
+    parser.add_argument('--eval_steps', type=int, default=100)
     parser.add_argument('--episode_classes', type=int, default=100)
     parser.add_argument('--episode_datasets', type=int, default=5)
     parser.add_argument('--episode_length', type=int, default=500)
@@ -359,6 +362,7 @@ if __name__ == '__main__':
     eval_every=args.eval_every
     eval_steps=args.eval_steps
     episode_length = args.episode_length
+    save_every=args.save_every
     if torch.cuda.device_count() > 1:
         n_gpus = torch.cuda.device_count()
         print("Let's use", n_gpus, "GPUs!")
@@ -368,6 +372,7 @@ if __name__ == '__main__':
         eval_every = int(eval_every/n_gpus)
         eval_steps = int(eval_steps/n_gpus)
         episode_length = int(episode_length / n_gpus)
+        save_every = int(save_every / n_gpus)
 
     print("Beginning Training...")
 
@@ -376,7 +381,7 @@ if __name__ == '__main__':
     checkpoint_dir = os.path.join(args.checkpoint_dir, args.checkpoint_name) if args.checkpoint_name is not None else None
     discriminator, (losses, accs, test_acc) = train_disc(discriminator, optimizer, train_generator, val_generator, test_generator, steps, 
         batch_size=batch_size, checkpoint_dir=checkpoint_dir, data_kwargs=data_kwargs, eval_every=eval_every, eval_steps=eval_steps,
-        episode_classes=args.episode_classes, episode_datasets=args.episode_datasets, episode_length=episode_length)
+        episode_classes=args.episode_classes, episode_datasets=args.episode_datasets, episode_length=episode_length, save_every=save_every)
 
     print("Test Accuracy:", test_acc)
 
