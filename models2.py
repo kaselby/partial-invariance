@@ -406,7 +406,7 @@ class MultiSetTransformer(nn.Module):
         if self.proj is not None:
             ZX, ZY = self.proj(ZX), self.proj(ZY)
             
-        if self.nn_attn:
+        if getattr(self, "nn_attn", False) or self.nn_attn:
             neighbours = cross_knn_inds(X, Y, self.k_neighbours)
             ZX, ZY = self.enc((ZX, ZY), neighbours=neighbours)
         else:
