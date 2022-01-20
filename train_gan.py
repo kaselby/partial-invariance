@@ -71,7 +71,7 @@ def train_adv(discriminator, generator, d_opt, g_opt, dataset, steps, device, se
     return discriminator, generator, d_losses, g_losses
 
 #@profile
-def train_disc(model, optimizer, train_dataset, val_dataset, test_dataset, steps, batch_size=64, eval_every=500, save_every=2000, 
+def train_disc(model, optimizer, train_dataset, val_dataset, test_dataset, steps, batch_size=64, eval_every=500, 
     eval_steps=100, episode_classes=100, episode_datasets=5, episode_length=250, checkpoint_dir=None, data_kwargs={}):
     train_losses = []
     eval_accs = []
@@ -105,23 +105,26 @@ def train_disc(model, optimizer, train_dataset, val_dataset, test_dataset, steps
 
             step += 1
 
+            if step % eval_every == 0 and step > 0:
+                #eval
+                cc = eval_disc(model, val_dataset.get_episode(episode_classes, episode_datasets), eval_steps, batch_size, data_kwargs)
+                eval_accs.append(acc)
+                avg_loss /= eval_every
+                print("Step: %d\tLoss: %f\tAccuracy: %f" % (step, avg_loss, acc))
+                avg_loss = 0
+                # save
+                if checkpoint_dir is not None:
+                    checkpoint_path = os.path.join(checkpoint_dir, "checkpoint.pt")
+                    if os.path.exists(checkpoint_path):
+                        os.remove(checkpoint_path)
+                    torch.save({'model':model,'optimizer':optimizer, 'step': step, 'losses':train_losses, 'accs': eval_accs}, checkpoint_path)
+
             if step >= steps:
                 break
         else:
             del episode 
             # eval
-            acc = eval_disc(model, val_dataset.get_episode(episode_classes, episode_datasets), eval_steps, batch_size, data_kwargs)
-            eval_accs.append(acc)
-            avg_loss /= eval_every
-            print("Step: %d\tLoss: %f\tAccuracy: %f" % (step, avg_loss, acc))
-            avg_loss = 0
-            
-            # save
-            if checkpoint_dir is not None:
-                checkpoint_path = os.path.join(checkpoint_dir, "checkpoint.pt")
-                if os.path.exists(checkpoint_path):
-                    os.remove(checkpoint_path)
-                torch.save({'model':model,'optimizer':optimizer, 'step': step, 'losses':train_losses, 'accs': eval_accs}, checkpoint_path)
+
 
             continue
         break
