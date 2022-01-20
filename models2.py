@@ -61,7 +61,7 @@ class MHA(nn.Module):
         return O
     
     def _equi_mha(self, Q, K, mask=None):
-        # band-aid fix:
+        # band-aid fix for backwards compat:
         d = self.latent_size if getattr(self, 'latent_size', None) is not None else self.dim_V
 
         Q = self.w_q(Q)

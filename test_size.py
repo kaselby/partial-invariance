@@ -33,6 +33,7 @@ def eval_all(sizes, sample_kwargs, *args, **kwargs):
     for i in range(sizes.size(0)):
         sample_kwargs['set_size']=(sizes[i].item(),sizes[i].item()+1)
         losses[i] = evaluate(*args, sample_kwargs=sample_kwargs, **kwargs)
+        print("Size": sizes[i].item(), "Loss:", losses[i].item())
     return losses
 
 
@@ -40,7 +41,7 @@ def eval_all(sizes, sample_kwargs, *args, **kwargs):
 if __name__ == '__main__':
     args = parse_args()
     
-    sizes = torch.linspace(2.5,8,15).exp().round().int()
+    sizes = torch.linspace(2.5,7,15).exp().round().int()
 
     sample_kwargs={'n':args.n}
     if args.target == 'wasserstein':
