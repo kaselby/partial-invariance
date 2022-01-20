@@ -61,15 +61,18 @@ class MHA(nn.Module):
         return O
     
     def _equi_mha(self, Q, K, mask=None):
+        # band-aid fix:
+        d = self.latent_size if getattr(self, 'latent_size', None) is not None else self.dim_V
+
         Q = self.w_q(Q)
         K, V = self.w_k(K), self.w_v(K)
 
-        dim_split = self.latent_size // self.num_heads
+        dim_split = d // self.num_heads
         Q_ = torch.stack(Q.split(dim_split, 3), 0)
         K_ = torch.stack(K.split(dim_split, 3), 0)
         V_ = torch.stack(V.split(dim_split, 3), 0)
 
-        E = Q_.transpose(2,3).matmul(K_.transpose(2,3).transpose(3,4)).sum(dim=2) / math.sqrt(self.latent_size)
+        E = Q_.transpose(2,3).matmul(K_.transpose(2,3).transpose(3,4)).sum(dim=2) / math.sqrt(d)
         if mask is not None:
             A = masked_softmax(E, mask.unsqueeze(0).expand_as(E), dim=3)
         else:
