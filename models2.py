@@ -258,7 +258,7 @@ class CSAB(nn.Module):
 
     def forward(self, inputs, masks=None, neighbours=None):
         X, Y = inputs
-        if self.nn_attn:
+        if getattr(self, 'nn_attn', None) is not None and self.nn_attn:
             assert neighbours is not None and masks is None
             N_XX, N_XY, N_YX, N_YY = neighbours
             XX = self.MAB_XX(X, X, neighbours=N_XX)
@@ -272,7 +272,7 @@ class CSAB(nn.Module):
             YX = self.MAB_YX(Y, X, mask=mask_yx)
             YY = self.MAB_YY(Y, Y, mask=mask_yy)
         #backwards compatibility
-        if getattr(self, "merge", True) or self.merge == "concat":
+        if getattr(self, "merge", None) is None or self.merge == "concat":
             X_out = X + self.fc_X(torch.cat([XX, XY], dim=-1))
             Y_out = Y + self.fc_Y(torch.cat([YY, YX], dim=-1))
         else:
