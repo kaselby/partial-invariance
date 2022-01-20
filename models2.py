@@ -121,13 +121,13 @@ class MHA(nn.Module):
         return O
 
     def forward(self, *args, **kwargs):
-        if self.equi:
-            if self.nn_attn:
+        if getattr(self, 'equi', False):
+            if getattr(self, 'nn_attn', None) is not None and self.nn_attn:
                 return self._nn_equi_mha(*args, **kwargs)
             else:
                 return self._equi_mha(*args, **kwargs)
         else:
-            if self.nn_attn:
+            if getattr(self, 'nn_attn', None) is not None and self.nn_attn:
                 return self._nn_mha(*args, **kwargs)
             else:
                 return self._mha(*args, **kwargs)
