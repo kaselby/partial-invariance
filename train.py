@@ -212,7 +212,7 @@ if __name__ == '__main__':
         mixture=False
         criterion=nn.MSELoss()
 
-    samples_kwargs['set_size'] = args.set_size
+    sample_kwargs['set_size'] = args.set_size
 
     if not args.old_model:
         if args.model == 'csab':
