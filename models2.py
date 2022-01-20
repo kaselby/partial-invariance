@@ -747,8 +747,9 @@ class MultiRNModel(nn.Module):
     def __init__(self, input_size, latent_size, hidden_size, output_size, num_blocks=2, remove_diag=False, ln=False, 
             pool1='sum', pool2='sum', equi=False, dropout=0.1, weight_sharing='none', decoder_layers=0):
         super().__init__()
+        self.input_size=input_size
         if equi:
-            input_size = 1
+            self.input_size = 1
         self.proj = nn.Linear(input_size, latent_size)
         self.enc = EncoderStack(*[MultiRNBlock(latent_size, hidden_size, ln=ln, remove_diag=remove_diag, pool=pool1, dropout=dropout, weight_sharing=weight_sharing, equi=equi) for i in range(num_blocks)])
         self.dec = self._make_decoder(latent_size, hidden_size, output_size, decoder_layers)
