@@ -122,10 +122,6 @@ def train_disc(model, optimizer, train_dataset, val_dataset, test_dataset, steps
             if step >= steps:
                 break
         else:
-            del episode 
-            # eval
-
-
             continue
         break
     
