@@ -41,7 +41,7 @@ def eval_all(sizes, sample_kwargs, *args, **kwargs):
 if __name__ == '__main__':
     args = parse_args()
     
-    sizes = torch.linspace(2.5,7,15).exp().round().int()
+    sizes = torch.linspace(2.5,7,10).exp().round().int()
 
     sample_kwargs={'n':args.n}
     if args.target == 'wasserstein':
