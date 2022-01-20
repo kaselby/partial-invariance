@@ -27,6 +27,6 @@ for ss in "${sizes[@]}"
 do
     for (( i = 0 ; i < $n_runs ; i++ ))
     do
-        sbatch scripts/train.sh "${run_name}_equi/${i}" $target $data -1 1 $dim $latent_size $hidden_size $lr $clip "csab" $basedir 0 $num_blocks $ss $(($ss+$ss/4))
+        sbatch scripts/train.sh "${run_name}_ss${ss}/${i}" $target $data -1 1 $dim $latent_size $hidden_size $lr $clip "csab" $basedir 0 $num_blocks $ss $(($ss+$ss/4))
     done
 done
