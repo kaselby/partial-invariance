@@ -406,7 +406,7 @@ class MultiSetTransformer(nn.Module):
         if self.proj is not None:
             ZX, ZY = self.proj(ZX), self.proj(ZY)
             
-        if getattr(self, "nn_attn", False) or self.nn_attn:
+        if getattr(self, "nn_attn", None) is not None and self.nn_attn:
             neighbours = cross_knn_inds(X, Y, self.k_neighbours)
             ZX, ZY = self.enc((ZX, ZY), neighbours=neighbours)
         else:
@@ -417,7 +417,7 @@ class MultiSetTransformer(nn.Module):
             ZY = ZY.max(dim=2)[0]
         
         #backwards compatibility
-        if getattr(self, "pool_method", True) or self.pool_method == "pma":
+        if getattr(self, "pool_method", None) is None or self.pool_method == "pma":
             ZX = self.pool_x(ZX)
             ZY = self.pool_y(ZY)
         elif self.pool_method == "max":
