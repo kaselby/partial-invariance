@@ -31,7 +31,7 @@ def parse_args():
     parser.add_argument('--num_inds', type=int, default=-1)
     parser.add_argument('--num_blocks', type=int, default=2)
     parser.add_argument('--num_heads', type=int, default=4)
-    parser.add_argument('--batch_size', type=int, default=64)
+    parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--steps', type=int, default=100000)
     parser.add_argument('--dropout', type=float, default=0)
     parser.add_argument('--old_model', action='store_true')
