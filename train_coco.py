@@ -110,12 +110,12 @@ def train(model, optimizer, train_dataset, test_dataset, steps, batch_size=64, e
             avg_loss /= eval_every
             print("Step: %d\tLoss: %f\tAccuracy: %f" % (i, avg_loss, acc))
             avg_loss = 0
-
-        if i % save_every == 0 and i > 0 and checkpoint_dir is not None:
+            
             checkpoint_path = os.path.join(checkpoint_dir, "checkpoint.pt")
             if os.path.exists(checkpoint_path):
                 os.remove(checkpoint_path)
             torch.save({'model':model,'optimizer':optimizer, 'step': i, 'losses':train_losses, 'accs': eval_accs}, checkpoint_path)
+
     
     test_acc = evaluate(model, test_dataset, eval_steps, batch_size, data_kwargs)
     
