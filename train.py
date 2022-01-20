@@ -44,6 +44,7 @@ def parse_args():
     parser.add_argument('--nn', action='store_true')
     parser.add_argument('--k_neighbours', type=int, default=-1)
     parser.add_argument('--decoder_layers', type=int, default=0)
+    parser.add_argument('--set_size', type=int, nargs=2, default=[100,150])
     parser.add_argument('--weight_sharing', type=str, choices=['none', 'cross', 'sym'], default='none')
     return parser.parse_args()
 
@@ -167,7 +168,7 @@ if __name__ == '__main__':
         sample_kwargs['n'] = args.dim
 
     if args.target == 'w1':
-        sample_kwargs['set_size'] = (10,150)
+        #sample_kwargs['set_size'] = (10,150)
         label_fct = wasserstein
         label_kwargs={'scaling':0.98, 'blur':0.001}
         baselines={'sinkhorn_default':wasserstein}
@@ -175,7 +176,7 @@ if __name__ == '__main__':
         criterion=nn.MSELoss()
         mixture=True
     elif args.target == 'w2':
-        sample_kwargs['set_size'] = (10,150)
+        #sample_kwargs['set_size'] = (10,150)
         label_fct = wasserstein2_gaussian
         label_kwargs={}
         baselines={'sinkhorn_default':wasserstein2}
@@ -183,7 +184,7 @@ if __name__ == '__main__':
         criterion=nn.MSELoss()
         mixture=False
     elif args.target == 'w1_exact':
-        sample_kwargs['set_size'] = (10,150)
+        #sample_kwargs['set_size'] = (10,150)
         label_fct = wasserstein_mc
         label_kwargs={}
         baselines={'sinkhorn_default':wasserstein2}
@@ -191,7 +192,7 @@ if __name__ == '__main__':
         criterion=nn.MSELoss()
         mixture=False
     elif args.target == 'kl':
-        sample_kwargs['set_size'] = (100,150)
+        #sample_kwargs['set_size'] = (100,150)
         label_fct = kl_mc
         label_kwargs={}
         baselines={'knn':kl_knn}
@@ -204,12 +205,14 @@ if __name__ == '__main__':
         mixture=True
         #batch_size = int(batch_size/4)
     elif args.target == 'mi':
-        sample_kwargs['set_size'] = (100,300)
+        #sample_kwargs['set_size'] = (100,300)
         label_fct = mi_corr_gaussian
         label_kwargs={}
         exact_loss=True
         mixture=False
         criterion=nn.MSELoss()
+
+    samples_kwargs['set_size'] = args.set_size
 
     if not args.old_model:
         if args.model == 'csab':
