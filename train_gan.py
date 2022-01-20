@@ -104,16 +104,8 @@ def train_disc(model, optimizer, train_dataset, val_dataset, test_dataset, steps
             train_losses.append(loss.item())
 
             step += 1
-
-            if step % eval_every == 0 and step > 0:
-                #eval
-                cc = eval_disc(model, val_dataset.get_episode(episode_classes, episode_datasets), eval_steps, batch_size, data_kwargs)
-                eval_accs.append(acc)
-                avg_loss /= eval_every
-                print("Step: %d\tLoss: %f\tAccuracy: %f" % (step, avg_loss, acc))
-                avg_loss = 0
-
-            if step % eval_every == 0 and step > 0:
+                
+            if step % save_every == 0 and step > 0:
                 # save
                 if checkpoint_dir is not None:
                     checkpoint_path = os.path.join(checkpoint_dir, "checkpoint.pt")
@@ -124,6 +116,12 @@ def train_disc(model, optimizer, train_dataset, val_dataset, test_dataset, steps
             if step >= steps:
                 break
         else:
+            acc = eval_disc(model, val_dataset.get_episode(episode_classes, episode_datasets), eval_steps, batch_size, data_kwargs)
+            eval_accs.append(acc)
+            avg_loss /= eval_every
+            print("Step: %d\tLoss: %f\tAccuracy: %f" % (step, avg_loss, acc))
+            avg_loss = 0
+
             continue
         break
     
