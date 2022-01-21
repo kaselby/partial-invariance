@@ -53,7 +53,7 @@ dataset = dataset_cls(args.data_dir, test_envs, False, args.img_size)
 
 model_path = os.path.join(args.basedir, args.run_name)
 all_runs = get_runs(model_path)
-dists = torch.zeros(n_envs, n_envs):
+dists = torch.zeros(n_envs, n_envs)
 for run_num in all_runs:
     run_path = os.path.join(model_path, run_num, 'model.pt')
     model = torch.load(run_path)
