@@ -42,7 +42,9 @@ if __name__ == '__main__':
         'p_same': 0.5
     }
 
-    test_generator = MetaDatasetGenerator(image_size=image_size, split=Split.TEST, device=device)
+    device=torch.device("cuda")
+
+    test_generator = MetaDatasetGenerator(image_size=args.image_size, split=Split.TEST, device=device)
     
 
     model_dir = os.path.join(args.basedir, args.run_name)
