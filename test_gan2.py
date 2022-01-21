@@ -31,7 +31,7 @@ def parse_args():
     parser.add_argument('--n_episodes', type=int, default=8)
     parser.add_argument('--set_size', type=int, nargs=2, default=[10, 30])
     parser.add_argument('--batch_size', type=int, default=16)
-    parser.add_argument('--episode_classes', type=int, default=100)
+    parser.add_argument('--episode_classes', type=int, default=200)
     parser.add_argument('--episode_datasets', type=int, default=11)
     parser.add_argument('--episode_length', type=int, default=80)
     parser.add_argument('--outfile', type=str)
