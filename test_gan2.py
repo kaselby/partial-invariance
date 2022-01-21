@@ -1,19 +1,12 @@
 
-import io
-import os
-import argparse
-from posixpath import basename
-import random
-
 import torch
-import torch.nn as nn
-import fasttext
-import numpy as np
+import os
 import tqdm
-import glob
+import numpy as np
+import pandas as pd
+import argparse
 
-from utils import *
-from generators import *
+from md_generator import MetaDatasetGenerator, Split
 
 
 from train_gan import eval_disc, summarize_eval
