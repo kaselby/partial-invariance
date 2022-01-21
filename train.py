@@ -17,7 +17,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('run_name', type=str)
     parser.add_argument('--target', type=str, default='w1')
-    parser.add_argument('--model', type=str, default='csab', choices=['csab', 'rn', 'pine', 'naive'])
+    parser.add_argument('--model', type=str, default='csab', choices=['csab', 'rn', 'pine', 'naive', 'cross-only'])
     parser.add_argument('--data', type=str, default='gmm')
     parser.add_argument('--normalize', type=str, choices=('none', 'scale-linear', 'scale-inv', 'whiten'))
     #parser.add_argument('--norm_in', action='store_true')
