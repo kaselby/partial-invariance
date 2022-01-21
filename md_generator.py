@@ -63,7 +63,7 @@ class MetaDatasetGenerator():
         class_datasets=[]
         for dataset in dataset_ids:
             n_i = len(self.datasets_by_class[dataset])
-            if classes_per_dataset >= n_i
+            if classes_per_dataset >= n_i:
                 class_datasets.append(self.datasets_by_class[dataset])
             else:
                 classes_i = torch.multinomial(torch.ones(n_i), classes_per_dataset)
