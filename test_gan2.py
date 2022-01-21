@@ -39,7 +39,7 @@ def parse_args():
 
 
 if __name__ == '__main__':
-    args = parser.parse_args()
+    args = parse_args()
 
     data_kwargs={
         'set_size':(10,30),
