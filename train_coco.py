@@ -110,7 +110,7 @@ def train(model, optimizer, train_dataset, test_dataset, steps, batch_size=64, e
             avg_loss /= eval_every
             print("Step: %d\tLoss: %f\tAccuracy: %f" % (i, avg_loss, acc))
             avg_loss = 0
-            
+
             checkpoint_path = os.path.join(checkpoint_dir, "checkpoint.pt")
             if os.path.exists(checkpoint_path):
                 os.remove(checkpoint_path)
@@ -138,7 +138,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('run_name', type=str)
     parser.add_argument('--model', type=str, default='csab', choices=['csab', 'rn', 'pine', 'naive', 'cross-only'])
-    parser.add_argument('--dataset', type=str, default='coco', choices=['coco', 'flickr'])
+    parser.add_argument('--dataset', type=str, default='coco', choices=['coco', 'flickr30k'])
     parser.add_argument('--checkpoint_dir', type=str, default="/checkpoint/kaselby")
     parser.add_argument('--checkpoint_name', type=str, default=None)
     parser.add_argument('--num_blocks', type=int, default=2)
