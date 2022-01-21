@@ -59,6 +59,22 @@ class MetaDatasetGenerator():
             N_remaining -= m_i
         return Episode(class_datasets, self.transforms, device=self.device)
 
+    def get_episode_from_datasets(self, dataset_ids, classes_per_dataset):
+        class_datasets=[]
+        for dataset in dataset_ids:
+            n_i = len(self.datasets_by_class[dataset])
+            if classes_per_dataset >= n_i
+                class_datasets.append(self.datasets_by_class[dataset])
+            else:
+                classes_i = torch.multinomial(torch.ones(n_i), classes_per_dataset)
+                class_datasets.append([self.datasets_by_class[dataset][j.item()] for j in classes_i])
+        return Episode(class_datasets, self.transforms, device=self.device)
+                
+
+    def get_dataset(self, dataset_id):
+        class_datasets = self.datasets_by_class[dataset_id]
+        return Episode(class_datasets, self,transforms, device=self.device)
+
     '''
     def get_episode(self, n_classes, n_datasets):
         class_datasets=[]
@@ -136,6 +152,41 @@ class MetaDatasetGenerator():
     def __call__(self, *args, **kwargs):
         return self._generate(*args, **kwargs)
 '''
+
+class TestEpisode():
+    def __init__(self, datasets, transforms, device=torch.device('cpu')):
+        self.datasets = datasets
+        self.sizes = [len(d) for d in datasets]
+        self.N = sum(self.sizes)
+        self.transforms = transforms
+        self.device = device
+
+    def _get_next(self, class_id, dataset_id):
+        try:
+            sample_dic = next(self.datasets[dataset_id][class_id])
+        except (StopIteration, TypeError) as e:
+            self.datasets[dataset_id][class_id] = cycle_(self.datasets[dataset_id][class_id])
+            sample_dic = next(self.datasets[dataset_id][class_id])
+        return sample_dic
+
+    def _generate_set_from_class(self, class_id, n_samples, dataset_id=None):
+        set_data = []
+        for i in range(n_samples):
+            sample_dic = self._get_next(class_id, dataset_id=dataset_id)
+            sample_dic = parse_record(sample_dic)
+            transformed_image = self.transforms(sample_dic['image'])
+            set_data.append(transformed_image)
+        return set_data
+
+    def _generate_set_from_dataset(self, dataset_id, n_samples):
+        set_data = []
+        for i in range(n_samples):
+            class_id = torch.randint(len(self.datasets[dataset_id]), (1,)).item()
+            sample_dic = self._get_next(class_id, dataset_id)
+            sample_dic = parse_record(sample_dic)
+            transformed_image = self.transforms(sample_dic['image'])
+            set_data.append(transformed_image)
+        return set_data
 
 
 class Episode():

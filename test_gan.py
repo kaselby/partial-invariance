@@ -29,53 +29,49 @@ def summarize_eval(y, yhat, dl, sd, return_all=False):
     N = y.size(0)
     correct = y==yhat
     acc = (y==yhat).sum().item() / N
-    #prec = (y & yhat).sum().item() / yhat.sum().item()
-
     if not return_all:
         return acc
-
     def get_acc(labels):
         n = labels.sum().item()
         return (labels & correct).sum().item() / n, n
-
     dl_acc, n_dl = get_acc(dl)
     dl_pos_acc, n_dl_pos = get_acc(dl & y)
     dl_neg_acc, n_dl_neg = get_acc(dl & ~y)
     cl_acc, n_cl = get_acc(~dl)
     cl_pos_acc, n_cl_pos = get_acc(~dl & y)
     cl_neg_acc, n_cl_neg = get_acc(~dl & ~y)
-    cl_neg_sd_acc, n_cl_neg_sd = get_acc(~dl & y & sd)
+    cl_neg_sd_acc, n_cl_neg_sd = get_acc(~dl & ~y & sd)
     cl_neg_dd_acc, n_cl_neg_dd = get_acc(~dl & ~y & ~sd)
-
     #dl_prec = (dl & y & yhat).sum().item() / (dl & yhat).sum().item()
     #cl_prec = (~dl & y & yhat).sum().item() / (~dl & yhat).sum().item()
-
     return (acc, dl_acc, dl_pos_acc, dl_neg_acc, cl_acc, cl_pos_acc, cl_neg_acc, cl_neg_sd_acc, cl_neg_dd_acc), (N, n_dl, n_dl_pos, n_dl_neg, n_cl, n_cl_pos, n_cl_neg, n_cl_neg_sd, n_cl_neg_dd)
 
 
-def eval_by_dataset(model, episode, steps, batch_size, set_size):
+def eval_by_dataset(model, dataset, steps, batch_size, set_size):
     n_datasets = len(episode.datasets)
     with torch.no_grad():
         accs = torch.zeros(n_datasets)
         for i in range(n_datasets):
+            episode = dataset.get_dataset(i)
             for _ in range(steps):
-                (X, Y), target = episode(batch_size, dataset_id=i, set_size=set_size)
-                out = model(X,Y).squeeze(-1).cpu()
-                accs[i] += ((out > 0) == target).float().sum()
+                (X, Y), target = episode(batch_size, dataset_id=0, set_size=set_size)
+                out = model(X,Y).squeeze(-1)
+                accs[i] += ((out > 0) == target).float().sum().cpu()
             accs[i] /= (steps * batch_size)
     return accs
                  
 
 
-def eval_cross_dataset(model, episode, steps, batch_size, set_size):
+def eval_cross_dataset(model, dataset, steps, batch_size, set_size, classes_per_dataset=100):
     n_datasets = len(episode.datasets)
     with torch.no_grad():
         dists = torch.zeros(n_datasets, n_datasets)
         accs = torch.zeros(n_datasets, n_datasets)
         for i in range(n_datasets):
             for j in range(n_datasets):
+                episode = dataset.get_episode_from_datasets((i,j), classes_per_dataset)
                 for _ in range(steps):
-                    X, Y = episode.compare_datasets(i, j, batch_size=batch_size, set_size=set_size)
+                    X, Y = episode.compare_datasets(0, 1, batch_size=batch_size, set_size=set_size)
                     out = model(X,Y).squeeze(-1).cpu()
                     dist = -1 * F.logsigmoid(out)[0].sum()
                     acc = ((out > 0) == (i==j)).float().sum()
@@ -93,11 +89,11 @@ device=torch.device("cuda")
 basedir="final-runs"
 dataset="meta-dataset/discriminator"
 
-run_name = "baseline_1_csab/0"
+run_name = "baseline_3_csab/0"
 image_size=84
 episode_classes=200
 episode_datasets=11
-steps=500
+steps=250
 batch_size=16
 
 data_kwargs={
@@ -131,7 +127,9 @@ data_kwargs={
 }
 steps=16
 
-dists,accs = eval_by_dataset(model, episode, steps, batch_size, (10,30))
+accs = eval_by_dataset(model, test_generator, steps, batch_size, (10,30))
+
+dists, accs = eval_cross_dataset(model, episode, steps)
 
 out_path = os.path.join(basedir, dataset, run_name)
 
