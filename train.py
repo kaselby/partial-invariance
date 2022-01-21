@@ -47,6 +47,7 @@ def parse_args():
     parser.add_argument('--decoder_layers', type=int, default=0)
     parser.add_argument('--set_size', type=int, nargs=2, default=[100,150])
     parser.add_argument('--weight_sharing', type=str, choices=['none', 'cross', 'sym'], default='none')
+    parser.add_argument('--merge', type=str, default='concat', choices=['concat', 'sum'])
     return parser.parse_args()
 
 
@@ -232,7 +233,8 @@ if __name__ == '__main__':
                 'nn_attn':args.nn,
                 'k_neighbours':args.k_neighbours,
                 'weight_sharing':args.weight_sharing,
-                'decoder_layers':args.decoder_layers
+                'decoder_layers':args.decoder_layers,
+                'merge': args.merge
             }
             model=MultiSetTransformer(**model_kwargs).to(device)
         elif args.model == 'rn':
@@ -251,6 +253,22 @@ if __name__ == '__main__':
             model=MultiRNModel(**model_kwargs).to(device)
         elif args.model == 'pine':
             model = PINE(args.dim, args.latent_size, 16, 2, args.hidden_size, 1).to(device)
+        elif args.model == 'cross-only':
+            model_kwargs={
+                'ln':True,
+                'remove_diag':True,
+                'num_blocks':args.num_blocks,
+                'equi':args.equi, 
+                'output_size':1,
+                'num_heads':args.num_heads,
+                'dropout':args.dropout,
+                'input_size':args.dim,
+                'latent_size':args.latent_size,
+                'hidden_size':args.hidden_size,
+                'weight_sharing':args.weight_sharing,
+                'decoder_layers':args.decoder_layers
+            }
+            model = CrossOnlyModel(**model_kwargs)
         else:
             raise NotImplementedError()
     else:
