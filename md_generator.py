@@ -153,6 +153,7 @@ class MetaDatasetGenerator():
         return self._generate(*args, **kwargs)
 '''
 
+'''
 class TestEpisode():
     def __init__(self, datasets, transforms, device=torch.device('cpu')):
         self.datasets = datasets
@@ -188,6 +189,16 @@ class TestEpisode():
             set_data.append(transformed_image)
         return set_data
 
+    def compare_datasets(self, i, j, batch_size=1, set_size=(10,15)):
+        n_samples = torch.randint(*set_size, (1,)).item()
+        if batch_size == 1:
+            X = torch.stack(self._generate_set_from_dataset(i, n_samples), dim=0)
+            Y = torch.stack(self._generate_set_from_dataset(j, n_samples), dim=0)
+        else:
+            X = torch.stack([torch.stack(self._generate_set_from_dataset(i, n_samples), dim=0) for _ in range(batch_size)], dim=0)
+            Y = torch.stack([torch.stack(self._generate_set_from_dataset(j, n_samples), dim=0) for _ in range(batch_size)], dim=0)
+        return X.to(self.device), Y.to(self.device)
+'''
 
 class Episode():
     def __init__(self, datasets, transforms, device=torch.device('cpu')):
