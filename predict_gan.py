@@ -59,11 +59,11 @@ for run_num in all_runs:
     model = torch.load(run_path)
     for i, source_name in enumerate(dataset_cls.ENVIRONMENTS):
         for j, target_name in enumerate(dataset_cls.ENVIRONMENTS):
-            dists = []
+            dists_ij = []
             for k in tqdm.tqdm(range(args.num_sets)):
                 dist_ijk = predict(model, dataset[i], dataset[j], args.num_samples, device)
-                dists.append(dist_ijk)
-            dists[i, j] += sum(dists)/len(dists)
+                dists_ij.append(dist_ijk)
+            dists[i, j] += sum(dists_ij)/len(dists_ij)
 dists /= len(all_runs)
 
 
@@ -75,6 +75,7 @@ output_file = args.run_name + "_results.csv"
 output_path = os.path.join(output_dir, output_file) 
 
 save_csv(dists, output_path)
+
 
 '''
 table=[]
