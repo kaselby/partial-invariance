@@ -27,6 +27,7 @@ def parse_args():
     parser.add_argument('--episode_classes', type=int, default=200)
     parser.add_argument('--episode_datasets', type=int, default=11)
     parser.add_argument('--episode_length', type=int, default=80)
+    parser.add_argument('--image_size', type=int, default=84)
     parser.add_argument('--outfile', type=str)
     return parser.parse_args()
 
