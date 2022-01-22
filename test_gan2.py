@@ -51,7 +51,10 @@ if __name__ == '__main__':
     runs = get_runs(model_dir)
     accs = torch.zeros(len(runs))
     for i, run_num in enumerate(runs):
-        model = torch.load(os.path.join(model_dir, run_num, 'model.pt'))
+        model_path = os.path.join(model_dir, run_num, 'model.pt')
+        if not os.path.exists(model_path):
+            break
+        model = torch.load(model_path)
         acc_i =0
         for j in range(args.n_episodes):
             episode = test_generator.get_episode(args.episode_classes, args.episode_datasets)
