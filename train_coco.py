@@ -43,7 +43,7 @@ def load_flickr_data(imgdir, annfile, split_file):
     splits = {'train':[], 'val':[], 'test':[]}
     for i in range(len(splits_dict['images'])):
         img_dict = splits_dict['images'][i]
-        splits[img_dict["split"]].append(img_dict["img_id"])
+        splits[img_dict["split"]].append(img_dict["imgid"])
 
     train_dataset = Subset(dataset, splits["train"])
     val_dataset = Subset(dataset, splits["val"])
