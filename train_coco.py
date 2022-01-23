@@ -76,7 +76,7 @@ def make_model(set_model, text_model='bert', img_model='vgg', embed_dim=300):
 
 
 
-def train(model, optimizer, train_dataset, test_dataset, steps, batch_size=64, eval_every=500, save_every=2000, eval_steps=100, checkpoint_dir=None, data_kwargs={}):
+def train(model, optimizer, train_dataset, test_dataset, steps, batch_size=64, eval_every=500, save_every=2000, eval_steps=100, test_steps=500, checkpoint_dir=None, data_kwargs={}):
     train_losses = []
     eval_accs = []
     initial_step=0
@@ -117,7 +117,7 @@ def train(model, optimizer, train_dataset, test_dataset, steps, batch_size=64, e
             torch.save({'model':model,'optimizer':optimizer, 'step': i, 'losses':train_losses, 'accs': eval_accs}, checkpoint_path)
 
     
-    test_acc = evaluate(model, test_dataset, eval_steps, batch_size, data_kwargs)
+    test_acc = evaluate(model, test_dataset, test_steps, batch_size, data_kwargs)
     
     return model, (train_losses, eval_accs, test_acc)
 
@@ -154,6 +154,7 @@ def parse_args():
     parser.add_argument('--data_dir', type=str, default='./data')
     parser.add_argument('--eval_every', type=int, default=500)
     parser.add_argument('--eval_steps', type=int, default=200)
+    parser.add_argument('--test_steps', type=int, default=500)
     parser.add_argument('--text_model', type=str, choices=['bert', 'ft'], default='bert')
     parser.add_argument('--img_model', type=str, choices=['resnet', 'base'], default='resnet')
     parser.add_argument('--embed_path', type=str, default="cc.en.300.bin")
@@ -258,7 +259,7 @@ if __name__ == '__main__':
     data_kwargs = {'set_size':args.set_size}
     print("Beginning training...")
     model, (losses, accs, test_acc) = train(model, optimizer, train_generator, train_generator, steps, batch_size, 
-        checkpoint_dir=checkpoint_dir, data_kwargs=data_kwargs, eval_every=eval_every, eval_steps=eval_steps)
+        checkpoint_dir=checkpoint_dir, data_kwargs=data_kwargs, eval_every=eval_every, eval_steps=eval_steps, test_steps=args.test_steps)
 
     print("Test Accuracy:", test_acc)
 
