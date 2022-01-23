@@ -74,7 +74,7 @@ def summarize_eval(y, yhat, dl, sd, return_all=False):
 
 
 def eval_by_dataset(model, dataset, steps, batch_size, set_size):
-    n_datasets = len(episode.datasets)
+    n_datasets = dataset.N
     with torch.no_grad():
         accs = torch.zeros(n_datasets)
         for i in range(n_datasets):
@@ -89,7 +89,7 @@ def eval_by_dataset(model, dataset, steps, batch_size, set_size):
 
 
 def eval_cross_dataset(model, dataset, steps, batch_size, set_size, classes_per_dataset=100):
-    n_datasets = len(episode.datasets)
+    n_datasets = dataset.N
     with torch.no_grad():
         dists = torch.zeros(n_datasets, n_datasets)
         accs = torch.zeros(n_datasets, n_datasets)
