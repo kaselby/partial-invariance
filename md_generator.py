@@ -72,7 +72,7 @@ class MetaDatasetGenerator():
                 
 
     def get_dataset(self, dataset_id):
-        class_datasets = self.datasets_by_class[dataset_id]
+        class_datasets = [self.datasets_by_class[dataset_id]]
         return Episode(class_datasets, self.transforms, device=self.device)
 
     '''
