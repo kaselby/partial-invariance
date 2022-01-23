@@ -481,28 +481,6 @@ class CaptionMatchingGenerator():
         return imgs, text
     
     def _build_text_batch(self, captions, use_first=True):
-        '''
-        bs = len(captions)
-        ss = len(captions[0])
-        ns = 1 if use_first else len(captions[0][0]) 
-        #batch = [[self.text_dataset[i] for i in indices_j] for indices_j in indices]
-        flattened_seqs = []
-        for batch_element in captions:
-            for set_element in batch_element:
-                if use_first:
-                    flattened_seqs.append(set_element[0])
-                else:
-                    flattened_seqs += set_element
-        
-        tokenized_seqs = self.tokenizer(flattened_seqs, padding=True, truncation=True, return_tensors='pt')
-        tokenized_seqs = {k:v.to(self.device) for k,v in tokenized_seqs.items()}
-
-        return {'set_size':ss, 'n_seqs': ns, 'inputs': tokenized_seqs}
-        #with torch.no_grad():
-        #    encoded_seqs = self.text_encoder(tokenized_seqs)
-
-        #return encoded_seqs[:,0].view(ss, bs, -1).transpose(0,1)
-        '''
         return self.tokenize_fct(captions, *self.tokenize_args, device=self.device, use_first=use_first)
 
     def _build_img_batch(self, imgs):
