@@ -111,7 +111,6 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('run_name', type=str)
     parser.add_argument('--basedir', type=str, default='final-runs/meta-dataset/discriminator')
-    parser.add_argument('--n_episodes', type=int, default=8)
     parser.add_argument('--set_size', type=int, nargs=2, default=[10, 30])
     parser.add_argument('--batch_size', type=int, default=16)
     parser.add_argument('--base_eval_steps', type=int, default=500)
@@ -141,6 +140,8 @@ if __name__ == '__main__':
         'p_dataset': 0.3,
         'p_same': 0.5
     }
+    episode_classes = 200
+    episode_datasets=11
     
 
     model_dir = os.path.join(args.basedir, args.run_name)
