@@ -36,7 +36,7 @@ def load_flickr_data(imgdir, annfile, split_file):
     transforms = T.Compose([T.Resize(256), T.CenterCrop(224), T.ToTensor(), T.Normalize(mean=[0.485, 0.456, 0.406],
                                  std=[0.229, 0.224, 0.225])])
     
-    dataset = Flickr30k(root=os.path.join(imgdir), annFile=annfile, transform=transforms)
+    dataset = Flickr30k(root=os.path.join(imgdir), ann_file=annfile, transform=transforms)
 
     with open(split_file, 'r') as f:
         splits_dict=json.load(f)
