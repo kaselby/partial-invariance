@@ -9,4 +9,4 @@
 #SBATCH --mem=25GB
 #SBATCH --exclude=gpu109
 
-python3 test_coco2.py $1 --outfile $2
+python3 test_coco.py $1 --outfile $2

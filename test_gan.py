@@ -89,7 +89,7 @@ device=torch.device("cuda")
 basedir="final-runs"
 dataset="meta-dataset/discriminator"
 
-run_name = "baseline_3_csab/0"
+run_name = "baseline_3_naive/1"
 image_size=84
 episode_classes=200
 episode_datasets=11
