@@ -2,7 +2,7 @@
 
 n_runs=3
 
-batch_size=6
+batch_size=4
 num_blocks=1
 latent_size=512
 hidden_size=1024
