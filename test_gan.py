@@ -17,7 +17,7 @@ def get_runs(run_name):
     return subfolders
 
 def save_csv(tensor, path):
-    df=pd.Dataframe(tensor.numpy())
+    df=pd.DataFrame(tensor.numpy())
     df.to_csv(path, index=False)
 
 def print_accs(accs):
