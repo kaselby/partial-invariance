@@ -1,11 +1,37 @@
+
 import torch
 import os
 import tqdm
 import numpy as np
 import pandas as pd
+import argparse
 
 from md_generator import MetaDatasetGenerator, Split
 
+
+
+use_cuda=torch.cuda.is_available()
+
+def get_runs(run_name):
+    subfolders = [f.name for f in os.scandir(run_name) if f.is_dir()]
+    return subfolders
+
+def save_csv(tensor, path):
+    df=pd.Dataframe(tensor.numpy())
+    df.to_csv(path, index=False)
+
+def print_accs(accs):
+    lines = []
+    lines.append("Overall Acc: "+ str(accs[0].item()))
+    lines.append("Dataset-level Acc: " + str(accs[1].item()))
+    lines.append("\tPositive Acc: " + str(accs[2].item()))
+    lines.append("\tNegative Acc: " + str(accs[3].item()))
+    lines.append("Class-level Acc: " + str(accs[4].item()))
+    lines.append("\tPositive Acc: " + str(accs[5].item()))
+    lines.append("\tNegative Acc: " + str(accs[6].item()))
+    lines.append("\t\tSame-Dataset Acc: " + str(accs[7].item()))
+    lines.append("\t\tCross-Dataset Acc: " + str(accs[8].item()))
+    return "\n".join(lines)
 
 def eval_disc(model, episode, steps, batch_size, data_kwargs):
     N = batch_size * steps
@@ -80,65 +106,67 @@ def eval_cross_dataset(model, dataset, steps, batch_size, set_size, classes_per_
                 dists[i][j] /= (steps * batch_size)
                 accs[i][j] /= (steps * batch_size)
     return dists, accs
-                
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('run_name', type=str)
+    parser.add_argument('--basedir', type=str, default='final-runs/meta-dataset/discriminator')
+    parser.add_argument('--n_episodes', type=int, default=8)
+    parser.add_argument('--set_size', type=int, nargs=2, default=[10, 30])
+    parser.add_argument('--batch_size', type=int, default=16)
+    parser.add_argument('--base_eval_steps', type=int, default=500)
+    parser.add_argument('--dataset_eval_steps', type=int, default=100)
+    parser.add_argument('--image_size', type=int, default=84)
+    parser.add_argument('--outfile', type=str)
+    return parser.parse_args()
 
 
+if __name__ == '__main__':
+    args = parse_args()
 
-device=torch.device("cuda")
+    data_kwargs={
+        'set_size':(10,30),
+        'p_aligned': 0.5,
+        'p_dataset': 0.3,
+        'p_same': 0.5
+    }
 
-basedir="final-runs"
-dataset="meta-dataset/discriminator"
+    device=torch.device("cuda")
 
-run_name = "baseline_3_naive/1"
-image_size=84
-episode_classes=200
-episode_datasets=11
-steps=250
-batch_size=16
+    test_generator = MetaDatasetGenerator(image_size=args.image_size, split=Split.TEST, device=device)
 
-data_kwargs={
-    'set_size':(10,30),
-    'p_aligned': 0.5,
-    'p_dataset': 0.3,
-    'p_same': 0.5
-}
+    data_kwargs={
+        'set_size':args.set_size,
+        'p_aligned': 0.5,
+        'p_dataset': 0.3,
+        'p_same': 0.5
+    }
+    
 
-model = torch.load(os.path.join(basedir, dataset, run_name, "model.pt"))
-test_generator = MetaDatasetGenerator(image_size=image_size, split=Split.TEST, device=device)
+    model_dir = os.path.join(args.basedir, args.run_name)
+    runs = get_runs(model_dir)
+    accs = torch.zeros(len(runs), 9)
+    dataset_cl_accs = torch.zeros(len(runs), test_generator.N)
+    dataset_cross_accs = torch.zeros(len(runs), test_generator.N, test_generator.N)
+    for i, run_num in enumerate(runs):
+        model_path = os.path.join(model_dir, run_num, 'model.pt')
+        if not os.path.exists(model_path):
+            break
+        model = torch.load(model_path)
+        episode = test_generator.get_episode(episode_classes, episode_datasets)
+        y,yhat, (dl, sd) = eval_disc(model, episode, steps, batch_size, data_kwargs)
+        accs[i,:] = torch.tensor(summarize_eval(y, yhat, dl, sd, return_all=True)[0])
 
-episode = test_generator.get_episode(episode_classes, episode_datasets)
-y,yhat, (dl, sd) = eval_disc(model, episode, steps, batch_size, data_kwargs)
+        dataset_cl_accs[i,:] = eval_by_dataset(model, test_generator, args.dataset_eval_steps, args.batch_size, args.set_size)
+        dataset_cross_accs[i,:,:] = eval_cross_dataset(model, test_generator, args.dataset_eval_steps, args.batch_size, args.set_size)
+    accs = accs.mean(dim=0)
+    dataset_cl_accs = dataset_cl_accs.mean(dim=0)
+    dataset_cross_accs = dataset_cross_accs.mean(dim=0)
 
+    outdir = os.path.join(args.basedir, args.run_name)
+    with open(os.path.join(outdir, "analysis.txt"), 'w') as writer:
+        writer.write(print_accs(accs))
+    
+    save_csv(dataset_cross_accs, os.path.join(outdir, "dataset_dists.csv"))
+    save_csv(dataset_cl_accs, os.path.join(outdir, "dataset_accs.csv"))
 
-(acc, dl_acc, dl_pos_acc, dl_neg_acc, cl_acc, cl_pos_acc, cl_neg_acc, cl_neg_sd_acc, cl_neg_dd_acc), _ = summarize_eval(y, yhat, dl, sd, return_all=True)
-
-lines=[]
-lines.append("Overall Acc: "+ str(acc))
-lines.append("Dataset-level Acc: " + str(dl_acc))
-lines.append("\tPositive Acc: " + str(dl_pos_acc))
-lines.append("\tNegative Acc: " + str(dl_neg_acc))
-lines.append("Class-level Acc: " + str(cl_acc))
-lines.append("\tPositive Acc: " + str(cl_pos_acc))
-lines.append("\tNegative Acc: " + str(cl_neg_acc))
-lines.append("\t\tSame-Dataset Acc: " + str(cl_neg_sd_acc))
-lines.append("\t\tCross-Dataset Acc: " + str(cl_neg_dd_acc))
-for line in lines:
-    print(line)
-
-data_kwargs={
-    'set_size':(6,10)
-}
-steps=16
-
-accs = eval_by_dataset(model, test_generator, steps, batch_size, (10,30))
-
-dists, accs = eval_cross_dataset(model, episode, steps)
-
-out_path = os.path.join(basedir, dataset, run_name)
-
-def save_csv(tensor, path):
-    df=pd.Dataframe(tensor.numpy())
-    df.to_csv(path, index=False)
-
-save_csv(dists, os.path.join(out_path, "dataset_dists.csv"))
-save_csv(dists, os.path.join(out_path, "dataset_accs.csv"))
