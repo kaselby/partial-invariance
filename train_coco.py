@@ -187,7 +187,7 @@ if __name__ == '__main__':
     else:
         train_dataset, val_dataset, test_dataset = load_flickr_data(os.path.join(dataset_dir, "images"), os.path.join(dataset_dir, "annotations.token"), os.path.join(dataset_dir, "splits.json"))
     train_generator = CaptionGenerator(train_dataset, tokenize_fct, tokenize_args, device=device)
-    train_generator = CaptionGenerator(val_dataset, tokenize_fct, tokenize_args, device=device)
+    val_generator = CaptionGenerator(val_dataset, tokenize_fct, tokenize_args, device=device)
     test_generator = CaptionGenerator(test_dataset, tokenize_fct, tokenize_args, device=device)
     
     if args.model == 'csab':
