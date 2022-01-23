@@ -22,7 +22,7 @@ def parse_args():
     parser.add_argument('--basedir', type=str, default='final-runs/coco')
     parser.add_argument('--set_size', type=int, nargs=2, default=[10, 30])
     parser.add_argument('--batch_size', type=int, default=12)
-    parser.add_argument('--steps', type=int, default=500
+    parser.add_argument('--steps', type=int, default=500)
     parser.add_argument('--outfile', type=str)
     parser.add_argument('--dataset', type=str, default='coco')
     parser.add_argument('--data_dir', type=str, default='data')

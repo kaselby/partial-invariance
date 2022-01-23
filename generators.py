@@ -461,6 +461,83 @@ def fasttext_tokenize_batch(captions, ft, device=torch.device("cpu"), use_first=
     batch = torch.stack(batch, 0)
     return batch.to(device)
 
+'''
+class CaptionMatchingGenerator():
+    def __init__(self, dataset, tokenize_fct, tokenize_args, device=torch.device('cpu')):
+        self.N = len(dataset)
+        self.dataset = dataset
+        #self.img_encoder = img_encoder
+        #self.text_encoder = text_encoder
+        self.tokenize_fct = tokenize_fct
+        self.tokenize_args = tokenize_args
+        self.p = p
+        self.device = device
+    
+    def _split_dataset(self, dataset):
+        imgs, text = [], []
+        for img, captions in dataset:
+            imgs.append(img)
+            text.append(captions[0])
+        return imgs, text
+    
+    def _build_text_batch(self, captions, use_first=True):
+        '''
+        bs = len(captions)
+        ss = len(captions[0])
+        ns = 1 if use_first else len(captions[0][0]) 
+        #batch = [[self.text_dataset[i] for i in indices_j] for indices_j in indices]
+        flattened_seqs = []
+        for batch_element in captions:
+            for set_element in batch_element:
+                if use_first:
+                    flattened_seqs.append(set_element[0])
+                else:
+                    flattened_seqs += set_element
+        
+        tokenized_seqs = self.tokenizer(flattened_seqs, padding=True, truncation=True, return_tensors='pt')
+        tokenized_seqs = {k:v.to(self.device) for k,v in tokenized_seqs.items()}
+
+        return {'set_size':ss, 'n_seqs': ns, 'inputs': tokenized_seqs}
+        #with torch.no_grad():
+        #    encoded_seqs = self.text_encoder(tokenized_seqs)
+
+        #return encoded_seqs[:,0].view(ss, bs, -1).transpose(0,1)
+        '''
+        return self.tokenize_fct(captions, *self.tokenize_args, device=self.device, use_first=use_first)
+
+    def _build_img_batch(self, imgs):
+        bs = len(imgs)
+        ss = len(imgs[0])
+        batch = torch.stack([torch.stack(batch_j, 0) for batch_j in imgs], 0).to(self.device)
+        return batch
+        #encoded_batch = self.img_encoder(batch.view(-1, *batch.size()[-3:]))
+        #return encoded_batch.view(bs, ss, -1)
+        
+
+    def _generate(self, batch_size, set_size=(25,50)):
+        n_samples = torch.randint(*set_size, (1,)).item()
+
+        indices = torch.randperm(self.N)
+        X, Y = [], []
+        for i in range(batch_size):
+            mindex = n_samples * 2 * i
+            imgs, captions = zip(*[self.dataset[i] for i in indices[mindex:mindex+n_samples]])
+            X.append(imgs)
+            if aligned[i].item():
+                Y.append(captions)
+                #Y.append(["y" for _ in captions])
+            else:
+                _, captions2 = zip(*[self.dataset[i] for i in indices[mindex+n_samples:mindex+n_samples*2]])
+                Y.append(captions2)
+                #Y.append(["n" for _ in captions])
+
+        X = self._build_img_batch(X)
+        Y = self._build_text_batch(Y)
+        return (X, Y), aligned.float()
+    
+    def __call__(self, *args, **kwargs):
+        return self._generate(*args, **kwargs)
+'''
 
 class DistinguishabilityGenerator():
     def __init__(self, *datasets, p=0.5, device=torch.device('cpu')):

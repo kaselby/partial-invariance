@@ -24,7 +24,7 @@ do
     sbatch scripts/train.sh "${run_name}_rn/${i}" $target $data -1 0 $dim $(( dim*latent_size )) $(( dim*hidden_size )) $lr $clip "rn" $basedir 0 $num_blocks $ss1 $ss2 $merge
     sbatch scripts/train.sh "${run_name}_rn_equi/${i}" $target $data -1 1 $dim $latent_size $hidden_size $lr $clip "rn" $basedir 0 $num_blocks $ss1 $ss2 $merge
     sbatch scripts/train.sh "${run_name}_cross-only/${i}" $target $data -1 1 $dim $latent_size $hidden_size $lr $clip "cross-only" $basedir 0 $num_blocks $ss1 $ss2 $merge
-    sbatch scripts/train.sh "${run_name}_sum-merge/${i}" $target $data -1 1 $dim $latent_size $hidden_size $lr $clip "csab" $basedir 0 $num_blocks $ss1 $ss2 "sum"
+    #sbatch scripts/train.sh "${run_name}_sum-merge/${i}" $target $data -1 1 $dim $latent_size $hidden_size $lr $clip "csab" $basedir 0 $num_blocks $ss1 $ss2 "sum"
 done
 
 #sizes=(20 50 100 200 500)
