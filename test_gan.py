@@ -157,6 +157,7 @@ if __name__ == '__main__':
         episode = test_generator.get_episode(episode_classes, episode_datasets)
         y,yhat, (dl, sd) = eval_disc(model, episode, args.base_eval_steps, args.batch_size, data_kwargs)
         accs[i,:] = torch.tensor(summarize_eval(y, yhat, dl, sd, return_all=True)[0])
+        del episode
 
         dataset_cl_accs[i,:] = eval_by_dataset(model, test_generator, args.dataset_eval_steps, args.batch_size, args.set_size)
         dataset_cross_accs[i,:,:] = eval_cross_dataset(model, test_generator, args.dataset_eval_steps, args.batch_size, args.set_size)
