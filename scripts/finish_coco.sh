@@ -21,7 +21,7 @@ for (( i = 0 ; i < $n_runs ; i++ ))
 do
     for model in "${models[@]}"
     do
-        if  [ ! -f "${basedir}/${dataset}/${run_name}_${model}/${i}" ]
+        if  [ ! -f "${basedir}/${dataset}/${run_name}_${model}/${i}/model.pt" ]
         then
             sbatch scripts/train_coco.sh "${run_name}_${model}/${i}" $batch_size $latent_size $hidden_size $lr $num_blocks $steps $model $set_size1 $set_size2 $merge $dataset
         fi
