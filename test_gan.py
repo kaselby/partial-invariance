@@ -148,7 +148,7 @@ if __name__ == '__main__':
     runs = get_runs(model_dir)
     accs = torch.zeros(len(runs), 9)
     dataset_cl_accs = torch.zeros(len(runs), test_generator.N)
-    dataset_cross_accs = torch.zeros(len(runs), test_generator.N, test_generator.N)
+    #dataset_cross_accs = torch.zeros(len(runs), test_generator.N, test_generator.N)
     for i, run_num in enumerate(runs):
         model_path = os.path.join(model_dir, run_num, 'model.pt')
         if not os.path.exists(model_path):
@@ -160,15 +160,15 @@ if __name__ == '__main__':
         del episode
 
         dataset_cl_accs[i,:] = eval_by_dataset(model, test_generator, args.dataset_eval_steps, args.batch_size, args.set_size)
-        dataset_cross_accs[i,:,:] = eval_cross_dataset(model, test_generator, args.dataset_eval_steps, args.batch_size, args.set_size)
+        #dataset_cross_accs[i,:,:] = eval_cross_dataset(model, test_generator, args.dataset_eval_steps, args.batch_size, args.set_size)
     accs = accs.mean(dim=0)
     dataset_cl_accs = dataset_cl_accs.mean(dim=0)
-    dataset_cross_accs = dataset_cross_accs.mean(dim=0)
+    #dataset_cross_accs = dataset_cross_accs.mean(dim=0)
 
     outdir = os.path.join(args.basedir, args.run_name)
     with open(os.path.join(outdir, "analysis.txt"), 'w') as writer:
         writer.write(print_accs(accs))
     
-    save_csv(dataset_cross_accs, os.path.join(outdir, "dataset_dists.csv"))
+    #save_csv(dataset_cross_accs, os.path.join(outdir, "dataset_dists.csv"))
     save_csv(dataset_cl_accs, os.path.join(outdir, "dataset_accs.csv"))
 
