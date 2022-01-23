@@ -256,7 +256,6 @@ if __name__ == '__main__':
         elif args.model == 'cross-only':
             model_kwargs={
                 'ln':True,
-                'remove_diag':True,
                 'num_blocks':args.num_blocks,
                 'equi':args.equi, 
                 'output_size':1,
