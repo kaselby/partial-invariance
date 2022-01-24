@@ -78,7 +78,7 @@ def eval_by_dataset(model, dataset, steps, batch_size, set_size):
     with torch.no_grad():
         accs = torch.zeros(n_datasets)
         for i in range(n_datasets):
-            episode = dataset.get_dataset(i)
+            episode = dataset.get_episode_from_datasets([i], 100)
             for _ in range(steps):
                 (X, Y), target = episode(batch_size, dataset_id=0, set_size=set_size)
                 out = model(X,Y).squeeze(-1)
@@ -139,7 +139,7 @@ if __name__ == '__main__':
         'p_dataset': 0.3,
         'p_same': 0.5
     }
-    episode_classes = 200
+    episode_classes = 100
     episode_datasets=11
     
 
