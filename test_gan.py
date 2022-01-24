@@ -145,8 +145,8 @@ if __name__ == '__main__':
 
     model_dir = os.path.join(args.basedir, args.run_name)
     runs = get_runs(model_dir)
-    accs = torch.zeros(len(runs), 9)
-    dataset_cl_accs = torch.zeros(len(runs), test_generator.N)
+    accs = []#torch.zeros(len(runs), 9)
+    dataset_cl_accs = []#torch.zeros(len(runs), test_generator.N)
     #dataset_cross_accs = torch.zeros(len(runs), test_generator.N, test_generator.N)
     for i, run_num in enumerate(runs):
         model_path = os.path.join(model_dir, run_num, 'model.pt')
@@ -155,13 +155,16 @@ if __name__ == '__main__':
         model = torch.load(model_path)
         episode = test_generator.get_episode(episode_classes, episode_datasets)
         y,yhat, (dl, sd) = eval_disc(model, episode, args.base_eval_steps, args.batch_size, data_kwargs)
-        accs[i,:] = torch.tensor(summarize_eval(y, yhat, dl, sd, return_all=True)[0])
+        accs.append(torch.tensor(summarize_eval(y, yhat, dl, sd, return_all=True)[0]))
         del episode
 
-        dataset_cl_accs[i,:] = eval_by_dataset(model, test_generator, args.dataset_eval_steps, args.batch_size, args.set_size)
+        dataset_cl_accs.append(eval_by_dataset(model, test_generator, args.dataset_eval_steps, args.batch_size, args.set_size))
         #dataset_cross_accs[i,:,:] = eval_cross_dataset(model, test_generator, args.dataset_eval_steps, args.batch_size, args.set_size)
-    accs = accs.mean(dim=0)
-    dataset_cl_accs = dataset_cl_accs.mean(dim=0)
+    accs = torch.stack(accs, dim=0)
+    dataset_cl_accs = torch.stack(accs, dim=0)
+    
+    accs = torch.stack([accs.mean(dim=0), accs.std(dim=0)], dim=1)
+    dataset_cl_accs = torch.stack([dataset_cl_accs.mean(dim=0), dataset_cl_accs.std(dim=0)], dim=1)
     #dataset_cross_accs = dataset_cross_accs.mean(dim=0)
 
     outdir = os.path.join(args.basedir, args.run_name)
