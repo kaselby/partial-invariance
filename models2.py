@@ -488,6 +488,8 @@ class CrossOnlyModel(nn.Module):
     def __init__(self, input_size, latent_size, hidden_size, output_size, num_blocks, num_heads, ln=False, 
             equi=False, weight_sharing='none', dropout=0.1, decoder_layers=1):
         super().__init__()
+        if equi:
+            input_size=1
         self.input_size = input_size
         self.equi = equi
         self.encoder = EncoderStack(*[CSABSimple(latent_size, latent_size, hidden_size, num_heads, ln=ln, equi=equi, 
