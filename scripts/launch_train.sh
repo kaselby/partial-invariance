@@ -23,7 +23,8 @@ do
     #sbatch scripts/train.sh "${run_name}_pine/${i}" $target $data -1 0 $dim $(( dim*latent_size/2 )) $(( dim*hidden_size*2 )) $lr $clip "pine" $basedir 0 $num_blocks $ss1 $ss2 $merge
     sbatch scripts/train.sh "${run_name}_rn/${i}" $target $data -1 0 $dim $(( dim*latent_size )) $(( dim*hidden_size )) $lr $clip "rn" $basedir 0 $num_blocks $ss1 $ss2 $merge
     sbatch scripts/train.sh "${run_name}_rn_equi/${i}" $target $data -1 1 $dim $latent_size $hidden_size $lr $clip "rn" $basedir 0 $num_blocks $ss1 $ss2 $merge
-    sbatch scripts/train.sh "${run_name}_cross-only/${i}" $target $data -1 1 $dim $latent_size $hidden_size $lr $clip "cross-only" $basedir 0 $num_blocks $ss1 $ss2 $merge
+    sbatch scripts/train.sh "${run_name}_cross-only/${i}" $target $data -1 0 $dim $latent_size $hidden_size $lr $clip "cross-only" $basedir 0 $num_blocks $ss1 $ss2 $merge
+    sbatch scripts/train.sh "${run_name}_cross-only_equi/${i}" $target $data -1 1 $dim $latent_size $hidden_size $lr $clip "cross-only" $basedir 0 $num_blocks $ss1 $ss2 $merge
     #sbatch scripts/train.sh "${run_name}_sum-merge/${i}" $target $data -1 1 $dim $latent_size $hidden_size $lr $clip "csab" $basedir 0 $num_blocks $ss1 $ss2 "sum"
 done
 
