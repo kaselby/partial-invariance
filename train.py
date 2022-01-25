@@ -267,7 +267,7 @@ if __name__ == '__main__':
                 'weight_sharing':args.weight_sharing,
                 'decoder_layers':args.decoder_layers
             }
-            model = CrossOnlyModel(**model_kwargs)
+            model = CrossOnlyModel(**model_kwargs).to(device)
         else:
             raise NotImplementedError()
     else:
