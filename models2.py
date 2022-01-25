@@ -489,6 +489,7 @@ class CrossOnlyModel(nn.Module):
             equi=False, weight_sharing='none', dropout=0.1, decoder_layers=1):
         super().__init__()
         self.input_size = input_size
+        self.equi = equi
         self.encoder = EncoderStack(*[CSABSimple(latent_size, latent_size, hidden_size, num_heads, ln=ln, equi=equi, 
             weight_sharing=weight_sharing, dropout=dropout) for i in range(num_blocks)])
         self.decoder = self._make_decoder(latent_size, hidden_size, output_size, decoder_layers)
@@ -512,6 +513,8 @@ class CrossOnlyModel(nn.Module):
 
     def forward(self, X, Y):
         ZX, ZY = X, Y
+        if self.equi:
+            ZX, ZY = ZX.unsqueeze(-1), ZY.unsqueeze(-1)
         if self.proj is not None:
             ZX, ZY = self.proj(ZX), self.proj(ZY)
         ZX, ZY = self.encoder((ZX, ZY))
