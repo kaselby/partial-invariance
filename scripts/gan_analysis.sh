@@ -9,4 +9,4 @@
 #SBATCH --mem=25GB
 #SBATCH --exclude=gpu109
 
-python3 test_gan.py $1
+python3 test_gan.py $1 --checkpoint_name $SLURM_JOB_ID 
