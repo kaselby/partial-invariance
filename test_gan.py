@@ -89,9 +89,9 @@ def eval_by_dataset(model, dataset, steps, batch_size, set_size):
 
 
 def eval_cross_dataset(model, dataset, steps, batch_size, set_size, classes_per_dataset=100, checkpoint_path=None):
+    n_datasets = dataset.N
     dists = torch.zeros(n_datasets, n_datasets)
     accs = torch.zeros(n_datasets, n_datasets)
-    n_datasets = dataset.N
     i0,j0 = -1,-1
     if checkpoint_path is not None and os.path.exists(checkpoint_path):
         checkpoint_dict = torch.load(checkpoint_path)
