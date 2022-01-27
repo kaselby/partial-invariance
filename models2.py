@@ -439,6 +439,9 @@ class NaiveMultiSetModel(nn.Module):
     def __init__(self, input_size, latent_size, hidden_size, output_size, num_blocks, num_heads, remove_diag=False, ln=False,
             equi=False, weight_sharing='none', dropout=0.1, decoder_layers=1):
         super().__init__()
+        self.equi = equi
+        if equi:
+            input_size = 1
         self.input_size = input_size
         self.proj = None if input_size == latent_size else nn.Linear(input_size, latent_size)
         if weight_sharing == 'none':
@@ -474,6 +477,8 @@ class NaiveMultiSetModel(nn.Module):
 
     def forward(self, X, Y):
         ZX, ZY = X, Y
+        if self.equi:
+            ZX, ZY = ZX.unsqueeze(-1), ZY.unsqueeze(-1)
         if self.proj is not None:
             ZX, ZY = self.proj(ZX), self.proj(ZY)
         ZX = self.encoder1(ZX)
