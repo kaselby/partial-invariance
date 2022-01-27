@@ -445,8 +445,8 @@ class NaiveMultiSetModel(nn.Module):
         self.input_size = input_size
         self.proj = None if input_size == latent_size else nn.Linear(input_size, latent_size)
         if weight_sharing == 'none':
-            self.encoder1 = nn.Sequential(*[SAB(input_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, equi=equi, dropout=dropout) for _ in range(num_blocks)])
-            self.encoder2 = nn.Sequential(*[SAB(input_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, equi=equi, dropout=dropout) for _ in range(num_blocks)])
+            self.encoder1 = nn.Sequential(*[SAB(latent_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, equi=equi, dropout=dropout) for _ in range(num_blocks)])
+            self.encoder2 = nn.Sequential(*[SAB(latent_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, equi=equi, dropout=dropout) for _ in range(num_blocks)])
             self.pool1 = PMA(latent_size, hidden_size, num_heads, 1, ln=ln)
             self.pool2 = PMA(latent_size, hidden_size, num_heads, 1, ln=ln)
             #self.encoder1 = SetTransformer(input_size, latent_size, hidden_size, latent_size, num_heads, num_blocks, remove_diag, ln, equi)
