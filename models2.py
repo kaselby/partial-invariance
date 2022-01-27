@@ -483,6 +483,11 @@ class NaiveMultiSetModel(nn.Module):
             ZX, ZY = self.proj(ZX), self.proj(ZY)
         ZX = self.encoder1(ZX)
         ZY = self.encoder2(ZY)
+
+        if self.equi:
+            ZX = ZX.max(dim=2)[0]
+            ZY = ZY.max(dim=2)[0]
+
         ZX = self.pool1(ZX)
         ZY = self.pool2(ZY)
         out = self.decoder(torch.cat([ZX, ZY], dim=-1))
