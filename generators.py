@@ -587,7 +587,7 @@ class DistinguishabilityGenerator():
         Y_unaligned = Y_dists.sample(n_samples).transpose(0,1).float()
         Y = torch.where(aligned.view(-1, 1, 1), Y_aligned, Y_unaligned)
 
-        return (X, Y), aligned
+        return (X, Y), aligned.float()
 
     def __call__(self, *args, **kwargs):
         return self._generate_gmm(*args, **kwargs)
