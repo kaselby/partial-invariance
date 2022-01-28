@@ -199,7 +199,7 @@ if __name__ == '__main__':
             'num_heads':args.num_heads,
             'dropout':args.dropout,
             'equi':False,
-            'decoder_layers': 1,
+            'decoder_layers': 0,
             'merge': args.merge_type
         }
         set_model = MultiSetTransformer(args.latent_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
@@ -219,7 +219,7 @@ if __name__ == '__main__':
             'remove_diag':False,
             'num_blocks':args.num_blocks,
             'num_heads':args.num_heads,
-            #'dropout':args.dropout,
+            'dropout':args.dropout,
             'equi':False,
         }
         set_model = NaiveMultiSetModel(args.latent_size, args.latent_size, args.hidden_size, 1, **model_kwargs)

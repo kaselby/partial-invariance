@@ -70,8 +70,61 @@ def train_adv(discriminator, generator, d_opt, g_opt, dataset, steps, device, se
 
     return discriminator, generator, d_losses, g_losses
 
+
+def train_synth(model, optimizer, generator, steps, batch_size=64, eval_every=500, eval_steps=200, save_every=100, checkpoint_dir=None, data_kwargs={}):
+    train_losses = []
+    eval_accs = []
+    initial_step=0
+    if checkpoint_dir is not None:
+        if not os.path.exists(checkpoint_dir):
+            os.makedirs(checkpoint_dir)
+        else:
+            checkpoint_path = os.path.join(checkpoint_dir, "checkpoint.pt")
+            if os.path.exists(checkpoint_path):
+                load_dict = torch.load(checkpoint_path)
+                model, optimizer, initial_step, train_losses, eval_accs = load_dict['model'], load_dict['optimizer'], load_dict['step'], load_dict['losses'], load_dict['accs']
+    
+    loss_fct = nn.BCEWithLogitsLoss()
+    for i in range(initial_step, steps):
+        optimizer.zero_grad()
+
+        (X,Y), target = generator(batch_size, **data_kwargs)
+
+        out = model(X,Y)
+        loss = loss_fct(out.squeeze(-1), target)
+        loss.backward()
+        optimizer.step()
+
+        avg_loss += loss.item()
+        train_losses.append(loss.item())
+
+        if i % eval_every == 0 and i > 0:
+            acc_i = eval_synth(model, generator, eval_steps, batch_size, data_kwargs)
+            eval_accs.append(acc_i)
+
+        if i % save_every == 0 and i > 0:
+            checkpoint_path = os.path.join(checkpoint_dir, "checkpoint.pt")
+            if os.path.exists(checkpoint_path):
+                os.remove(checkpoint_path)
+            torch.save({'model':model,'optimizer':optimizer, 'step': i, 'losses':train_losses, 'accs': eval_accs}, checkpoint_path)
+    
+    test_acc = eval_synth(model, generator, eval_steps, batch_size, data_kwargs)
+    return model, (train_losses, eval_accs, test_acc)
+        
+
+def eval_synth(model, generator, steps, batch_size, data_kwargs):
+    with torch.no_grad():
+        n_correct = 0
+        for i in range(steps):
+            (X,Y), target = generator(batch_size, **data_kwargs)
+            out = model(X,Y)
+            n_correct += ((out > 0) == target).sum().item()
+    return n_correct / (batch_size * steps)
+
+
+
 #@profile
-def train_disc(model, optimizer, train_dataset, val_dataset, test_dataset, steps, batch_size=64, eval_every=500, 
+def train_meta(model, optimizer, train_dataset, val_dataset, test_dataset, steps, batch_size=64, eval_every=500, 
     eval_steps=100, save_every=100, episode_classes=100, episode_datasets=5, episode_length=250, checkpoint_dir=None, data_kwargs={}):
     train_losses = []
     eval_accs = []
@@ -204,7 +257,7 @@ def eval_disc(model, dataset, steps, batch_size, episode_classes, episode_datase
 '''    
 
 
-
+'''
 def train_gen(generator, discriminator, optimizer, train_dataset, steps, batch_size=64, save_every=2000, print_every=250, checkpoint_dir=None, data_kwargs={}):
     train_losses = []
     initial_step=1
@@ -247,6 +300,7 @@ def train_gen(generator, discriminator, optimizer, train_dataset, steps, batch_s
             torch.save({'generator':generator, 'discriminator': discriminator, 'optimizer':optimizer, 'step': i, 'losses':train_losses}, checkpoint_path)
     
     return generator, train_losses   
+'''
 
 
 def parse_args():
@@ -274,6 +328,7 @@ def parse_args():
     parser.add_argument('--img_encoder', choices=['cnn','resnet'], default='cnn')
     parser.add_argument('--weight_sharing', type=str, choices=['none', 'cross', 'sym'], default='cross')
     parser.add_argument('--merge_type', type=str, default='concat', choices=['concat', 'sum'])
+    parser.add_argument('--data', type=str, default='md', choices=['md', 'synth'])
     return parser.parse_args()
 
 
@@ -377,7 +432,7 @@ if __name__ == '__main__':
     data_kwargs = {'set_size':args.set_size}
     optimizer = torch.optim.Adam(discriminator.parameters(), args.lr)
     checkpoint_dir = os.path.join(args.checkpoint_dir, args.checkpoint_name) if args.checkpoint_name is not None else None
-    discriminator, (losses, accs, test_acc) = train_disc(discriminator, optimizer, train_generator, val_generator, test_generator, steps, 
+    discriminator, (losses, accs, test_acc) = train_meta(discriminator, optimizer, train_generator, val_generator, test_generator, steps, 
         batch_size=batch_size, checkpoint_dir=checkpoint_dir, data_kwargs=data_kwargs, eval_every=eval_every, eval_steps=eval_steps,
         episode_classes=args.episode_classes, episode_datasets=args.episode_datasets, episode_length=episode_length, save_every=save_every)
 
