@@ -570,9 +570,6 @@ class DistinguishabilityGenerator():
                 c = LKJCholesky(n, concentration=nu).sample((batch_size, n_components))
             s = torch.diag_embed(LogNormal(mu0,s0).sample((batch_size, n_components, n)))
             sigmas = torch.matmul(s, c)
-            if scale is not None:
-                mus = mus * scale.unsqueeze(-1).unsqueeze(-1)
-                sigmas = sigmas * scale.unsqueeze(-1).unsqueeze(-1)
             mus = mus.to(self.device)
             sigmas = sigmas.to(self.device)
             logits = Dirichlet(torch.ones(n_components).to(self.device)/n_components).sample((batch_size,))
