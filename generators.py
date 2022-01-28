@@ -582,8 +582,8 @@ class DistinguishabilityGenerator():
             return dist
         n_samples = torch.randint(*set_size,(1,))
         aligned = (torch.rand(batch_size) < p)
-        X_dists = generate_mixture(batch_size, n, component_range, nu, mu0, s0)
-        Y_dists = generate_mixture(batch_size, n, component_range, nu, mu0, s0)
+        X_dists = _generate_mixture(batch_size, n, component_range, nu, mu0, s0)
+        Y_dists = _generate_mixture(batch_size, n, component_range, nu, mu0, s0)
         
         X = X_dists.sample(n_samples).transpose(0,1).float()
         Y_aligned = X_dists.sample(n_samples).transpose(0,1).float()
