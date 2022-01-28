@@ -95,7 +95,6 @@ def train_synth(model, optimizer, generator, steps, batch_size=64, eval_every=50
         loss.backward()
         optimizer.step()
 
-        avg_loss += loss.item()
         train_losses.append(loss.item())
 
         if i % eval_every == 0 and i > 0:
