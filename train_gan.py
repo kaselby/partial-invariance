@@ -102,7 +102,7 @@ def train_synth(model, optimizer, generator, steps, batch_size=64, eval_every=50
             acc_i = eval_synth(model, generator, eval_steps, batch_size, data_kwargs)
             eval_accs.append(acc_i)
 
-        if i % save_every == 0 and i > 0:
+        if checkpoint_dir is not None and i % save_every == 0 and i > 0:
             checkpoint_path = os.path.join(checkpoint_dir, "checkpoint.pt")
             if os.path.exists(checkpoint_path):
                 os.remove(checkpoint_path)
