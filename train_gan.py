@@ -85,7 +85,7 @@ def train_synth(model, optimizer, generator, steps, batch_size=64, eval_every=50
                 model, optimizer, initial_step, train_losses, eval_accs = load_dict['model'], load_dict['optimizer'], load_dict['step'], load_dict['losses'], load_dict['accs']
     
     loss_fct = nn.BCEWithLogitsLoss()
-    for i in range(initial_step, steps):
+    for i in tqdm.tqdm(range(initial_step, steps)):
         optimizer.zero_grad()
 
         (X,Y), target = generator(batch_size, **data_kwargs)
