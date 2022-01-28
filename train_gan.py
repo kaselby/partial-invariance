@@ -116,7 +116,7 @@ def eval_synth(model, generator, steps, batch_size, data_kwargs):
         n_correct = 0
         for i in range(steps):
             (X,Y), target = generator(batch_size, **data_kwargs)
-            out = model(X,Y)
+            out = model(X,Y).squeeze(-1)
             n_correct += ((out > 0) == target).sum().item()
     return n_correct / (batch_size * steps)
 
