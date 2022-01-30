@@ -477,14 +477,14 @@ class NaiveMultiSetModel(nn.Module):
 
     def forward(self, X, Y):
         ZX, ZY = X, Y
-        if self.equi:
+        if getattr(self, 'equi', False):
             ZX, ZY = ZX.unsqueeze(-1), ZY.unsqueeze(-1)
         if self.proj is not None:
             ZX, ZY = self.proj(ZX), self.proj(ZY)
         ZX = self.encoder1(ZX)
         ZY = self.encoder2(ZY)
 
-        if self.equi:
+        if getattr(self, 'equi', False):
             ZX = ZX.max(dim=2)[0]
             ZY = ZY.max(dim=2)[0]
 
