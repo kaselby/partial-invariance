@@ -6,6 +6,7 @@ from train_omniglot import ConvEncoder, ConvBlock, ConvLayer, MultiSetImageModel
 from md_generator import MetaDatasetGenerator
 from meta_dataset.dataset_spec import Split
 from models2 import MultiSetTransformer, PINE, NaiveMultiSetModel, MultiRNModel, CrossOnlyModel
+from generators import DistinguishabilityGenerator
 
 import argparse
 import os
@@ -328,32 +329,21 @@ def parse_args():
     parser.add_argument('--weight_sharing', type=str, choices=['none', 'cross', 'sym'], default='cross')
     parser.add_argument('--merge_type', type=str, default='concat', choices=['concat', 'sum'])
     parser.add_argument('--data', type=str, default='md', choices=['md', 'synth'])
+    parser.add_argument('--n', type=int, default=8)
     return parser.parse_args()
 
 
 if __name__ == '__main__':
     args = parse_args()
 
-    run_dir = os.path.join(args.basedir, "meta-dataset", "discriminator", args.run_name)
+    dataset_dir = "meta-dataset" if args.data == 'md' else "synth_" + str(args.n)
+    run_dir = os.path.join(args.basedir, "distinguishability", dataset_dir, args.run_name)
     if not os.path.exists(run_dir):
         os.makedirs(run_dir)
 
     device = torch.device("cuda")
 
-    if args.img_encoder == "cnn":
-        image_size=84
-        layers = [
-            ConvLayer(3, 32, kernel_size=7, stride=2),
-            ConvBlock(32, 32, n_conv=2, pool='max'),
-            ConvBlock(32, 64, n_conv=2,pool='max'),
-            ConvBlock(64, 128, n_conv=2, pool='max')
-        ]
-        encoder = ConvEncoder(layers, image_size, args.latent_size)
-    else:
-        image_size=224
-        encoder = torchvision.models.resnet101(pretrained=False)
-        encoder.fc = nn.Linear(2048, args.latent_size)
-
+    input_size = args.latent_size if args.data == 'md' else args.n
     if args.model == 'csab':
         model_kwargs={
             'ln':True,
@@ -365,7 +355,7 @@ if __name__ == '__main__':
             'weight_sharing': args.weight_sharing,
             'merge': args.merge_type
         }
-        set_model = MultiSetTransformer(args.latent_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
+        set_model = MultiSetTransformer(input_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
     elif args.model == 'cross-only':
         model_kwargs={
             'ln':True,
@@ -375,7 +365,7 @@ if __name__ == '__main__':
             'equi':False,
             'weight_sharing': args.weight_sharing
         }
-        set_model = CrossOnlyModel(args.latent_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
+        set_model = CrossOnlyModel(input_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
     elif args.model == 'naive':
         model_kwargs={
             'ln':True,
@@ -386,9 +376,9 @@ if __name__ == '__main__':
             'equi':False,
             'weight_sharing': args.weight_sharing
         }
-        set_model = NaiveMultiSetModel(args.latent_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
+        set_model = NaiveMultiSetModel(input_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
     elif args.model == 'pine':
-        set_model = PINE(args.latent_size, int(args.latent_size/4), 16, 2, 4*args.hidden_size, 1)
+        set_model = PINE(input_size, int(args.latent_size/4), 16, 2, 4*args.hidden_size, 1)
     elif args.model == 'rn':
         model_kwargs={
             'ln':True,
@@ -400,14 +390,34 @@ if __name__ == '__main__':
             'pool1': 'max',
             'pool2': 'max'
         }
-        set_model = MultiRNModel(args.latent_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
+        set_model = MultiRNModel(input_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
     else:
         raise NotImplementedError
-    discriminator = MultiSetImageModel(encoder, set_model).to(device)
 
-    train_generator = MetaDatasetGenerator(image_size=image_size, split=Split.TRAIN, device=device)
-    val_generator = MetaDatasetGenerator(image_size=image_size, split=Split.VALID, device=device)
-    test_generator = MetaDatasetGenerator(image_size=image_size, split=Split.TEST, device=device)
+    data_kwargs = {'set_size':args.set_size}
+    if args.data == 'md':
+        if args.img_encoder == "cnn":
+            image_size=84
+            layers = [
+                ConvLayer(3, 32, kernel_size=7, stride=2),
+                ConvBlock(32, 32, n_conv=2, pool='max'),
+                ConvBlock(32, 64, n_conv=2,pool='max'),
+                ConvBlock(64, 128, n_conv=2, pool='max')
+            ]
+            encoder = ConvEncoder(layers, image_size, args.latent_size)
+        else:
+            image_size=224
+            encoder = torchvision.models.resnet101(pretrained=False)
+            encoder.fc = nn.Linear(2048, args.latent_size)
+        discriminator = MultiSetImageModel(encoder, set_model).to(device)
+
+        train_generator = MetaDatasetGenerator(image_size=image_size, split=Split.TRAIN, device=device)
+        val_generator = MetaDatasetGenerator(image_size=image_size, split=Split.VALID, device=device)
+        test_generator = MetaDatasetGenerator(image_size=image_size, split=Split.TEST, device=device)
+    else: 
+        discriminator = set_model.to(device)
+        train_generator = DistinguishabilityGenerator(device)
+        data_kwargs['n'] = args.n
     
     batch_size = args.batch_size
     steps = args.steps
@@ -428,12 +438,17 @@ if __name__ == '__main__':
 
     print("Beginning Training...")
 
-    data_kwargs = {'set_size':args.set_size}
+    
     optimizer = torch.optim.Adam(discriminator.parameters(), args.lr)
     checkpoint_dir = os.path.join(args.checkpoint_dir, args.checkpoint_name) if args.checkpoint_name is not None else None
-    discriminator, (losses, accs, test_acc) = train_meta(discriminator, optimizer, train_generator, val_generator, test_generator, steps, 
-        batch_size=batch_size, checkpoint_dir=checkpoint_dir, data_kwargs=data_kwargs, eval_every=eval_every, eval_steps=eval_steps,
-        episode_classes=args.episode_classes, episode_datasets=args.episode_datasets, episode_length=episode_length, save_every=save_every)
+    if args.data == 'md':
+        discriminator, (losses, accs, test_acc) = train_meta(discriminator, optimizer, train_generator, val_generator, test_generator, steps, 
+            batch_size=batch_size, checkpoint_dir=checkpoint_dir, data_kwargs=data_kwargs, eval_every=eval_every, eval_steps=eval_steps,
+            episode_classes=args.episode_classes, episode_datasets=args.episode_datasets, episode_length=episode_length, save_every=save_every)
+    else:
+        discriminator, (losses, accs, test_acc) = train_synth(discriminator, optimizer, train_generator, steps, 
+            batch_size=batch_size, checkpoint_dir=checkpoint_dir, data_kwargs=data_kwargs, eval_every=eval_every, eval_steps=eval_steps,
+            save_every=save_every)
 
     print("Test Accuracy:", test_acc)
 
