@@ -318,7 +318,7 @@ def parse_args():
     parser.add_argument('--latent_size', type=int, default=512)
     parser.add_argument('--hidden_size', type=int, default=1024)
     parser.add_argument('--set_size', type=int, nargs=2, default=[3,10])
-    parser.add_argument('--basedir', type=str, default="final-runs")
+    parser.add_argument('--basedir', type=str, default="final-runs2")
     parser.add_argument('--save_every', type=int, default=50)
     parser.add_argument('--eval_every', type=int, default=500)
     parser.add_argument('--eval_steps', type=int, default=100)

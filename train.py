@@ -41,7 +41,7 @@ def parse_args():
     parser.add_argument('--hidden_size', type=int, default=384)
     parser.add_argument('--dim', type=int, default=32)
     parser.add_argument('--clip', type=int, default=-1)
-    parser.add_argument('--basedir', type=str, default="final-runs")
+    parser.add_argument('--basedir', type=str, default="final-runs2")
     parser.add_argument('--nn', action='store_true')
     parser.add_argument('--k_neighbours', type=int, default=-1)
     parser.add_argument('--decoder_layers', type=int, default=0)
