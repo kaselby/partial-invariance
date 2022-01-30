@@ -22,15 +22,15 @@ def save_csv(tensor, path):
 
 def print_accs(accs):
     lines = []
-    lines.append("Overall Acc: "+ str(accs[0].item()))
-    lines.append("Dataset-level Acc: " + str(accs[1].item()))
-    lines.append("\tPositive Acc: " + str(accs[2].item()))
-    lines.append("\tNegative Acc: " + str(accs[3].item()))
-    lines.append("Class-level Acc: " + str(accs[4].item()))
-    lines.append("\tPositive Acc: " + str(accs[5].item()))
-    lines.append("\tNegative Acc: " + str(accs[6].item()))
-    lines.append("\t\tSame-Dataset Acc: " + str(accs[7].item()))
-    lines.append("\t\tCross-Dataset Acc: " + str(accs[8].item()))
+    lines.append("Overall Acc: %f pm %f" % (accs[0,0].item(), accs[0,1].item()) )
+    lines.append("Dataset-level Acc: %f pm %f" % (accs[1,0].item(), accs[1,1].item()) )
+    lines.append("\tPositive Acc: %f pm %f" % (accs[2,0].item(), accs[2,1].item()) )
+    lines.append("\tNegative Acc: %f pm %f" % (accs[3,0].item(), accs[3,1].item()) )
+    lines.append("Class-level Acc: %f pm %f" % (accs[4,0].item(), accs[4,1].item()) )
+    lines.append("\tPositive Acc: %f pm %f" % (accs[5,0].item(), accs[5,1].item()) )
+    lines.append("\tNegative Acc: %f pm %f" % (accs[6,0].item(), accs[6,1].item()) )
+    lines.append("\t\tSame-Dataset Acc: %f pm %f" % (accs[7,0].item(), accs[7,1].item()) )
+    lines.append("\t\tCross-Dataset Acc: %f pm %f" % (accs[8,0].item(), accs[8,1].item()) )
     return "\n".join(lines)
 
 def eval_disc(model, episode, steps, batch_size, data_kwargs):
@@ -135,12 +135,6 @@ def parse_args():
 if __name__ == '__main__':
     args = parse_args()
 
-    data_kwargs={
-        'set_size':(10,30),
-        'p_aligned': 0.5,
-        'p_dataset': 0.3,
-        'p_same': 0.5
-    }
 
     device=torch.device("cuda")
 
@@ -155,13 +149,13 @@ if __name__ == '__main__':
     episode_classes = 100
     episode_datasets=11
     
-    '''
+    
     model_dir = os.path.join(args.basedir, args.run_name)
     runs = get_runs(model_dir)
-    #accs = []#torch.zeros(len(runs), 9)
-    #dataset_cl_accs = []#torch.zeros(len(runs), test_generator.N)
-    dataset_cross_dists = []#torch.zeros(len(runs), test_generator.N, test_generator.N)
-    dataset_cross_accs = []
+    accs = []#torch.zeros(len(runs), 9)
+    dataset_cl_accs = []#torch.zeros(len(runs), test_generator.N)
+    #dataset_cross_dists = []#torch.zeros(len(runs), test_generator.N, test_generator.N)
+    #dataset_cross_accs = []
     for i, run_num in enumerate(runs):
         model_path = os.path.join(model_dir, run_num, 'model.pt')
         if not os.path.exists(model_path):
@@ -172,28 +166,28 @@ if __name__ == '__main__':
         y,yhat, (dl, sd) = eval_disc(model, episode, args.base_eval_steps, args.batch_size, data_kwargs)
         accs.append(torch.tensor(summarize_eval(y, yhat, dl, sd, return_all=True)[0]))
         del episode
-        
 
         #dataset_cl_accs.append(eval_by_dataset(model, test_generator, args.dataset_eval_steps, args.batch_size, args.set_size))
-        accs_i, dists_i = eval_cross_dataset(model, test_generator, args.dataset_eval_steps, args.batch_size, args.set_size)
-    accs = torch.stack(accs, dim=0)
-    dataset_cl_accs = torch.stack(accs, dim=0)
-    dataset_cross_accs = torch.stack(accs, dim=0)
+        #accs_i, dists_i = eval_cross_dataset(model, test_generator, args.dataset_eval_steps, args.batch_size, args.set_size)
+    #accs = torch.stack(accs, dim=0)
+    #dataset_cl_accs = torch.stack(dataset_cl_accs, dim=0)
+    #dataset_cross_accs = torch.stack(accs, dim=0)
     
-    #accs = torch.stack([accs.mean(dim=0), accs.std(dim=0)], dim=1)
+    accs = torch.stack([accs.mean(dim=0), accs.std(dim=0)], dim=1)
     #dataset_cl_accs = torch.stack([dataset_cl_accs.mean(dim=0), dataset_cl_accs.std(dim=0)], dim=1)
-    dataset_cross_accs = dataset_cross_accs.mean(dim=0)
+    #dataset_cross_accs = dataset_cross_accs.mean(dim=0)
     '''
     checkpoint_path=os.path.join(args.checkpoint_dir, args.checkpoint_name) if args.checkpoint_name is not None else None
     model_path = os.path.join(args.basedir, args.run_name, '0', 'model.pt')
     model = torch.load(model_path)
     cross_dists, cross_accs = eval_cross_dataset(model, test_generator, args.dataset_eval_steps, args.batch_size, args.set_size, checkpoint_path=checkpoint_path)
+    '''
 
-    #outdir = os.path.join(args.basedir, args.run_name)
-    #with open(os.path.join(outdir, "analysis.txt"), 'w') as writer:
-    #    writer.write(print_accs(accs))
+    outdir = os.path.join(args.basedir, args.run_name)
+    with open(os.path.join(outdir, "analysis.txt"), 'w') as writer:
+        writer.write(print_accs(accs))
     
-    save_csv(cross_dists, os.path.join(outdir, "dataset_cross_dists.csv"))
-    save_csv(cross_accs, os.path.join(outdir, "dataset_cross_accss.csv"))
+    #save_csv(cross_dists, os.path.join(outdir, "dataset_cross_dists.csv"))
+    #save_csv(cross_accs, os.path.join(outdir, "dataset_cross_accss.csv"))
     #save_csv(dataset_cl_accs, os.path.join(outdir, "dataset_accs.csv"))
 
