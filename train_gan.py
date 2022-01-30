@@ -325,6 +325,7 @@ def parse_args():
     parser.add_argument('--episode_classes', type=int, default=100)
     parser.add_argument('--episode_datasets', type=int, default=5)
     parser.add_argument('--episode_length', type=int, default=500)
+    parser.add_argument('--p_dl', type=float, default=0.3)
     parser.add_argument('--img_encoder', choices=['cnn','resnet'], default='cnn')
     parser.add_argument('--weight_sharing', type=str, choices=['none', 'cross', 'sym'], default='cross')
     parser.add_argument('--merge_type', type=str, default='concat', choices=['concat', 'sum'])
@@ -414,6 +415,7 @@ if __name__ == '__main__':
         train_generator = MetaDatasetGenerator(image_size=image_size, split=Split.TRAIN, device=device)
         val_generator = MetaDatasetGenerator(image_size=image_size, split=Split.VALID, device=device)
         test_generator = MetaDatasetGenerator(image_size=image_size, split=Split.TEST, device=device)
+        data_kwargs['p_dataset'] = args.p_dl
     else: 
         discriminator = set_model.to(device)
         train_generator = DistinguishabilityGenerator(device)
