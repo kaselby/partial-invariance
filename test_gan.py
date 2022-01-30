@@ -169,7 +169,7 @@ if __name__ == '__main__':
 
         #dataset_cl_accs.append(eval_by_dataset(model, test_generator, args.dataset_eval_steps, args.batch_size, args.set_size))
         #accs_i, dists_i = eval_cross_dataset(model, test_generator, args.dataset_eval_steps, args.batch_size, args.set_size)
-    #accs = torch.stack(accs, dim=0)
+    accs = torch.stack(accs, dim=0)
     #dataset_cl_accs = torch.stack(dataset_cl_accs, dim=0)
     #dataset_cross_accs = torch.stack(accs, dim=0)
     
