@@ -249,7 +249,7 @@ class Episode():
         return set_data
 
     def _generate(self, batch_size, set_size=(10,15), p_aligned=0.5, p_dataset=0.3, p_same=0.5, eval=False):
-        dataset_level = (torch.rand(batch_size) < p_aligned)
+        dataset_level = (torch.rand(batch_size) < p_dataset)
         aligned = (torch.rand(batch_size) < p_aligned)
         same_dataset = (torch.rand(batch_size) < p_same)
         n_samples = torch.randint(*set_size, (1,)).item()
