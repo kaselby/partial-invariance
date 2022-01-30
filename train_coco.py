@@ -150,7 +150,7 @@ def parse_args():
     parser.add_argument('--latent_size', type=int, default=256)
     parser.add_argument('--hidden_size', type=int, default=512)
     parser.add_argument('--set_size', type=int, nargs=2, default=[6,10])
-    parser.add_argument('--basedir', type=str, default="final-runs")
+    parser.add_argument('--basedir', type=str, default="final-runs2")
     parser.add_argument('--data_dir', type=str, default='./data')
     parser.add_argument('--eval_every', type=int, default=500)
     parser.add_argument('--eval_steps', type=int, default=200)
