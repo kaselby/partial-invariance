@@ -1,6 +1,7 @@
 import torch
 from torch.distributions import MultivariateNormal, LKJCholesky, Categorical, MixtureSameFamily, Dirichlet, LogNormal
 from scipy.stats import invwishart
+import numpy as np
 
 import os
 import string
@@ -496,7 +497,7 @@ class EmbeddingAlignmentGenerator():
             word_x, word_y = self.pairs[i]
             X.append(self.src_emb[word_x])
             Y.append(self.tgt_emb[word_y])
-        return torch.tensor(X), torch.tensor(Y)
+        return torch.tensor(np.array(X)), torch.tensor(np.array(Y))
 
     def _generate(self, batch_size, p_aligned=0.5, set_size=(10,30)):
         aligned = (torch.rand(batch_size) < p_aligned).to(self.device)

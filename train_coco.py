@@ -80,7 +80,7 @@ def make_model(set_model, text_model='bert', img_model='vgg', embed_dim=300):
 
 
 
-def train(model, optimizer, train_dataset, test_dataset, steps, batch_size=64, eval_every=500, save_every=2000, eval_steps=100, test_steps=500, checkpoint_dir=None, data_kwargs={}):
+def train(model, optimizer, train_dataset, val_dataset, test_dataset, steps, batch_size=64, eval_every=500, save_every=2000, eval_steps=100, test_steps=500, checkpoint_dir=None, data_kwargs={}):
     train_losses = []
     eval_accs = []
     initial_step=0
@@ -109,7 +109,7 @@ def train(model, optimizer, train_dataset, test_dataset, steps, batch_size=64, e
         train_losses.append(loss.item())
 
         if i % eval_every == 0 and i > 0:
-            acc = evaluate(model, train_dataset, eval_steps, batch_size, data_kwargs)
+            acc = evaluate(model, val_dataset, eval_steps, batch_size, data_kwargs)
             eval_accs.append(acc)
             avg_loss /= eval_every
             print("Step: %d\tLoss: %f\tAccuracy: %f" % (i, avg_loss, acc))
@@ -197,13 +197,16 @@ if __name__ == '__main__':
         train_generator = CaptionGenerator(train_dataset, tokenize_fct, tokenize_args, device=device)
         val_generator = CaptionGenerator(val_dataset, tokenize_fct, tokenize_args, device=device)
         test_generator = CaptionGenerator(test_dataset, tokenize_fct, tokenize_args, device=device)
+        input_size = args.latent_size
     else:
         src_emb = fasttext.load_model(os.path.join(dataset_dir, "cc.en.300.bin"))
         tgt_emb = fasttext.load_model(os.path.join(dataset_dir, "cc.fr.300.bin"))
         pairs = load_pairs(os.path.join(dataset_dir, "valid_en-fr.txt"))
         train_pairs, test_pairs = split_pairs(pairs, 0.1)
         train_generator = EmbeddingAlignmentGenerator(src_emb, tgt_emb, train_pairs, device=device)
+        val_generator = train_generator
         test_generator = EmbeddingAlignmentGenerator(src_emb, tgt_emb, test_pairs, device=device)
+        input_size = 300
     
     if args.model == 'csab':
         model_kwargs={
@@ -216,7 +219,7 @@ if __name__ == '__main__':
             'decoder_layers': 0,
             'merge': args.merge_type
         }
-        set_model = MultiSetTransformer(args.latent_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
+        set_model = MultiSetTransformer(input_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
     elif args.model == 'cross-only':
         model_kwargs={
             'ln':True,
@@ -226,7 +229,7 @@ if __name__ == '__main__':
             'equi':False,
             #'weight_sharing': args.weight_sharing
         }
-        set_model = CrossOnlyModel(args.latent_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
+        set_model = CrossOnlyModel(input_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
     elif args.model == 'naive':
         model_kwargs={
             'ln':True,
@@ -236,9 +239,9 @@ if __name__ == '__main__':
             'dropout':args.dropout,
             'equi':False,
         }
-        set_model = NaiveMultiSetModel(args.latent_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
+        set_model = NaiveMultiSetModel(input_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
     elif args.model == 'pine':
-        set_model = PINE(args.latent_size, int(args.latent_size/4), 16, 2, args.hidden_size, 1)
+        set_model = PINE(input_size, int(args.latent_size/4), 16, 2, args.hidden_size, 1)
     elif args.model == 'rn':
         model_kwargs={
             'ln':True,
@@ -250,7 +253,7 @@ if __name__ == '__main__':
             'pool1': 'max',
             'pool2': 'max'
         }
-        set_model = MultiRNModel(args.latent_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
+        set_model = MultiRNModel(input_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
     else:
         raise NotImplementedError("Model type not recognized.")
     if captioning:
@@ -275,7 +278,7 @@ if __name__ == '__main__':
     checkpoint_dir = os.path.join(args.checkpoint_dir, args.checkpoint_name) if args.checkpoint_name is not None else None
     data_kwargs = {'set_size':args.set_size}
     print("Beginning training...")
-    model, (losses, accs, test_acc) = train(model, optimizer, train_generator, test_generator, steps, batch_size, 
+    model, (losses, accs, test_acc) = train(model, optimizer, train_generator, val_generator, test_generator, steps, batch_size, 
         checkpoint_dir=checkpoint_dir, data_kwargs=data_kwargs, eval_every=eval_every, eval_steps=eval_steps, test_steps=args.test_steps)
 
     print("Test Accuracy:", test_acc)
