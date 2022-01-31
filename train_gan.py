@@ -178,7 +178,7 @@ def train_meta(model, optimizer, train_dataset, val_dataset, test_dataset, steps
             continue
         break
     
-    test_acc = eval_disc(model, test_dataset.get_episode(episode_classes, episode_datasets), 500, batch_size, data_kwargs)
+    test_acc = eval_disc(model, test_dataset.get_episode(episode_classes, episode_datasets), 5*eval_steps, batch_size, data_kwargs)
     
     return model, (train_losses, eval_accs, test_acc)
 
