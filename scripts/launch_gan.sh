@@ -4,6 +4,7 @@ n_runs=3
 
 run_name=$1
 
+data="md"
 merge="concat"
 
 for (( i = 0 ; i < $n_runs ; i++ ))
