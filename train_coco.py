@@ -15,7 +15,7 @@ import json
 import fasttext
 
 from models2 import MultiSetTransformer, PINE, MultiSetModel, NaiveMultiSetModel, BertEncoderWrapper, ImageEncoderWrapper, EmbeddingEncoderWrapper, CrossOnlyModel, MultiRNModel
-from generators import CaptionGenerator, bert_tokenize_batch, fasttext_tokenize_batch, EmbeddingAlignmentGenerator, load_pairs
+from generators import CaptionGenerator, bert_tokenize_batch, fasttext_tokenize_batch, EmbeddingAlignmentGenerator, load_pairs, split_pairs
 from train_omniglot import ConvEncoder
 
 
