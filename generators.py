@@ -461,6 +461,59 @@ def fasttext_tokenize_batch(captions, ft, device=torch.device("cpu"), use_first=
     batch = torch.stack(batch, 0)
     return batch.to(device)
 
+
+def load_pairs(pair_file):
+    with open(pair_file, 'r') as infile:
+        lines = infile.readlines()
+    pairs = [line.strip().split(" ") for line in lines]
+    return pairs
+
+import math
+def split_pairs(pairs, test_frac):
+    N = len(pairs)
+    r = int(math.round(test_frac * N))
+    return pairs[:r], pairs[r:]
+
+import fasttext
+class EmbeddingAlignmentGenerator():
+    @classmethod
+    def from_files(cls, src_file, tgt_file, dict_file, **kwargs):
+        src_emb = fasttext.load_model(src_file)
+        tgt_emb = fasttext.load_model(tgt_file)
+        pairs=load_pairs(dict_file)
+        return cls(src_emb, tgt_emb, pairs, **kwargs)
+
+    def __init__(self, src_emb, tgt_emb, pairs, device=torch.device('cpu')):
+        self.src_emb = src_emb
+        self.tgt_emb = tgt_emb
+        self.pairs = pairs#[p for p in pairs if (p[0] in src_emb and p[1] in tgt_emb)] ASSUME THIS IS ALREADY DONE
+        self.N = len(pairs)
+        self.device = device
+
+    def _generate_sets(self, indices):
+        X,Y = [],[]
+        for i in indices:
+            word_x, word_y = self.pairs[i]
+            X.append(self.src_emb[word_x])
+            Y.append(self.tgt_emb[word_y])
+        return torch.tensor(X), torch.tensor(Y)
+
+    def _generate(self, batch_size, p_aligned=0.5, set_size=(10,30)):
+        aligned = (torch.rand(batch_size) < p_aligned).to(self.device)
+        n_samples = torch.randint(*set_size, (1,)).item()
+        indices = torch.randperm(self.N)
+        X, Y_aligned = self._generate_sets(indices[:batch_size*n_samples])
+        _, Y_unaligned = self._generate_sets(indices[batch_size*n_samples:batch_size*n_samples*2])
+        X = X.view(batch_size, n_samples, -1).to(self.device)
+        Y_aligned = Y_aligned.view(batch_size, n_samples, -1).to(self.device)
+        Y_unaligned = Y_aligned.view(batch_size, n_samples, -1).to(self.device)
+        Y = torch.where(aligned.view(-1,1,1), Y_aligned, Y_unaligned)
+        return (X, Y), aligned.float()
+
+    def __call__(self, *args, **kwargs):
+        return self._generate(*args, **kwargs)
+
+
 '''
 class CaptionMatchingGenerator():
     def __init__(self, dataset, tokenize_fct, tokenize_args, device=torch.device('cpu')):

@@ -15,12 +15,14 @@ import json
 import fasttext
 
 from models2 import MultiSetTransformer, PINE, MultiSetModel, NaiveMultiSetModel, BertEncoderWrapper, ImageEncoderWrapper, EmbeddingEncoderWrapper, CrossOnlyModel, MultiRNModel
-from generators import CaptionGenerator, bert_tokenize_batch, fasttext_tokenize_batch
+from generators import CaptionGenerator, bert_tokenize_batch, fasttext_tokenize_batch, EmbeddingAlignmentGenerator, load_pairs
 from train_omniglot import ConvEncoder
 
 
 #def fasttext_encoder_preproc():
 
+
+SS_SCHEDULE=[{'set_size':(1,5), 'steps':2000}, {'set_size':(3,10), 'steps':4000}, {'set_size':(8,15), 'steps':10000}]
 
 
 def load_coco_data(imgdir, anndir):
@@ -50,6 +52,8 @@ def load_flickr_data(imgdir, annfile, split_file):
     test_dataset = Subset(dataset, splits["test"])
 
     return train_dataset, val_dataset, test_dataset
+
+
 
 
 def make_model(set_model, text_model='bert', img_model='vgg', embed_dim=300):
@@ -138,7 +142,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('run_name', type=str)
     parser.add_argument('--model', type=str, default='csab', choices=['csab', 'rn', 'pine', 'naive', 'cross-only'])
-    parser.add_argument('--dataset', type=str, default='coco', choices=['coco', 'flickr30k'])
+    parser.add_argument('--dataset', type=str, default='coco', choices=['coco', 'flickr30k', 'fasttext'])
     parser.add_argument('--checkpoint_dir', type=str, default="/checkpoint/kaselby")
     parser.add_argument('--checkpoint_name', type=str, default=None)
     parser.add_argument('--num_blocks', type=int, default=2)
@@ -150,6 +154,7 @@ def parse_args():
     parser.add_argument('--latent_size', type=int, default=256)
     parser.add_argument('--hidden_size', type=int, default=512)
     parser.add_argument('--set_size', type=int, nargs=2, default=[6,10])
+    parser.add_argument('--anneal_set_size', action='store_true')
     parser.add_argument('--basedir', type=str, default="final-runs2")
     parser.add_argument('--data_dir', type=str, default='./data')
     parser.add_argument('--eval_every', type=int, default=500)
@@ -172,24 +177,33 @@ if __name__ == '__main__':
         os.makedirs(run_dir)
 
     device = torch.device("cuda:0")
-
-    if args.text_model == 'bert':
-        tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
-        tokenize_fct = bert_tokenize_batch
-        tokenize_args = (tokenizer,)
-    elif args.text_model == 'ft':
-        ft = fasttext.load_model(args.embed_path)
-        tokenize_fct = fasttext_tokenize_batch
-        tokenize_args = (ft,)
+    captioning = args.dataset != "fasttext"
 
     dataset_dir = os.path.join(args.data_dir, args.dataset)
-    if args.dataset == "coco":
-        train_dataset, val_dataset, test_dataset = load_coco_data(os.path.join(dataset_dir, "images"), os.path.join(dataset_dir, "annotations"))
+    if captioning:
+        if args.text_model == 'bert':
+            tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
+            tokenize_fct = bert_tokenize_batch
+            tokenize_args = (tokenizer,)
+        elif args.text_model == 'ft':
+            ft = fasttext.load_model(args.embed_path)
+            tokenize_fct = fasttext_tokenize_batch
+            tokenize_args = (ft,)
+
+        if args.dataset == "coco":
+            train_dataset, val_dataset, test_dataset = load_coco_data(os.path.join(dataset_dir, "images"), os.path.join(dataset_dir, "annotations"))
+        else:
+            train_dataset, val_dataset, test_dataset = load_flickr_data(os.path.join(dataset_dir, "images"), os.path.join(dataset_dir, "annotations.token"), os.path.join(dataset_dir, "splits.json"))
+        train_generator = CaptionGenerator(train_dataset, tokenize_fct, tokenize_args, device=device)
+        val_generator = CaptionGenerator(val_dataset, tokenize_fct, tokenize_args, device=device)
+        test_generator = CaptionGenerator(test_dataset, tokenize_fct, tokenize_args, device=device)
     else:
-        train_dataset, val_dataset, test_dataset = load_flickr_data(os.path.join(dataset_dir, "images"), os.path.join(dataset_dir, "annotations.token"), os.path.join(dataset_dir, "splits.json"))
-    train_generator = CaptionGenerator(train_dataset, tokenize_fct, tokenize_args, device=device)
-    val_generator = CaptionGenerator(val_dataset, tokenize_fct, tokenize_args, device=device)
-    test_generator = CaptionGenerator(test_dataset, tokenize_fct, tokenize_args, device=device)
+        src_emb = fasttext.load_model(os.path.join(dataset_dir, "cc.en.300.bin"))
+        tgt_emb = fasttext.load_model(os.path.join(dataset_dir, "cc.fr.300.bin"))
+        pairs = load_pairs(os.path.join(dataset_dir, "valid_en-fr.txt"))
+        train_pairs, test_pairs = split_pairs(pairs, 0.1)
+        train_generator = EmbeddingAlignmentGenerator(src_emb, tgt_emb, train_pairs, device=device)
+        test_generator = EmbeddingAlignmentGenerator(src_emb, tgt_emb, test_pairs, device=device)
     
     if args.model == 'csab':
         model_kwargs={
@@ -239,7 +253,10 @@ if __name__ == '__main__':
         set_model = MultiRNModel(args.latent_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
     else:
         raise NotImplementedError("Model type not recognized.")
-    model = make_model(set_model, text_model=args.text_model, img_model=args.img_model, embed_dim=args.embed_dim).to(device)
+    if captioning:
+        model = make_model(set_model, text_model=args.text_model, img_model=args.img_model, embed_dim=args.embed_dim).to(device)
+    else:
+        model = set_model.to(device)
 
     batch_size = args.batch_size
     steps = args.steps
@@ -258,7 +275,7 @@ if __name__ == '__main__':
     checkpoint_dir = os.path.join(args.checkpoint_dir, args.checkpoint_name) if args.checkpoint_name is not None else None
     data_kwargs = {'set_size':args.set_size}
     print("Beginning training...")
-    model, (losses, accs, test_acc) = train(model, optimizer, train_generator, train_generator, steps, batch_size, 
+    model, (losses, accs, test_acc) = train(model, optimizer, train_generator, test_generator, steps, batch_size, 
         checkpoint_dir=checkpoint_dir, data_kwargs=data_kwargs, eval_every=eval_every, eval_steps=eval_steps, test_steps=args.test_steps)
 
     print("Test Accuracy:", test_acc)
