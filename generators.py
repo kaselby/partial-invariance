@@ -469,10 +469,9 @@ def load_pairs(pair_file):
     pairs = [line.strip().split(" ") for line in lines]
     return pairs
 
-import math
 def split_pairs(pairs, test_frac):
     N = len(pairs)
-    r = int(math.round(test_frac * N))
+    r = int(round(test_frac * N))
     return pairs[:r], pairs[r:]
 
 import fasttext
