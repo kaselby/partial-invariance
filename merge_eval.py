@@ -7,7 +7,7 @@ def get_runs(run_name):
     subfolders = [f.name for f in os.scandir(run_name) if f.is_dir()]
     return subfolders
 
-model_suffixes = ['csab','pine','naive','rn','cross-only','sum-merge']
+model_suffixes = ['csab','pine','naive','rn','cross-only']
 
 parser = ArgumentParser()
 parser.add_argument('run_name', type=str)
