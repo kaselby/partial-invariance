@@ -138,7 +138,7 @@ class MHA(nn.Module):
 
 
 class MAB(nn.Module):
-    def __init__(self, input_size, latent_size, hidden_size, num_heads, attn_size=None, ln=False, equi=False, nn_attn=False, dropout=0.1):
+    def __init__(self, input_size, latent_size, hidden_size, num_heads, attn_size=None, ln=False, rezero=False, equi=False, nn_attn=False, dropout=0.1):
         super(MAB, self).__init__()
         attn_size = attn_size if attn_size is not None else input_size
         self.attn = MHA(input_size, attn_size, latent_size, num_heads, equi=equi, nn_attn=nn_attn)
@@ -148,12 +148,18 @@ class MAB(nn.Module):
         if ln:
             self.ln0 = nn.LayerNorm(latent_size)
             self.ln1 = nn.LayerNorm(latent_size)
+        if rezero:
+            self.alpha0 = nn.Parameter(torch.tensor(0))
+            self.alpha1 = nn.Parameter(torch.tensor(0))
+        else:
+            self.alpha0 = 1
+            self.alpha1 = 1
 
     def forward(self, Q, K, **kwargs):
-        X = Q + self.attn(Q, K, **kwargs)
+        X = Q + getattr(self, 'alpha0', 1) * self.attn(Q, K, **kwargs)
         X = X if getattr(self, 'dropout', None) is None else self.dropout(X)
         X = X if getattr(self, 'ln0', None) is None else self.ln0(X)
-        X = X + self.fc(X)
+        X = X + getattr(self, 'alpha1', 1) * self.fc(X)
         X = X if getattr(self, 'dropout', None) is None else self.dropout(X)
         X = X if getattr(self, 'ln1', None) is None else self.ln1(X)
         return X
@@ -204,7 +210,7 @@ class CSABSimple(nn.Module):
         return (X_out, Y_out)
 
 class CSAB(nn.Module):
-    def __init__(self, input_size, latent_size, hidden_size, num_heads, remove_diag=False, nn_attn=False, weight_sharing='none', merge='concat', **kwargs):
+    def __init__(self, input_size, latent_size, hidden_size, num_heads, remove_diag=False, nn_attn=False, rezero=False, weight_sharing='none', merge='concat', **kwargs):
         super(CSAB, self).__init__()
         self._init_blocks(input_size, latent_size, hidden_size, num_heads, remove_diag, nn_attn, weight_sharing, **kwargs)
         self.merge = merge
@@ -366,7 +372,7 @@ class SetTransformer(nn.Module):
         return self.dec(ZX).squeeze(-1)
 
 class MultiSetTransformer(nn.Module):
-    def __init__(self, input_size, latent_size, hidden_size, output_size, num_heads=4, num_blocks=2, remove_diag=False, ln=False, equi=False, 
+    def __init__(self, input_size, latent_size, hidden_size, output_size, num_heads=4, num_blocks=2, remove_diag=False, ln=False, rezero=False, equi=False, 
             nn_attn=False, weight_sharing='none', k_neighbours=5, dropout=0.1, num_inds=-1, decoder_layers=0, pool='pma', merge='concat'):
         super(MultiSetTransformer, self).__init__()
         if equi:
@@ -377,7 +383,7 @@ class MultiSetTransformer(nn.Module):
             self.enc = EncoderStack(*[ICSAB(latent_size, latent_size, hidden_size, num_heads, num_inds, ln=ln, remove_diag=remove_diag, 
                 equi=equi, weight_sharing=weight_sharing, dropout=dropout) for i in range(num_blocks)])
         else:
-            self.enc = EncoderStack(*[CSAB(latent_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, 
+            self.enc = EncoderStack(*[CSAB(latent_size, latent_size, hidden_size, num_heads, ln=ln, rezero=rezero, remove_diag=remove_diag, 
                 equi=equi, nn_attn=nn_attn, weight_sharing=weight_sharing, dropout=dropout, merge='concat') for i in range(num_blocks)])
         self.pool_method = pool
         if self.pool_method == "pma":

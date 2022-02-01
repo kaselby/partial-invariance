@@ -447,7 +447,7 @@ if __name__ == '__main__':
 
     
     optimizer = torch.optim.Adam(discriminator.parameters(), args.lr)
-    scheduler = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=0, total_iters=args.warmup_steps) if args.warmup_steps > 0 else None
+    scheduler = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=1e-8, total_iters=args.warmup_steps) if args.warmup_steps > 0 else None
     checkpoint_dir = os.path.join(args.checkpoint_dir, args.checkpoint_name) if args.checkpoint_name is not None else None
     if args.data == 'md':
         discriminator, (losses, accs, test_acc) = train_meta(discriminator, optimizer, train_generator, val_generator, test_generator, steps, 
