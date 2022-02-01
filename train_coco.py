@@ -80,7 +80,7 @@ def make_model(set_model, text_model='bert', img_model='vgg', embed_dim=300):
 
 
 
-def train(model, optimizer, scheduler, train_dataset, val_dataset, test_dataset, steps, batch_size=64, eval_every=500, save_every=2000, eval_steps=100, test_steps=500, checkpoint_dir=None, data_kwargs={}):
+def train(model, optimizer, train_dataset, val_dataset, test_dataset, steps, scheduler=None, batch_size=64, eval_every=500, save_every=2000, eval_steps=100, test_steps=500, checkpoint_dir=None, data_kwargs={}):
     train_losses = []
     eval_accs = []
     initial_step=0
@@ -91,7 +91,7 @@ def train(model, optimizer, scheduler, train_dataset, val_dataset, test_dataset,
             checkpoint_path = os.path.join(checkpoint_dir, "checkpoint.pt")
             if os.path.exists(checkpoint_path):
                 load_dict = torch.load(checkpoint_path)
-                model, optimizer, initial_step, train_losses, eval_accs = load_dict['model'], load_dict['optimizer'], load_dict['step'], load_dict['losses'], load_dict['accs']
+                model, optimizer, scheduler, initial_step, train_losses, eval_accs = load_dict['model'], load_dict['optimizer'], load_dict['scheduler'], load_dict['step'], load_dict['losses'], load_dict['accs']
     
     avg_loss = 0
     loss_fct = nn.BCEWithLogitsLoss()
@@ -104,7 +104,8 @@ def train(model, optimizer, scheduler, train_dataset, val_dataset, test_dataset,
         loss = loss_fct(out.squeeze(-1), target)
         loss.backward()
         optimizer.step()
-        scheduler.step()
+        if scheduler is not None:
+            scheduler.step()
 
         avg_loss += loss.item()
         train_losses.append(loss.item())
@@ -119,7 +120,7 @@ def train(model, optimizer, scheduler, train_dataset, val_dataset, test_dataset,
             checkpoint_path = os.path.join(checkpoint_dir, "checkpoint.pt")
             if os.path.exists(checkpoint_path):
                 os.remove(checkpoint_path)
-            torch.save({'model':model,'optimizer':optimizer, 'step': i, 'losses':train_losses, 'accs': eval_accs}, checkpoint_path)
+            torch.save({'model':model,'optimizer':optimizer, 'scheduler':scheduler, 'step': i, 'losses':train_losses, 'accs': eval_accs}, checkpoint_path)
 
     
     test_acc = evaluate(model, test_dataset, test_steps, batch_size, data_kwargs)
@@ -277,12 +278,12 @@ if __name__ == '__main__':
         eval_steps = int(eval_steps/n_gpus)
 
     optimizer = torch.optim.Adam(model.parameters(), args.lr)
-    scheduler = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=0, total_iters=args.warmup_steps)
+    scheduler = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=0, total_iters=args.warmup_steps) if args.warmup_steps > 0 else None
     checkpoint_dir = os.path.join(args.checkpoint_dir, args.checkpoint_name) if args.checkpoint_name is not None else None
     data_kwargs = {'set_size':args.set_size}
     print("Beginning training...")
-    model, (losses, accs, test_acc) = train(model, optimizer, scheduler, train_generator, val_generator, test_generator, steps, batch_size, 
-        checkpoint_dir=checkpoint_dir, data_kwargs=data_kwargs, eval_every=eval_every, eval_steps=eval_steps, test_steps=args.test_steps)
+    model, (losses, accs, test_acc) = train(model, optimizer, train_generator, val_generator, test_generator, steps, batch_size, 
+        scheduler=scheduler, checkpoint_dir=checkpoint_dir, data_kwargs=data_kwargs, eval_every=eval_every, eval_steps=eval_steps, test_steps=args.test_steps)
 
     print("Test Accuracy:", test_acc)
 

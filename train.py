@@ -88,7 +88,7 @@ def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(),
     checkpoint_dir=None, save_every=1000, sample_kwargs={}, label_kwargs={}, normalize='none', clip=-1, warmup_steps=1000):
     #model.train(True)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-    scheduler = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=0, total_iters=warmup_steps)
+    scheduler = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=0, total_iters=warmup_steps) if warmup_steps > 0 else None
     losses = []
     initial_step=1
     if checkpoint_dir is not None:
@@ -98,7 +98,7 @@ def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(),
             checkpoint_path = os.path.join(checkpoint_dir, "checkpoint.pt")
             if os.path.exists(checkpoint_path):
                 load_dict = torch.load(checkpoint_path)
-                model, optimizer, initial_step, losses = load_dict['model'], load_dict['optimizer'], load_dict['step'], load_dict['losses']
+                model, optimizer, scheduler, initial_step, losses = load_dict['model'], load_dict['optimizer'], load_dict['scheduler'], load_dict['step'], load_dict['losses']
 
     for i in tqdm.tqdm(range(initial_step,steps+1)):
         optimizer.zero_grad()
@@ -127,7 +127,8 @@ def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(),
         if clip > 0:
             torch.nn.utils.clip_grad_norm_(model.parameters(), clip)
         optimizer.step()
-        scheduler.step()
+        if scheduler is not None:
+            scheduler.step()
 
         losses.append(loss.item())
 
@@ -135,7 +136,7 @@ def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(),
             checkpoint_path = os.path.join(checkpoint_dir, "checkpoint.pt")
             if os.path.exists(checkpoint_path):
                 os.remove(checkpoint_path)
-            torch.save({'model':model,'optimizer':optimizer, 'step': i, 'losses':losses}, checkpoint_path)
+            torch.save({'model':model,'optimizer':optimizer, 'scheduler':scheduler, 'step': i, 'losses':losses}, checkpoint_path)
 
     seed = torch.randint(100, (1,)).item()
     '''

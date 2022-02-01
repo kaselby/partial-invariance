@@ -378,7 +378,7 @@ def load_cifar(root_folder="./data"):
 def poisson_loss(outputs, targets):
     return -1 * (targets * outputs - torch.exp(outputs)).mean()
 
-def train(model, optimizer, scheduler, train_generator, val_generator, test_generator, steps, poisson=False, batch_size=64, eval_every=500, save_every=2000, eval_steps=200, test_steps=500, checkpoint_dir=None, data_kwargs={}):
+def train(model, optimizer, train_generator, val_generator, test_generator, steps, scheduler=None, poisson=False, batch_size=64, eval_every=500, save_every=2000, eval_steps=200, test_steps=500, checkpoint_dir=None, data_kwargs={}):
     losses = []
     eval_accs = []
     initial_step=1
@@ -389,7 +389,7 @@ def train(model, optimizer, scheduler, train_generator, val_generator, test_gene
             checkpoint_path = os.path.join(checkpoint_dir, "checkpoint.pt")
             if os.path.exists(checkpoint_path):
                 load_dict = torch.load(checkpoint_path)
-                model, optimizer, initial_step, losses, eval_accs = load_dict['model'], load_dict['optimizer'], load_dict['step'], load_dict['losses'], load_dict['accs']
+                model, optimizer, scheduler, initial_step, losses, eval_accs = load_dict['model'], load_dict['optimizer'], load_dict['scheduler'], load_dict['step'], load_dict['losses'], load_dict['accs']
     
     loss_fct = nn.MSELoss() if not poisson else poisson_loss
     avg_loss=0
@@ -402,7 +402,8 @@ def train(model, optimizer, scheduler, train_generator, val_generator, test_gene
         loss = loss_fct(out.squeeze(-1), target)
         loss.backward()
         optimizer.step()
-        scheduler.step()
+        if scheduler is not None:
+            scheduler.step()
 
         losses.append(loss.item())
         avg_loss += loss.item()
@@ -417,7 +418,7 @@ def train(model, optimizer, scheduler, train_generator, val_generator, test_gene
             checkpoint_path = os.path.join(checkpoint_dir, "checkpoint.pt")
             if os.path.exists(checkpoint_path):
                 os.remove(checkpoint_path)
-            torch.save({'model':model,'optimizer':optimizer, 'step': i, 'losses':losses, 'accs': eval_accs}, checkpoint_path)
+            torch.save({'model':model,'optimizer':optimizer, 'scheduler':scheduler, 'step': i, 'losses':losses, 'accs': eval_accs}, checkpoint_path)
     
     test_acc = evaluate(model, test_generator, test_steps, poisson, batch_size, data_kwargs)
     
@@ -620,10 +621,10 @@ if __name__ == '__main__':
     print("Beginning Training...")
 
     optimizer = torch.optim.Adam(model.parameters(), args.lr)
-    scheduler = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=0, total_iters=args.warmup_steps)
+    scheduler = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=0, total_iters=args.warmup_steps) if args.warmup_steps > 0 else None
     checkpoint_dir = os.path.join(args.checkpoint_dir, args.checkpoint_name) if args.checkpoint_name is not None else None
-    model, (losses, accs, test_acc) = train(model, optimizer, scheduler, train_generator, val_generator, test_generator, steps, 
-        batch_size=batch_size, poisson=args.poisson, checkpoint_dir=checkpoint_dir, data_kwargs=data_kwargs, eval_every=eval_every, eval_steps=eval_steps)
+    model, (losses, accs, test_acc) = train(model, optimizer, train_generator, val_generator, test_generator, steps, 
+        scheduler=scheduler, batch_size=batch_size, poisson=args.poisson, checkpoint_dir=checkpoint_dir, data_kwargs=data_kwargs, eval_every=eval_every, eval_steps=eval_steps)
 
     print("Test Accuracy:", test_acc)
 
