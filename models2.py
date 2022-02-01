@@ -453,7 +453,7 @@ class NaiveMultiSetModel(nn.Module):
             #self.encoder2 = SetTransformer(input_size, latent_size, hidden_size, latent_size, num_heads, num_blocks, remove_diag, ln, equi)
         else:
             #encoder = SetTransformer(input_size, latent_size, hidden_size, latent_size, num_heads, num_blocks, remove_diag, ln, equi)
-            encoder = nn.Sequential(*[SAB(input_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, equi=equi, dropout=dropout) for _ in range(num_blocks)])
+            encoder = nn.Sequential(*[SAB(latent_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, equi=equi, dropout=dropout) for _ in range(num_blocks)])
             pool = PMA(latent_size, hidden_size, num_heads, 1, ln=ln)
             self.encoder1 = encoder
             self.encoder2 = encoder
