@@ -11,4 +11,4 @@
 
 
 
-python3 train_gan.py $1 --batch_size 16 --steps 16000 --set_size 10 30 --img_encoder cnn --p_dl 0 --checkpoint_name $SLURM_JOB_ID --model $2 --merge $3 --data $4 --n $5 --latent_size $6 --hidden_size $7
+python3 train_gan.py $1 --img_encoder cnn --p_dl 0 --checkpoint_name $SLURM_JOB_ID --model $2 --merge $3 --data $4 --n $5 --latent_size $6 --hidden_size $7 --bs $8 --lr $9 --steps ${10} --set_size ${11} ${12}
