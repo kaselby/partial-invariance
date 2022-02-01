@@ -2,6 +2,7 @@ from torch.distributions.distribution import Distribution
 #from models import *
 import torch
 import torch.nn as nn
+import torch.optim as optim
 import math
 from torch.distributions import OneHotCategorical, Normal, MultivariateNormal, Categorical, MixtureSameFamily, Distribution, Dirichlet, LKJCholesky, LogNormal
 import tqdm

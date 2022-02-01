@@ -26,7 +26,7 @@ nb=${14}
 ss1=${15}
 ss2=${16}
 merge=${17}
-
+warmup=${18}
 
 if [ $target == "w1" ]
 then

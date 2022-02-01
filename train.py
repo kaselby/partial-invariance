@@ -48,6 +48,7 @@ def parse_args():
     parser.add_argument('--set_size', type=int, nargs=2, default=[100,150])
     parser.add_argument('--weight_sharing', type=str, choices=['none', 'cross', 'sym'], default='none')
     parser.add_argument('--merge', type=str, default='concat', choices=['concat', 'sum'])
+    parser.add_argument('--warmup_steps', type=int, default=1000)
     return parser.parse_args()
 
 
@@ -84,9 +85,10 @@ def evaluate(model, generator, label_fct, exact_loss=False, batch_size=64, sampl
     return sum(model_losses)/len(model_losses)
 
 def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(), batch_size=64, steps=3000, lr=1e-5, 
-    checkpoint_dir=None, save_every=1000, sample_kwargs={}, label_kwargs={}, normalize='none', clip=-1):
+    checkpoint_dir=None, save_every=1000, sample_kwargs={}, label_kwargs={}, normalize='none', clip=-1, warmup_steps=1000):
     #model.train(True)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+    scheduler = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=0, total_iters=warmup_steps)
     losses = []
     initial_step=1
     if checkpoint_dir is not None:
@@ -125,6 +127,7 @@ def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(),
         if clip > 0:
             torch.nn.utils.clip_grad_norm_(model.parameters(), clip)
         optimizer.step()
+        scheduler.step()
 
         losses.append(loss.item())
 
@@ -300,7 +303,7 @@ if __name__ == '__main__':
 
     model, losses = train(model, generator, label_fct, checkpoint_dir=os.path.join(args.checkpoint_dir, args.checkpoint_name), \
         exact_loss=exact_loss, criterion=criterion, steps=steps, lr=args.lr, batch_size=batch_size, \
-        sample_kwargs=sample_kwargs, label_kwargs=label_kwargs, normalize=args.normalize, clip=args.clip)
+        sample_kwargs=sample_kwargs, label_kwargs=label_kwargs, normalize=args.normalize, clip=args.clip, warmup_steps=args.warmup_steps)
 
     eval_loss = evaluate(model, generator, label_fct, exact_loss=exact_loss, steps=1000, batch_size=batch_size, \
         sample_kwargs=sample_kwargs, label_kwargs=label_kwargs, normalize=args.normalize)

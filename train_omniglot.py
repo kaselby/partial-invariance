@@ -378,7 +378,7 @@ def load_cifar(root_folder="./data"):
 def poisson_loss(outputs, targets):
     return -1 * (targets * outputs - torch.exp(outputs)).mean()
 
-def train(model, optimizer, train_generator, val_generator, test_generator, steps, poisson=False, batch_size=64, eval_every=500, save_every=2000, eval_steps=200, test_steps=500, checkpoint_dir=None, data_kwargs={}):
+def train(model, optimizer, scheduler, train_generator, val_generator, test_generator, steps, poisson=False, batch_size=64, eval_every=500, save_every=2000, eval_steps=200, test_steps=500, checkpoint_dir=None, data_kwargs={}):
     losses = []
     eval_accs = []
     initial_step=1
@@ -402,6 +402,7 @@ def train(model, optimizer, train_generator, val_generator, test_generator, step
         loss = loss_fct(out.squeeze(-1), target)
         loss.backward()
         optimizer.step()
+        scheduler.step()
 
         losses.append(loss.item())
         avg_loss += loss.item()
@@ -499,6 +500,7 @@ def parse_args():
     parser.add_argument('--eval_every', type=int, default=500)
     parser.add_argument('--eval_steps', type=int, default=200)
     parser.add_argument('--merge_type', type=str, default='concat', choices=['concat', 'sum'])
+    parser.add_argument('--warmup_steps', type=int, default=1000)
     return parser.parse_args()
 
 if __name__ == '__main__':
@@ -618,8 +620,9 @@ if __name__ == '__main__':
     print("Beginning Training...")
 
     optimizer = torch.optim.Adam(model.parameters(), args.lr)
+    scheduler = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=0, total_iters=args.warmup_steps)
     checkpoint_dir = os.path.join(args.checkpoint_dir, args.checkpoint_name) if args.checkpoint_name is not None else None
-    model, (losses, accs, test_acc) = train(model, optimizer, train_generator, val_generator, test_generator, steps, 
+    model, (losses, accs, test_acc) = train(model, optimizer, scheduler, train_generator, val_generator, test_generator, steps, 
         batch_size=batch_size, poisson=args.poisson, checkpoint_dir=checkpoint_dir, data_kwargs=data_kwargs, eval_every=eval_every, eval_steps=eval_steps)
 
     print("Test Accuracy:", test_acc)

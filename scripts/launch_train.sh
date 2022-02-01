@@ -7,7 +7,7 @@ data='corr'
 dim=2
 latent_size=32
 hidden_size=64
-lr="1e-4"
+lr="1e-3"
 clip=-1
 basedir="final-runs"
 run_name=$1
@@ -15,6 +15,7 @@ num_blocks=2
 ss1=100
 ss2=200
 merge="concat"
+warmup_steps=5000
 
 for (( i = 0 ; i < $n_runs ; i++ ))
 do

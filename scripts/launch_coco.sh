@@ -6,7 +6,7 @@ batch_size=4
 num_blocks=1
 latent_size=512
 hidden_size=1024
-lr="1e-5"
+lr="1e-3"
 basedir="final-runs"
 run_name=$1
 steps=20000
@@ -14,6 +14,7 @@ set_size1=3
 set_size2=10
 merge="concat"
 dataset="coco"
+warmup_steps=5000
 
 for (( i = 0 ; i < $n_runs ; i++ ))
 do

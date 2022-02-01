@@ -7,6 +7,7 @@ lr=$4
 
 weight_sharing="cross"
 merge="concat"
+warmup_steps=5000
 
 n_runs=3
 

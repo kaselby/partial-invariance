@@ -80,7 +80,7 @@ def make_model(set_model, text_model='bert', img_model='vgg', embed_dim=300):
 
 
 
-def train(model, optimizer, train_dataset, val_dataset, test_dataset, steps, batch_size=64, eval_every=500, save_every=2000, eval_steps=100, test_steps=500, checkpoint_dir=None, data_kwargs={}):
+def train(model, optimizer, scheduler, train_dataset, val_dataset, test_dataset, steps, batch_size=64, eval_every=500, save_every=2000, eval_steps=100, test_steps=500, checkpoint_dir=None, data_kwargs={}):
     train_losses = []
     eval_accs = []
     initial_step=0
@@ -104,6 +104,7 @@ def train(model, optimizer, train_dataset, val_dataset, test_dataset, steps, bat
         loss = loss_fct(out.squeeze(-1), target)
         loss.backward()
         optimizer.step()
+        scheduler.step()
 
         avg_loss += loss.item()
         train_losses.append(loss.item())
@@ -165,6 +166,7 @@ def parse_args():
     parser.add_argument('--embed_path', type=str, default="cc.en.300.bin")
     parser.add_argument('--embed_dim', type=int, default=300)
     parser.add_argument('--merge_type', type=str, default='concat', choices=['concat', 'sum'])
+    parser.add_argument('--warmup_steps', type=int, default=1000)
     return parser.parse_args()
 
 #IMG_SIZE=105
@@ -275,10 +277,11 @@ if __name__ == '__main__':
         eval_steps = int(eval_steps/n_gpus)
 
     optimizer = torch.optim.Adam(model.parameters(), args.lr)
+    scheduler = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=0, total_iters=args.warmup_steps)
     checkpoint_dir = os.path.join(args.checkpoint_dir, args.checkpoint_name) if args.checkpoint_name is not None else None
     data_kwargs = {'set_size':args.set_size}
     print("Beginning training...")
-    model, (losses, accs, test_acc) = train(model, optimizer, train_generator, val_generator, test_generator, steps, batch_size, 
+    model, (losses, accs, test_acc) = train(model, optimizer, scheduler, train_generator, val_generator, test_generator, steps, batch_size, 
         checkpoint_dir=checkpoint_dir, data_kwargs=data_kwargs, eval_every=eval_every, eval_steps=eval_steps, test_steps=args.test_steps)
 
     print("Test Accuracy:", test_acc)
