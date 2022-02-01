@@ -88,7 +88,7 @@ def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(),
     checkpoint_dir=None, save_every=1000, sample_kwargs={}, label_kwargs={}, normalize='none', clip=-1, warmup_steps=1000):
     #model.train(True)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-    scheduler = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=0, total_iters=warmup_steps) if warmup_steps > 0 else None
+    scheduler = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=1e-8, total_iters=warmup_steps) if warmup_steps > 0 else None
     losses = []
     initial_step=1
     if checkpoint_dir is not None:
