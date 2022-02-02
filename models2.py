@@ -149,8 +149,8 @@ class MAB(nn.Module):
             self.ln0 = nn.LayerNorm(latent_size)
             self.ln1 = nn.LayerNorm(latent_size)
         if rezero:
-            self.alpha0 = nn.Parameter(torch.tensor(0))
-            self.alpha1 = nn.Parameter(torch.tensor(0))
+            self.alpha0 = nn.Parameter(torch.tensor(0.))
+            self.alpha1 = nn.Parameter(torch.tensor(0.))
         else:
             self.alpha0 = 1
             self.alpha1 = 1
@@ -192,8 +192,8 @@ class CSABSimple(nn.Module):
         self.fc_X = nn.Linear(latent_size, latent_size)
         self.fc_Y = nn.Linear(latent_size, latent_size)
         if rezero:
-            self.alpha_x = nn.Parameter(torch.tensor(0))
-            self.alpha_y = nn.Parameter(torch.tensor(0))
+            self.alpha_x = nn.Parameter(torch.tensor(0.))
+            self.alpha_y = nn.Parameter(torch.tensor(0.))
         else:
             self.alpha_x = 1
             self.alpha_y = 1
@@ -227,8 +227,8 @@ class CSAB(nn.Module):
             self.fc_X = nn.Linear(latent_size, latent_size)
             self.fc_Y = nn.Linear(latent_size, latent_size)
         if rezero:
-            self.alpha_x = nn.Parameter(torch.tensor(0))
-            self.alpha_y = nn.Parameter(torch.tensor(0))
+            self.alpha_x = nn.Parameter(torch.tensor(0.))
+            self.alpha_y = nn.Parameter(torch.tensor(0.))
         else:
             self.alpha_x = 1
             self.alpha_y = 1
