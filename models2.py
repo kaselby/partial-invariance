@@ -186,11 +186,17 @@ class ISAB(nn.Module):
 
 
 class CSABSimple(nn.Module):
-    def __init__(self, input_size, latent_size, hidden_size, num_heads, weight_sharing='none', **kwargs):
+    def __init__(self, input_size, latent_size, hidden_size, num_heads, weight_sharing='none', rezero=False **kwargs):
         super(CSABSimple, self).__init__()
-        self._init_blocks(input_size, latent_size, hidden_size, num_heads, weight_sharing, **kwargs)
+        self._init_blocks(input_size, latent_size, hidden_size, num_heads, weight_sharing, rezero=rezero, **kwargs)
         self.fc_X = nn.Linear(latent_size, latent_size)
         self.fc_Y = nn.Linear(latent_size, latent_size)
+        if rezero:
+            self.alpha_x = nn.Parameter(torch.tensor(0))
+            self.alpha_y = nn.Parameter(torch.tensor(0))
+        else:
+            self.alpha_x = 1
+            self.alpha_y = 1
 
     def _init_blocks(self, input_size, latent_size, hidden_size, num_heads, weight_sharing='none', **kwargs):
         if weight_sharing == 'none':
@@ -205,14 +211,14 @@ class CSABSimple(nn.Module):
         X, Y = inputs
         XY = self.MAB_XY(X, Y)
         YX = self.MAB_YX(Y, X)
-        X_out = X + self.fc_X(XY)
-        Y_out = Y + self.fc_Y(YX)
+        X_out = X + getattr(self, 'alpha_x', 1) * self.fc_X(XY)
+        Y_out = Y + getattr(self, 'alpha_y', 1) * self.fc_Y(YX)
         return (X_out, Y_out)
 
 class CSAB(nn.Module):
     def __init__(self, input_size, latent_size, hidden_size, num_heads, remove_diag=False, nn_attn=False, rezero=False, weight_sharing='none', merge='concat', **kwargs):
         super(CSAB, self).__init__()
-        self._init_blocks(input_size, latent_size, hidden_size, num_heads, remove_diag, nn_attn, weight_sharing, **kwargs)
+        self._init_blocks(input_size, latent_size, hidden_size, num_heads, remove_diag, nn_attn, weight_sharing, rezero=rezero, **kwargs)
         self.merge = merge
         if self.merge == 'concat':
             self.fc_X = nn.Linear(latent_size * 2, latent_size)
@@ -220,6 +226,12 @@ class CSAB(nn.Module):
         else:
             self.fc_X = nn.Linear(latent_size, latent_size)
             self.fc_Y = nn.Linear(latent_size, latent_size)
+        if rezero:
+            self.alpha_x = nn.Parameter(torch.tensor(0))
+            self.alpha_y = nn.Parameter(torch.tensor(0))
+        else:
+            self.alpha_x = 1
+            self.alpha_y = 1
         self.remove_diag = remove_diag
         self.nn_attn = nn_attn
 
@@ -283,11 +295,11 @@ class CSAB(nn.Module):
             YY = self.MAB_YY(Y, Y, neighbours=N_YY)
         #backwards compatibility
         if getattr(self, "merge", None) is None or self.merge == "concat":
-            X_out = X + self.fc_X(torch.cat([XX, XY], dim=-1))
-            Y_out = Y + self.fc_Y(torch.cat([YY, YX], dim=-1))
+            X_out = X + getattr(self, 'alpha_x', 1) * self.fc_X(torch.cat([XX, XY], dim=-1))
+            Y_out = Y + getattr(self, 'alpha_y', 1) * self.fc_Y(torch.cat([YY, YX], dim=-1))
         else:
-            X_out = X + self.fc_X(XX + XY)
-            Y_out = Y + self.fc_Y(YX + YY)
+            X_out = X + getattr(self, 'alpha_x', 1) * self.fc_X(XX + XY)
+            Y_out = Y + getattr(self, 'alpha_y', 1) * self.fc_Y(YX + YY)
         return (X_out, Y_out)
 
 

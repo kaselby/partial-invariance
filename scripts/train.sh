@@ -27,6 +27,7 @@ ss1=${15}
 ss2=${16}
 merge=${17}
 warmup=${18}
+steps=${19}
 
 if [ $target == "w1" ]
 then
@@ -55,4 +56,4 @@ then
     argstring="${argstring} --nn"
 fi
 
-python3 train.py $run_name --target $target --data $data --model $model --num_inds $num_inds --dim $is --latent_size $lts --hidden_size $hs --lr $lr --clip $clip --basedir $basedir --num_blocks $nb --set_size $ss1 $ss2 --merge $merge --checkpoint_name $SLURM_JOB_ID $argstring 
+python3 train.py $run_name --target $target --data $data --model $model --num_inds $num_inds --dim $is --latent_size $lts --hidden_size $hs --lr $lr --clip $clip --basedir $basedir --num_blocks $nb --set_size $ss1 $ss2 --merge $merge --warmup_steps $warmup --steps $steps --checkpoint_name $SLURM_JOB_ID $argstring 
