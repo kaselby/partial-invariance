@@ -110,7 +110,7 @@ def train_synth(model, optimizer, generator, steps, scheduler=None, batch_size=6
                 os.remove(checkpoint_path)
             torch.save({'model':model,'optimizer':optimizer, 'step': i, 'losses':train_losses, 'accs': eval_accs}, checkpoint_path)
     
-    test_acc = eval_synth(model, generator, eval_steps, batch_size, data_kwargs)
+    test_acc = eval_synth(model, generator, 5*eval_steps, batch_size, data_kwargs)
     return model, (train_losses, eval_accs, test_acc)
         
 
