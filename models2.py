@@ -186,7 +186,7 @@ class ISAB(nn.Module):
 
 
 class CSABSimple(nn.Module):
-    def __init__(self, input_size, latent_size, hidden_size, num_heads, weight_sharing='none', rezero=False **kwargs):
+    def __init__(self, input_size, latent_size, hidden_size, num_heads, weight_sharing='none', rezero=False, **kwargs):
         super(CSABSimple, self).__init__()
         self._init_blocks(input_size, latent_size, hidden_size, num_heads, weight_sharing, rezero=rezero, **kwargs)
         self.fc_X = nn.Linear(latent_size, latent_size)
