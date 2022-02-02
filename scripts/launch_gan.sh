@@ -15,7 +15,7 @@ lr="1e-3"
 steps=20000
 set_size1=10
 set_size2=30
-warmup_steps=5000
+warmup_steps=-1
 
 for (( i = 0 ; i < $n_runs ; i++ ))
 do

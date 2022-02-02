@@ -22,7 +22,18 @@ from train_omniglot import ConvEncoder
 #def fasttext_encoder_preproc():
 
 
-SS_SCHEDULE=[{'set_size':(1,5), 'steps':2000}, {'set_size':(3,10), 'steps':4000}, {'set_size':(6,12), 'steps':10000}]
+SS_SCHEDULE=[{'set_size':(1,5), 'steps':4000}, {'set_size':(3,10), 'steps':4000}, {'set_size':(6,12), 'steps':10000}]
+
+class SetSizeScheduler():
+    def __init__(self, schedule):
+        self.schedule=schedule
+        self.N = sum([entry['steps'] for entry in schedule])
+
+    def get_set_size(self):
+        step=0
+        for entry in self.schedule:
+            if 
+
 
 
 def load_coco_data(imgdir, anndir):
