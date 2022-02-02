@@ -13,11 +13,12 @@ run_name=$1
 ss1=100
 ss2=150
 merge="concat"
-steps=80000
+steps=120000
 
-warmup=(-1 5000 20000)
-lrs=("1e-2" "1e-3" "1e-4")
-nblocks=(1 2 3)
+warmup=(-1 20000 40000)
+lrs=("1e-3")
+nblocks=(3 4 5 6)
+dls=(0 1)
 
 for lr in "${lrs[@]}"
 do
@@ -25,9 +26,12 @@ do
     do
         for wsteps in "${warmup[@]}"
         do
-            for (( i = 0 ; i < $n_runs ; i++ ))
+            for dl in "${dls[@]}"
             do
-                sbatch scripts/train.sh "${run_name}_${lr}_${nb}_w${wsteps}/${i}" $target $data -1 1 $dim $latent_size $hidden_size $lr $clip "csab" $basedir 0 $nb $ss1 $ss2 $merge $wsteps $steps
+                for (( i = 0 ; i < $n_runs ; i++ ))
+                do
+                    sbatch scripts/train.sh "${run_name}_${lr}_${nb}_w${wsteps}/${i}" $target $data -1 1 $dim $latent_size $hidden_size $lr $clip "csab" $basedir 0 $nb $ss1 $ss2 $merge $wsteps $steps $dl
+                done
             done
         done
     done
