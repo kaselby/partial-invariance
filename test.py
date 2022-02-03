@@ -26,6 +26,7 @@ def parse_args():
     parser.add_argument('--target', type=str, default='wasserstein')
     parser.add_argument('--set_size', type=int, nargs=2, default=[100, 150])
     parser.add_argument('--n', type=int, default=2)
+    parser.add_argument('--steps', type=int, default=500)
 
     return parser.parse_args()
 
@@ -83,7 +84,7 @@ if __name__ == '__main__':
                 for run_num in all_runs:
                     model = torch.load(os.path.join(run_path, run_num, "model.pt"))
                     model_loss_i = evaluate(model, generator, label_fct, 
-                        sample_kwargs=sample_kwargs, steps=500, criterion=nn.L1Loss(), normalize=normalize, exact_loss=exact_loss, seed=seed)
+                        sample_kwargs=sample_kwargs, steps=args.steps, criterion=nn.L1Loss(), normalize=normalize, exact_loss=exact_loss, seed=seed)
                     results[run_name][name]['all_losses'].append(model_loss_i)
                     avg_loss += model_loss_i
                     print("%s-%s Loss: %f" % (run_name, run_num, model_loss_i))
@@ -93,14 +94,14 @@ if __name__ == '__main__':
             else:
                 model = torch.load(os.path.join(run_path, "model.pt"))
                 model_loss = evaluate(model, generator, label_fct, 
-                    sample_kwargs=sample_kwargs, steps=500, criterion=nn.L1Loss(), normalize=normalize, exact_loss=exact_loss, seed=seed)
+                    sample_kwargs=sample_kwargs, steps=args.steps, criterion=nn.L1Loss(), normalize=normalize, exact_loss=exact_loss, seed=seed)
                 print("%s Loss: %f" % (run_name, model_loss))
                 results[run_name][name] = model_loss
         for baseline_name, baseline_fct in baselines.items():
             if baseline_name not in results:
                 results[baseline_name] = {}
             baseline_loss = evaluate(baseline_fct, generator, label_fct, 
-                sample_kwargs=sample_kwargs, steps=500, criterion=nn.L1Loss(), normalize=False, exact_loss=exact_loss, seed=seed)
+                sample_kwargs=sample_kwargs, steps=args.steps, criterion=nn.L1Loss(), normalize=False, exact_loss=exact_loss, seed=seed)
             print("%s Loss: %f" % (baseline_name, baseline_loss))
             results[baseline_name][name] = baseline_loss
     
