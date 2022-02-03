@@ -35,6 +35,7 @@ class SetSizeScheduler():
             step += entry['steps']
             if iter_id < step:
                 return entry['set_size']
+        return self.schedule[-1]['set_size']    #fallback for now
         
 
 
@@ -94,7 +95,7 @@ def make_model(set_model, text_model='bert', img_model='vgg', embed_dim=300):
 
 
 
-def train(model, optimizer, train_dataset, val_dataset, test_dataset, steps, scheduler=None, batch_size=64, eval_every=500, save_every=2000, eval_steps=100, test_steps=500, checkpoint_dir=None, data_kwargs={}):
+def train(model, optimizer, train_dataset, val_dataset, test_dataset, steps, scheduler=None, batch_size=64, eval_every=500, save_every=2000, eval_steps=100, test_steps=500, ss_schedule=None, checkpoint_dir=None data_kwargs={}):
     train_losses = []
     eval_accs = []
     initial_step=0
@@ -111,6 +112,9 @@ def train(model, optimizer, train_dataset, val_dataset, test_dataset, steps, sch
     loss_fct = nn.BCEWithLogitsLoss()
     for i in tqdm.tqdm(range(initial_step, steps)):
         optimizer.zero_grad()
+        if ss_schedule is not None:
+            set_size = ss_schedule.get_set_size(i)
+            data_kwargs['set_size'] = set_size
 
         (X,Y), target = train_dataset(batch_size, **data_kwargs)
 
@@ -294,6 +298,7 @@ if __name__ == '__main__':
     optimizer = torch.optim.Adam(model.parameters(), args.lr)
     scheduler = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=1e-8, total_iters=args.warmup_steps) if args.warmup_steps > 0 else None
     checkpoint_dir = os.path.join(args.checkpoint_dir, args.checkpoint_name) if args.checkpoint_name is not None else None
+    ss_schedule = SetSizeScheduler(SS_SCHEDULE) if args.anneal_set_size else None
     data_kwargs = {'set_size':args.set_size}
     print("Beginning training...")
     model, (losses, accs, test_acc) = train(model, optimizer, train_generator, val_generator, test_generator, steps, batch_size=batch_size, 
