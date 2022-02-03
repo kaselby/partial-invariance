@@ -35,6 +35,7 @@ class SetSizeScheduler():
             step += entry['steps']
             if iter_id < step:
                 return entry['set_size']
+        
 
 
 
@@ -295,7 +296,7 @@ if __name__ == '__main__':
     checkpoint_dir = os.path.join(args.checkpoint_dir, args.checkpoint_name) if args.checkpoint_name is not None else None
     data_kwargs = {'set_size':args.set_size}
     print("Beginning training...")
-    model, (losses, accs, test_acc) = train(model, optimizer, train_generator, val_generator, test_generator, steps, batch_size, 
+    model, (losses, accs, test_acc) = train(model, optimizer, train_generator, val_generator, test_generator, steps, batch_size=batch_size, 
         scheduler=scheduler, checkpoint_dir=checkpoint_dir, data_kwargs=data_kwargs, eval_every=eval_every, eval_steps=eval_steps, test_steps=args.test_steps)
 
     print("Test Accuracy:", test_acc)
