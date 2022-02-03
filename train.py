@@ -49,6 +49,7 @@ def parse_args():
     parser.add_argument('--weight_sharing', type=str, choices=['none', 'cross', 'sym'], default='none')
     parser.add_argument('--merge', type=str, default='concat', choices=['concat', 'sum'])
     parser.add_argument('--warmup_steps', type=int, default=1000)
+    parser.add_argument('--rezero', action='store_true')
     return parser.parse_args()
 
 
@@ -238,7 +239,8 @@ if __name__ == '__main__':
                 'k_neighbours':args.k_neighbours,
                 'weight_sharing':args.weight_sharing,
                 'decoder_layers':args.decoder_layers,
-                'merge': args.merge
+                'merge': args.merge,
+                'rezero': args.rezero
             }
             model=MultiSetTransformer(**model_kwargs).to(device)
         elif args.model == 'rn':
