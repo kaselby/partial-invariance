@@ -29,10 +29,12 @@ class SetSizeScheduler():
         self.schedule=schedule
         self.N = sum([entry['steps'] for entry in schedule])
 
-    def get_set_size(self):
+    def get_set_size(self, iter_id):
         step=0
         for entry in self.schedule:
-            if 
+            step += entry['steps']
+            if iter_id < step:
+                return entry['set_size']
 
 
 

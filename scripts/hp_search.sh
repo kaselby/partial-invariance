@@ -30,7 +30,7 @@ do
             do
                 for (( i = 0 ; i < $n_runs ; i++ ))
                 do
-                    sbatch scripts/train.sh "${run_name}_${lr}_${nb}_w${wsteps}/${i}" $target $data -1 1 $dim $latent_size $hidden_size $lr $clip "csab" $basedir 0 $nb $ss1 $ss2 $merge $wsteps $steps $dl
+                    sbatch scripts/train.sh "${run_name}_${lr}_${nb}_${dl}_w${wsteps}/${i}" $target $data -1 1 $dim $latent_size $hidden_size $lr $clip "csab" $basedir 0 $nb $ss1 $ss2 $merge $wsteps $steps $dl
                 done
             done
         done
