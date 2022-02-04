@@ -18,6 +18,8 @@ set_size2=30
 warmup_steps=-1
 weight_sharing="none"
 ln=1
+num_blocks=1
+decoder_layers=1
 
 for (( i = 0 ; i < $n_runs ; i++ ))
 do

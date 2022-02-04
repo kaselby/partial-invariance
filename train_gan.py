@@ -337,6 +337,7 @@ def parse_args():
     parser.add_argument('--n', type=int, default=8)
     parser.add_argument('--warmup_steps', type=int, default=1000)
     parser.add_argument('--ln', action='store_true')
+    parser.add_argument('--decoder_layers', type=int, default=0)
     return parser.parse_args()
 
 
@@ -360,7 +361,8 @@ if __name__ == '__main__':
             'dropout':args.dropout,
             'equi':False,
             'weight_sharing': args.weight_sharing,
-            'merge': args.merge_type
+            'merge': args.merge_type,
+            'decoder_layers': args.decoder_layers
         }
         set_model = MultiSetTransformer(input_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
     elif args.model == 'cross-only':
@@ -370,7 +372,8 @@ if __name__ == '__main__':
             'num_heads':args.num_heads,
             'dropout':args.dropout,
             'equi':False,
-            'weight_sharing': args.weight_sharing
+            'weight_sharing': args.weight_sharing,
+            'decoder_layers': args.decoder_layers
         }
         set_model = CrossOnlyModel(input_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
     elif args.model == 'naive':
@@ -381,7 +384,8 @@ if __name__ == '__main__':
             'num_heads':args.num_heads,
             'dropout':args.dropout,
             'equi':False,
-            'weight_sharing': args.weight_sharing
+            'weight_sharing': args.weight_sharing,
+            'decoder_layers': args.decoder_layers
         }
         set_model = NaiveMultiSetModel(input_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
     elif args.model == 'pine':
@@ -395,7 +399,8 @@ if __name__ == '__main__':
             'equi':False,
             'weight_sharing': args.weight_sharing,
             'pool1': 'max',
-            'pool2': 'max'
+            'pool2': 'max',
+            'decoder_layers': args.decoder_layers
         }
         set_model = MultiRNModel(input_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
     else:
