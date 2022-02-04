@@ -216,13 +216,19 @@ class CSABSimple(nn.Module):
         return (X_out, Y_out)
 
 class CSAB(nn.Module):
-    def __init__(self, input_size, latent_size, hidden_size, num_heads, remove_diag=False, nn_attn=False, rezero=False, weight_sharing='none', merge='concat', **kwargs):
+    def __init__(self, input_size, latent_size, hidden_size, num_heads, remove_diag=False, nn_attn=False, rezero=False, weight_sharing='none', merge='concat', ln=False, **kwargs):
         super(CSAB, self).__init__()
-        self._init_blocks(input_size, latent_size, hidden_size, num_heads, remove_diag, nn_attn, weight_sharing, rezero=rezero, **kwargs)
+        self._init_blocks(input_size, latent_size, hidden_size, num_heads, remove_diag, nn_attn, weight_sharing, rezero=rezero, ln=ln, **kwargs)
         self.merge = merge
         if self.merge == 'concat':
             self.fc_X = nn.Linear(latent_size * 2, latent_size)
             self.fc_Y = nn.Linear(latent_size * 2, latent_size)
+        elif self.merge == 'lambda':
+            self.fc_XX = nn.Linear(latent_size, latent_size)
+            self.fc_XY = nn.Linear(latent_size, latent_size)
+            self.fc_YX = nn.Linear(latent_size, latent_size)
+            self.fc_YX = nn.Linear(latent_size, latent_size)
+            self.lambd = nn.Parameter(torch.tensor(0.5))
         else:
             self.fc_X = nn.Linear(latent_size, latent_size)
             self.fc_Y = nn.Linear(latent_size, latent_size)
@@ -234,6 +240,9 @@ class CSAB(nn.Module):
             self.alpha_y = 1
         self.remove_diag = remove_diag
         self.nn_attn = nn_attn
+        if ln:
+            self.ln_x = nn.LayerNorm(latent_size)
+            self.lnY = nn.LayerNorm(latent_size)
 
     def _init_blocks(self, input_size, latent_size, hidden_size, num_heads, remove_diag=False, nn_attn=False, weight_sharing='none', **kwargs):
         if weight_sharing == 'none':
@@ -295,11 +304,18 @@ class CSAB(nn.Module):
             YY = self.MAB_YY(Y, Y, neighbours=N_YY)
         #backwards compatibility
         if getattr(self, "merge", None) is None or self.merge == "concat":
-            X_out = X + getattr(self, 'alpha_x', 1) * self.fc_X(torch.cat([XX, XY], dim=-1))
-            Y_out = Y + getattr(self, 'alpha_y', 1) * self.fc_Y(torch.cat([YY, YX], dim=-1))
+            X_merge = self.fc_X(torch.cat([XX, XY], dim=-1))
+            Y_merge = self.fc_Y(torch.cat([YY, YX], dim=-1))
+        elif self.merge == "lambda":
+            X_merge = self.lambd * self.fc_XX(XX) + (1-self.lambd) * self.fc_XY(XY)
+            Y_merge = self.lambd * self.fc_YX(YX) + (1-self.lambd) * self.fc_YY(YY)
         else:
-            X_out = X + getattr(self, 'alpha_x', 1) * self.fc_X(XX + XY)
-            Y_out = Y + getattr(self, 'alpha_y', 1) * self.fc_Y(YX + YY)
+            X_merge = self.fc_X(XX + XY)
+            Y_merge = self.fc_Y(YX + YY)
+        X_out = X + getattr(self, 'alpha_x', 1) * X_merge
+        Y_out = Y + getattr(self, 'alpha_y', 1) * Y_merge
+        X_out = X_out if getattr(self, 'ln_x', None) is None else self.ln_x(X_out)
+        Y_out = Y_out if getattr(self, 'ln_y', None) is None else self.ln_y(Y_out)
         return (X_out, Y_out)
 
 
