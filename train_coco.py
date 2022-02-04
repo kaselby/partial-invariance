@@ -186,6 +186,7 @@ def parse_args():
     parser.add_argument('--embed_dim', type=int, default=300)
     parser.add_argument('--merge_type', type=str, default='concat', choices=['concat', 'sum'])
     parser.add_argument('--warmup_steps', type=int, default=1000)
+    parser.add_argument('--decoder_layers', type=int, default=1)
     return parser.parse_args()
 
 #IMG_SIZE=105
@@ -237,7 +238,7 @@ if __name__ == '__main__':
             'num_heads':args.num_heads,
             'dropout':args.dropout,
             'equi':False,
-            'decoder_layers': 0,
+            'decoder_layers': args.decoder_layers,
             'merge': args.merge_type
         }
         set_model = MultiSetTransformer(input_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
@@ -248,6 +249,7 @@ if __name__ == '__main__':
             'num_heads':args.num_heads,
             'dropout':args.dropout,
             'equi':False,
+            'decoder_layers': args.decoder_layers
             #'weight_sharing': args.weight_sharing
         }
         set_model = CrossOnlyModel(input_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
@@ -259,6 +261,7 @@ if __name__ == '__main__':
             'num_heads':args.num_heads,
             'dropout':args.dropout,
             'equi':False,
+            'decoder_layers': 1
         }
         set_model = NaiveMultiSetModel(input_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
     elif args.model == 'pine':
@@ -272,7 +275,8 @@ if __name__ == '__main__':
             'equi':False,
             #'weight_sharing': args.weight_sharing,
             'pool1': 'max',
-            'pool2': 'max'
+            'pool2': 'max',
+            'decoder_layers': args.decoder_layers
         }
         set_model = MultiRNModel(input_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
     else:
