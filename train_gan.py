@@ -332,7 +332,7 @@ def parse_args():
     parser.add_argument('--p_dl', type=float, default=0.3)
     parser.add_argument('--img_encoder', choices=['cnn','resnet'], default='cnn')
     parser.add_argument('--weight_sharing', type=str, choices=['none', 'cross', 'sym'], default='cross')
-    parser.add_argument('--merge_type', type=str, default='concat', choices=['concat', 'sum'])
+    parser.add_argument('--merge_type', type=str, default='concat', choices=['concat', 'sum', 'lambda'])
     parser.add_argument('--data', type=str, default='md', choices=['md', 'synth'])
     parser.add_argument('--n', type=int, default=8)
     parser.add_argument('--warmup_steps', type=int, default=1000)

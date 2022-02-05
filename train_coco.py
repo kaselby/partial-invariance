@@ -184,7 +184,7 @@ def parse_args():
     parser.add_argument('--img_model', type=str, choices=['resnet', 'base'], default='resnet')
     parser.add_argument('--embed_path', type=str, default="cc.en.300.bin")
     parser.add_argument('--embed_dim', type=int, default=300)
-    parser.add_argument('--merge_type', type=str, default='concat', choices=['concat', 'sum'])
+    parser.add_argument('--merge_type', type=str, default='concat', choices=['concat', 'sum', 'lambda'])
     parser.add_argument('--warmup_steps', type=int, default=1000)
     parser.add_argument('--decoder_layers', type=int, default=1)
     return parser.parse_args()
