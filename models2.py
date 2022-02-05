@@ -243,7 +243,7 @@ class CSAB(nn.Module):
         self.nn_attn = nn_attn
         if ln:
             self.ln_x = nn.LayerNorm(latent_size)
-            self.lnY = nn.LayerNorm(latent_size)
+            self.ln_y = nn.LayerNorm(latent_size)
 
     def _init_blocks(self, input_size, latent_size, hidden_size, num_heads, remove_diag=False, nn_attn=False, weight_sharing='none', **kwargs):
         if weight_sharing == 'none':
