@@ -187,6 +187,7 @@ def parse_args():
     parser.add_argument('--merge_type', type=str, default='concat', choices=['concat', 'sum', 'lambda'])
     parser.add_argument('--warmup_steps', type=int, default=1000)
     parser.add_argument('--decoder_layers', type=int, default=1)
+    parser.add_argument('--ln', action='store_true')
     return parser.parse_args()
 
 #IMG_SIZE=105
@@ -232,7 +233,7 @@ if __name__ == '__main__':
     
     if args.model == 'csab':
         model_kwargs={
-            'ln':True,
+            'ln':args.ln,
             'remove_diag':False,
             'num_blocks':args.num_blocks,
             'num_heads':args.num_heads,
@@ -244,7 +245,7 @@ if __name__ == '__main__':
         set_model = MultiSetTransformer(input_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
     elif args.model == 'cross-only':
         model_kwargs={
-            'ln':True,
+            'ln':args.ln,
             'num_blocks':args.num_blocks,
             'num_heads':args.num_heads,
             'dropout':args.dropout,
@@ -255,7 +256,7 @@ if __name__ == '__main__':
         set_model = CrossOnlyModel(input_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
     elif args.model == 'naive':
         model_kwargs={
-            'ln':True,
+            'ln':args.ln,
             'remove_diag':False,
             'num_blocks':args.num_blocks,
             'num_heads':args.num_heads,
@@ -268,7 +269,7 @@ if __name__ == '__main__':
         set_model = PINE(input_size, int(args.latent_size/4), 16, 2, args.hidden_size, 1)
     elif args.model == 'rn':
         model_kwargs={
-            'ln':True,
+            'ln':args.ln,
             'remove_diag':False,
             'num_blocks':args.num_blocks,
             'dropout':args.dropout,

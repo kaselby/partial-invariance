@@ -10,4 +10,11 @@
 #SBATCH --exclude=gpu109
 
 
+argstring=""
+if [ ${15} -eq 1 ]
+then
+    argstring="${argstring} --ln"
+fi
+
+
 python3 train_coco.py $1 --batch_size $2 --latent_size $3 --hidden_size $4 --lr $5 --num_blocks $6 --steps $7 --model $8 --set_size $9 ${10} --merge ${11} --dataset ${12} --warmup_steps ${13} --decoder_layers ${14} --checkpoint_name $SLURM_JOB_ID
