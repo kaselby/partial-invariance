@@ -500,7 +500,7 @@ def parse_args():
     parser.add_argument('--val_split', type=float, default=0.1)
     parser.add_argument('--eval_every', type=int, default=500)
     parser.add_argument('--eval_steps', type=int, default=200)
-    parser.add_argument('--merge_type', type=str, default='concat', choices=['concat', 'sum'])
+    parser.add_argument('--merge_type', type=str, default='concat', choices=['concat', 'sum', 'lambda'])
     parser.add_argument('--warmup_steps', type=int, default=1000)
     return parser.parse_args()
 
