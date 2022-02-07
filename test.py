@@ -82,13 +82,15 @@ if __name__ == '__main__':
                 results[run_name][name]={'all_losses':[]}
                 avg_loss=0
                 for run_num in all_runs:
-                    model = torch.load(os.path.join(run_path, run_num, "model.pt"))
-                    model_loss_i = evaluate(model, generator, label_fct, 
-                        sample_kwargs=sample_kwargs, steps=args.steps, criterion=nn.L1Loss(), normalize=normalize, exact_loss=exact_loss, seed=seed)
-                    results[run_name][name]['all_losses'].append(model_loss_i)
-                    avg_loss += model_loss_i
-                    print("%s-%s Loss: %f" % (run_name, run_num, model_loss_i))
-                avg_loss /= len(all_runs)
+                    model_path = os.path.join(run_path, run_num, "model.pt")
+                    if os.path.exists(model_path):
+                        model = torch.load(model_path)
+                        model_loss_i = evaluate(model, generator, label_fct, 
+                            sample_kwargs=sample_kwargs, steps=args.steps, criterion=nn.L1Loss(), normalize=normalize, exact_loss=exact_loss, seed=seed)
+                        results[run_name][name]['all_losses'].append(model_loss_i)
+                        avg_loss += model_loss_i
+                        print("%s-%s Loss: %f" % (run_name, run_num, model_loss_i))
+                avg_loss /= len(results[run_name][name]['all_losses'])
                 print("%s Avg Loss: %f" % (run_name, avg_loss))
                 results[run_name][name]['avg_loss'] = avg_loss
             else:
