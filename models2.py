@@ -186,9 +186,9 @@ class ISAB(nn.Module):
 
 
 class CSABSimple(nn.Module):
-    def __init__(self, input_size, latent_size, hidden_size, num_heads, weight_sharing='none', rezero=False, **kwargs):
+    def __init__(self, input_size, latent_size, hidden_size, num_heads, weight_sharing='none', rezero=False, ln=False, **kwargs):
         super(CSABSimple, self).__init__()
-        self._init_blocks(input_size, latent_size, hidden_size, num_heads, weight_sharing, rezero=rezero, **kwargs)
+        self._init_blocks(input_size, latent_size, hidden_size, num_heads, weight_sharing, rezero=rezero, ln=ln, **kwargs)
         self.fc_X = nn.Linear(latent_size, latent_size)
         self.fc_Y = nn.Linear(latent_size, latent_size)
         if rezero:
@@ -197,6 +197,9 @@ class CSABSimple(nn.Module):
         else:
             self.alpha_x = 1
             self.alpha_y = 1
+        if ln:
+            self.ln_x = nn.LayerNorm(latent_size)
+            self.ln_y = nn.LayerNorm(latent_size)
 
     def _init_blocks(self, input_size, latent_size, hidden_size, num_heads, weight_sharing='none', **kwargs):
         if weight_sharing == 'none':
@@ -213,6 +216,8 @@ class CSABSimple(nn.Module):
         YX = self.MAB_YX(Y, X)
         X_out = X + getattr(self, 'alpha_x', 1) * self.fc_X(XY)
         Y_out = Y + getattr(self, 'alpha_y', 1) * self.fc_Y(YX)
+        X_out = X_out if getattr(self, 'ln_x', None) is None else self.ln_x(X_out)
+        Y_out = Y_out if getattr(self, 'ln_y', None) is None else self.ln_y(Y_out)
         return (X_out, Y_out)
 
 class CSAB(nn.Module):

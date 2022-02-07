@@ -23,10 +23,10 @@ decoder_layers=1
 
 for (( i = 0 ; i < $n_runs ; i++ ))
 do
-    sbatch scripts/train_gan.sh "${run_name}_csab/$i" "csab" $merge $data $n $latent_size $hidden_size $bs $lr $steps $set_size1 $set_size2 $warmup_steps $weight_sharing $ln
-    sbatch scripts/train_gan.sh "${run_name}_pine/$i" "pine" $merge $data $n $latent_size $hidden_size $bs $lr $steps $set_size1 $set_size2 $warmup_steps $weight_sharing $ln
-    sbatch scripts/train_gan.sh "${run_name}_naive/$i" "naive" $merge $data $n $latent_size $hidden_size $bs $lr $steps $set_size1 $set_size2 $warmup_steps $weight_sharing $ln
-    sbatch scripts/train_gan.sh "${run_name}_rn/$i" "rn" $merge $data $n $latent_size $hidden_size $bs $lr $steps $set_size1 $set_size2 $warmup_steps $weight_sharing $ln
-    sbatch scripts/train_gan.sh "${run_name}_cross-only/$i" "cross-only" $merge $data $n $latent_size $hidden_size $bs $lr $steps $set_size1 $set_size2 $warmup_steps $weight_sharing $ln
+    sbatch scripts/train_gan.sh "${run_name}_csab/$i" "csab" $merge $data $n $latent_size $hidden_size $bs $lr $steps $set_size1 $set_size2 $warmup_steps $weight_sharing $ln $num_blocks $decoder_layers
+    sbatch scripts/train_gan.sh "${run_name}_pine/$i" "pine" $merge $data $n $latent_size $hidden_size $bs $lr $steps $set_size1 $set_size2 $warmup_steps $weight_sharing $ln $num_blocks $decoder_layers
+    sbatch scripts/train_gan.sh "${run_name}_naive/$i" "naive" $merge $data $n $latent_size $hidden_size $bs $lr $steps $set_size1 $set_size2 $warmup_steps $weight_sharing $ln $num_blocks $decoder_layers
+    sbatch scripts/train_gan.sh "${run_name}_rn/$i" "rn" $merge $data $n $latent_size $hidden_size $bs $lr $steps $set_size1 $set_size2 $warmup_steps $weight_sharing $ln $num_blocks $decoder_layers
+    sbatch scripts/train_gan.sh "${run_name}_cross-only/$i" "cross-only" $merge $data $n $latent_size $hidden_size $bs $lr $steps $set_size1 $set_size2 $warmup_steps $weight_sharing $ln $num_blocks $decoder_layers
     #sbatch scripts/train_gan.sh "${run_name}_sum-merge/$i" "csab" "sum" $data $n
 done

@@ -22,7 +22,7 @@ from train_omniglot import ConvEncoder
 #def fasttext_encoder_preproc():
 
 
-SS_SCHEDULE=[{'set_size':(1,5), 'steps':4000}, {'set_size':(3,10), 'steps':4000}, {'set_size':(6,12), 'steps':10000}]
+SS_SCHEDULE=[{'set_size':(1,5), 'steps':4000}, {'set_size':(3,10), 'steps':6000}, {'set_size':(8,15), 'steps':10000}]
 
 class SetSizeScheduler():
     def __init__(self, schedule):
@@ -30,11 +30,12 @@ class SetSizeScheduler():
         self.N = sum([entry['steps'] for entry in schedule])
 
     def get_set_size(self, iter_id):
-        step=0
-        for entry in self.schedule:
-            step += entry['steps']
-            if iter_id < step:
-                return entry['set_size']
+        if iter_id >= 0:    #return last set size for iter_id -1
+            step=0
+            for entry in self.schedule:
+                step += entry['steps']
+                if iter_id < step:
+                    return entry['set_size']
         return self.schedule[-1]['set_size']    #fallback for now
         
 
@@ -306,8 +307,9 @@ if __name__ == '__main__':
     ss_schedule = SetSizeScheduler(SS_SCHEDULE) if args.anneal_set_size else None
     data_kwargs = {'set_size':args.set_size}
     print("Beginning training...")
-    model, (losses, accs, test_acc) = train(model, optimizer, train_generator, val_generator, test_generator, steps, batch_size=batch_size, 
-        scheduler=scheduler, checkpoint_dir=checkpoint_dir, data_kwargs=data_kwargs, eval_every=eval_every, eval_steps=eval_steps, test_steps=args.test_steps)
+    model, (losses, accs, test_acc) = train(model, optimizer, train_generator, val_generator, test_generator, steps, 
+        batch_size=batch_size, scheduler=scheduler, checkpoint_dir=checkpoint_dir, data_kwargs=data_kwargs, eval_every=eval_every, 
+        eval_steps=eval_steps, test_steps=args.test_steps, ss_schedule=ss_schedule)
 
     print("Test Accuracy:", test_acc)
 
