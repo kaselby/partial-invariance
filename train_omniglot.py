@@ -502,6 +502,8 @@ def parse_args():
     parser.add_argument('--eval_steps', type=int, default=200)
     parser.add_argument('--merge_type', type=str, default='concat', choices=['concat', 'sum', 'lambda'])
     parser.add_argument('--warmup_steps', type=int, default=1000)
+    parser.add_argument('--ln', action='store_true')
+    parser.add_argument('--decoder_layers', type=int, default=0)
     return parser.parse_args()
 
 if __name__ == '__main__':
