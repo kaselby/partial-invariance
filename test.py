@@ -90,7 +90,8 @@ if __name__ == '__main__':
                         results[run_name][name]['all_losses'].append(model_loss_i)
                         avg_loss += model_loss_i
                         print("%s-%s Loss: %f" % (run_name, run_num, model_loss_i))
-                avg_loss /= len(results[run_name][name]['all_losses'])
+                if len(results[run_name][name]['all_losses']) > 0:
+                    avg_loss /= len(results[run_name][name]['all_losses'])
                 print("%s Avg Loss: %f" % (run_name, avg_loss))
                 results[run_name][name]['avg_loss'] = avg_loss
             else:
