@@ -3,13 +3,13 @@
 n_runs=3
 
 batch_size=6
-num_blocks=1
+num_blocks=4
 latent_size=512
 hidden_size=1024
 lr="1e-5"
-basedir="final-runs"
+basedir="final-runs2"
 run_name=$1
-steps=20000
+steps=25000
 set_size1=3
 set_size2=10
 merge="concat"
