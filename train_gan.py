@@ -338,6 +338,7 @@ def parse_args():
     parser.add_argument('--warmup_steps', type=int, default=1000)
     parser.add_argument('--ln', action='store_true')
     parser.add_argument('--decoder_layers', type=int, default=0)
+    parser.add_argument('--dataset_path', type=str, default="/ssd003/projects/meta-dataset")
     return parser.parse_args()
 
 
@@ -423,9 +424,9 @@ if __name__ == '__main__':
             encoder.fc = nn.Linear(2048, args.latent_size)
         discriminator = MultiSetImageModel(encoder, set_model).to(device)
 
-        train_generator = MetaDatasetGenerator(image_size=image_size, split=Split.TRAIN, device=device)
-        val_generator = MetaDatasetGenerator(image_size=image_size, split=Split.VALID, device=device)
-        test_generator = MetaDatasetGenerator(image_size=image_size, split=Split.TEST, device=device)
+        train_generator = MetaDatasetGenerator(root_dir=args.dataset_path, image_size=image_size, split=Split.TRAIN, device=device)
+        val_generator = MetaDatasetGenerator(root_dir=args.dataset_path, image_size=image_size, split=Split.VALID, device=device)
+        test_generator = MetaDatasetGenerator(root_dir=args.dataset_path, image_size=image_size, split=Split.TEST, device=device)
         data_kwargs['p_dataset'] = args.p_dl
     else: 
         discriminator = set_model.to(device)

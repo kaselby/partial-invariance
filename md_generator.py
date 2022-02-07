@@ -21,25 +21,27 @@ def cycle_(iterable):
 
 
 class MetaDatasetGenerator():
-    def __init__(self, image_size=84, dataset_path=DATASET_ROOT, split=Split.TRAIN, device=torch.device('cpu')):
+    def __init__(self, image_size=84, root_dir=DATASET_ROOT, split=Split.TRAIN, device=torch.device('cpu')):
         self.split=split
         self.image_size = image_size
         self.device=device
-        self.datasets_by_class = self._build_datasets()
+        self.datasets_by_class = self._build_datasets(root_dir)
         self.N = len(self.datasets_by_class)
         self.transforms = get_transforms(self.image_size, self.split)
 
-    def _build_datasets(self, min_class_examples=20):
+    def _build_datasets(self, root_dir, min_class_examples=20):
         datasets = []
         for dataset in ALL_DATASETS:
-            dataset_spec = dataset_spec_lib.load_dataset_spec(os.path.join(DATASET_ROOT, dataset))
-            reader = Reader(dataset_spec, self.split, False, 0) 
-            class_datasets = reader.construct_class_datasets()
-            if len(class_datasets) > 0:
-                split_classes = dataset_spec.get_classes(self.split)
-                filtered_class_datasets = [x for i, x in enumerate(class_datasets) if dataset_spec.get_total_images_per_class(split_classes[i]) >= min_class_examples]
+            dataset_path = os.path.join(root_dir, dataset)
+            if os.path.exists(dataset_path):
+                dataset_spec = dataset_spec_lib.load_dataset_spec(dataset_path)
+                reader = Reader(dataset_spec, self.split, False, 0) 
+                class_datasets = reader.construct_class_datasets()
                 if len(class_datasets) > 0:
-                    datasets.append(class_datasets)
+                    split_classes = dataset_spec.get_classes(self.split)
+                    filtered_class_datasets = [x for i, x in enumerate(class_datasets) if dataset_spec.get_total_images_per_class(split_classes[i]) >= min_class_examples]
+                    if len(class_datasets) > 0:
+                        datasets.append(class_datasets)
         return datasets
     
     def get_episode(self, n_classes, n_datasets):

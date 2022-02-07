@@ -47,7 +47,7 @@ def parse_args():
     parser.add_argument('--decoder_layers', type=int, default=0)
     parser.add_argument('--set_size', type=int, nargs=2, default=[100,150])
     parser.add_argument('--weight_sharing', type=str, choices=['none', 'cross', 'sym'], default='none')
-    parser.add_argument('--merge', type=str, default='concat', choices=['concat', 'sum'])
+    parser.add_argument('--merge', type=str, default='concat', choices=['concat', 'sum', 'lambda'])
     parser.add_argument('--warmup_steps', type=int, default=1000)
     parser.add_argument('--rezero', action='store_true')
     return parser.parse_args()
@@ -217,7 +217,8 @@ if __name__ == '__main__':
         label_kwargs={}
         exact_loss=True
         mixture=False
-        criterion=nn.MSELoss()
+        #criterion=nn.MSELoss()
+        criterion=nn.L1Loss()
 
     sample_kwargs['set_size'] = args.set_size
 
