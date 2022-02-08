@@ -12,7 +12,7 @@ from geomloss import SamplesLoss
 use_cuda=torch.cuda.is_available()
 
 
-def windowed_losses(losses, window_size, stride):
+#def windowed_losses(losses, window_size, stride):
     
 
 
