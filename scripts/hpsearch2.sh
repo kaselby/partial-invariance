@@ -18,6 +18,7 @@ set_size2=30
 weight_sharing="none"
 ln=1
 decoder_layers=1
+basedir="final-runs2/hptest"
 
 nblocks=(1 2 4 6)
 warmup=(-1 5000 10000)
@@ -28,7 +29,7 @@ do
     do
         for (( i = 0 ; i < $n_runs ; i++ ))
         do
-            sbatch scripts/train.sh "${run_name}_${nb}_w${wsteps}/${i}" $target $data -1 1 $dim $latent_size $hidden_size $lr $clip "csab" $basedir 0 $nb $ss1 $ss2 $merge $wsteps $steps $dl
+            sbatch scripts/train_gan.sh "${run_name}_nb${nb}_w${wsteps}/$i" "csab" $merge $data $n $latent_size $hidden_size $bs $lr $steps $set_size1 $set_size2 $wsteps $weight_sharing $ln $nb $decoder_layers $basedir
         done
     done
 done
