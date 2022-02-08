@@ -506,7 +506,7 @@ class EmbeddingAlignmentGenerator():
         _, Y_unaligned = self._generate_sets(indices[batch_size*n_samples:batch_size*n_samples*2])
         X = X.view(batch_size, n_samples, -1).to(self.device)
         Y_aligned = Y_aligned.view(batch_size, n_samples, -1).to(self.device)
-        Y_unaligned = Y_aligned.view(batch_size, n_samples, -1).to(self.device)
+        Y_unaligned = Y_unaligned.view(batch_size, n_samples, -1).to(self.device)
         Y = torch.where(aligned.view(-1,1,1), Y_aligned, Y_unaligned)
         return (X, Y), aligned.float()
 
