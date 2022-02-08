@@ -217,8 +217,8 @@ if __name__ == '__main__':
         label_kwargs={}
         exact_loss=True
         mixture=False
-        #criterion=nn.MSELoss()
-        criterion=nn.L1Loss()
+        criterion=nn.MSELoss()
+        #criterion=nn.L1Loss()
 
     sample_kwargs['set_size'] = args.set_size
 

@@ -12,6 +12,10 @@ from geomloss import SamplesLoss
 use_cuda=torch.cuda.is_available()
 
 
+def windowed_losses(losses, window_size, stride):
+    
+
+
 def generate_categorical(batch_size, classes=5):
     logits = torch.randint(5, size=(batch_size, classes)).float()
     n_samples = torch.randint(100,150,(1,))
