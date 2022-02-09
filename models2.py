@@ -229,12 +229,12 @@ class CSAB(nn.Module):
             self.fc_XX = nn.Linear(latent_size, latent_size)
             self.fc_XY = nn.Linear(latent_size, latent_size)
             self.fc_YX = nn.Linear(latent_size, latent_size)
-            self.fc_YX = nn.Linear(latent_size, latent_size)
+            self.fc_YY = nn.Linear(latent_size, latent_size)
         elif self.merge == 'lambda':
             self.fc_XX = nn.Linear(latent_size, latent_size)
             self.fc_XY = nn.Linear(latent_size, latent_size)
             self.fc_YX = nn.Linear(latent_size, latent_size)
-            self.fc_YX = nn.Linear(latent_size, latent_size)
+            self.fc_YY = nn.Linear(latent_size, latent_size)
             self.lambda_x = nn.Parameter(torch.tensor(lambda0))
             self.lambda_y = nn.Parameter(torch.tensor(lambda0))
         else:
