@@ -14,7 +14,7 @@ import tqdm
 import json
 import fasttext
 
-from models2 import MultiSetTransformer, PINE, MultiSetModel, NaiveMultiSetModel, BertEncoderWrapper, ImageEncoderWrapper, EmbeddingEncoderWrapper, CrossOnlyModel, MultiRNModel
+from models2 import MultiSetTransformer, PINE, MultiSetModel, NaiveMultiSetModel, BertEncoderWrapper, ImageEncoderWrapper, EmbeddingEncoderWrapper, CrossOnlyModel, MultiRNModel, cst_from_cross, cst_from_naive
 from generators import CaptionGenerator, bert_tokenize_batch, fasttext_tokenize_batch, EmbeddingAlignmentGenerator, load_pairs, split_pairs
 from train_omniglot import ConvEncoder
 
@@ -96,7 +96,7 @@ def make_model(set_model, text_model='bert', img_model='vgg', embed_dim=300):
 
 
 
-def train(model, optimizer, train_dataset, val_dataset, test_dataset, steps, scheduler=None, batch_size=64, eval_every=500, save_every=2000, eval_steps=100, test_steps=500, ss_schedule=None, checkpoint_dir=None, data_kwargs={}):
+def train(model, optimizer, train_dataset, val_dataset, test_dataset, steps, scheduler=None, batch_size=64, eval_every=500, save_every=2000, eval_steps=100, test_steps=500, ss_schedule=None, checkpoint_dir=None, eval_initial=False, data_kwargs={}):
     train_losses = []
     eval_accs = []
     initial_step=0
@@ -107,8 +107,11 @@ def train(model, optimizer, train_dataset, val_dataset, test_dataset, steps, sch
             checkpoint_path = os.path.join(checkpoint_dir, "checkpoint.pt")
             if os.path.exists(checkpoint_path):
                 load_dict = torch.load(checkpoint_path)
-                model, optimizer, scheduler, initial_step, train_losses, eval_accs = load_dict['model'], load_dict['optimizer'], load_dict['scheduler'], load_dict['step'], load_dict['losses'], load_dict['accs']
+                model, optimizer, scheduler, initial_step, train_losses, eval_accs, initial_acc = load_dict['model'], load_dict['optimizer'], load_dict['scheduler'], load_dict['step'], load_dict['losses'], load_dict['accs'], load_dict['initial_acc']
     
+    if initial_step == 0:
+        initial_acc = -1 if not eval_initial else evaluate(model, test_dataset, test_steps, batch_size, data_kwargs)
+
     avg_loss = 0
     loss_fct = nn.BCEWithLogitsLoss()
     for i in tqdm.tqdm(range(initial_step, steps)):
@@ -139,12 +142,12 @@ def train(model, optimizer, train_dataset, val_dataset, test_dataset, steps, sch
             checkpoint_path = os.path.join(checkpoint_dir, "checkpoint.pt")
             if os.path.exists(checkpoint_path):
                 os.remove(checkpoint_path)
-            torch.save({'model':model,'optimizer':optimizer, 'scheduler':scheduler, 'step': i, 'losses':train_losses, 'accs': eval_accs}, checkpoint_path)
+            torch.save({'model':model,'optimizer':optimizer, 'scheduler':scheduler, 'step': i, 'losses':train_losses, 'accs': eval_accs, 'initial_acc': initial_acc}, checkpoint_path)
 
     
     test_acc = evaluate(model, test_dataset, test_steps, batch_size, data_kwargs)
     
-    return model, (train_losses, eval_accs, test_acc)
+    return model, (train_losses, eval_accs, test_acc, initial_acc)
 
 def evaluate(model, eval_dataset, steps, batch_size=64, data_kwargs={}):
     n_correct = 0
@@ -189,6 +192,7 @@ def parse_args():
     parser.add_argument('--warmup_steps', type=int, default=1000)
     parser.add_argument('--decoder_layers', type=int, default=1)
     parser.add_argument('--ln', action='store_true')
+    parser.add_argument('--init_from', type=str, default=None)
     return parser.parse_args()
 
 #IMG_SIZE=105
@@ -232,61 +236,81 @@ if __name__ == '__main__':
         test_generator = EmbeddingAlignmentGenerator(src_emb, tgt_emb, test_pairs, device=device)
         input_size = 300
     
-    if args.model == 'csab':
+    if args.init_from is not None:
+        model = torch.load(os.path.join(args.init_from, "model.pt")).to(device)
+        load_args = torch.load(os.path.join(args.init_from, "logs.pt"))['args']
         model_kwargs={
-            'ln':args.ln,
+            'ln':load_args.ln,
             'remove_diag':False,
-            'num_blocks':args.num_blocks,
-            'num_heads':args.num_heads,
-            'dropout':args.dropout,
+            'num_blocks':load_args.num_blocks,
+            'num_heads':load_args.num_heads,
+            'dropout':load_args.dropout,
             'equi':False,
-            'decoder_layers': args.decoder_layers,
+            'decoder_layers': load_args.decoder_layers,
             'merge': args.merge_type
         }
-        set_model = MultiSetTransformer(input_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
-    elif args.model == 'cross-only':
-        model_kwargs={
-            'ln':args.ln,
-            'num_blocks':args.num_blocks,
-            'num_heads':args.num_heads,
-            'dropout':args.dropout,
-            'equi':False,
-            'decoder_layers': args.decoder_layers
-            #'weight_sharing': args.weight_sharing
-        }
-        set_model = CrossOnlyModel(input_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
-    elif args.model == 'naive':
-        model_kwargs={
-            'ln':args.ln,
-            'remove_diag':False,
-            'num_blocks':args.num_blocks,
-            'num_heads':args.num_heads,
-            'dropout':args.dropout,
-            'equi':False,
-            'decoder_layers': 1
-        }
-        set_model = NaiveMultiSetModel(input_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
-    elif args.model == 'pine':
-        set_model = PINE(input_size, int(args.latent_size/4), 16, 2, args.hidden_size, 1)
-    elif args.model == 'rn':
-        model_kwargs={
-            'ln':args.ln,
-            'remove_diag':False,
-            'num_blocks':args.num_blocks,
-            'dropout':args.dropout,
-            'equi':False,
-            #'weight_sharing': args.weight_sharing,
-            'pool1': 'max',
-            'pool2': 'max',
-            'decoder_layers': args.decoder_layers
-        }
-        set_model = MultiRNModel(input_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
+        if load_model.__class__ == NaiveMultiSetModel:
+            model.set_model = cst_from_naive(model.set_model, input_size, load_args.latent_size, load_args.hidden_size, 1, **model_kwargs).to(device)
+        elif load_model.__class__ == CrossOnlyModel:
+            model.set_model = cst_from_cross(model.set_model, input_size, load_args.latent_size, load_args.hidden_size, 1, **model_kwargs).to(device)
+        else:
+            raise AssertionError("Naive or Crossonly model expected")
     else:
-        raise NotImplementedError("Model type not recognized.")
-    if captioning:
-        model = make_model(set_model, text_model=args.text_model, img_model=args.img_model, embed_dim=args.embed_dim).to(device)
-    else:
-        model = set_model.to(device)
+        if args.model == 'csab':
+            model_kwargs={
+                'ln':args.ln,
+                'remove_diag':False,
+                'num_blocks':args.num_blocks,
+                'num_heads':args.num_heads,
+                'dropout':args.dropout,
+                'equi':False,
+                'decoder_layers': args.decoder_layers,
+                'merge': args.merge_type
+            }
+            set_model = MultiSetTransformer(input_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
+        elif args.model == 'cross-only':
+            model_kwargs={
+                'ln':args.ln,
+                'num_blocks':args.num_blocks,
+                'num_heads':args.num_heads,
+                'dropout':args.dropout,
+                'equi':False,
+                'decoder_layers': args.decoder_layers
+                #'weight_sharing': args.weight_sharing
+            }
+            set_model = CrossOnlyModel(input_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
+        elif args.model == 'naive':
+            model_kwargs={
+                'ln':args.ln,
+                'remove_diag':False,
+                'num_blocks':args.num_blocks,
+                'num_heads':args.num_heads,
+                'dropout':args.dropout,
+                'equi':False,
+                'decoder_layers': 1
+            }
+            set_model = NaiveMultiSetModel(input_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
+        elif args.model == 'pine':
+            set_model = PINE(input_size, int(args.latent_size/4), 16, 2, args.hidden_size, 1)
+        elif args.model == 'rn':
+            model_kwargs={
+                'ln':args.ln,
+                'remove_diag':False,
+                'num_blocks':args.num_blocks,
+                'dropout':args.dropout,
+                'equi':False,
+                #'weight_sharing': args.weight_sharing,
+                'pool1': 'max',
+                'pool2': 'max',
+                'decoder_layers': args.decoder_layers
+            }
+            set_model = MultiRNModel(input_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
+        else:
+            raise NotImplementedError("Model type not recognized.")
+        if captioning:
+            model = make_model(set_model, text_model=args.text_model, img_model=args.img_model, embed_dim=args.embed_dim).to(device)
+        else:
+            model = set_model.to(device)
 
     batch_size = args.batch_size
     steps = args.steps
@@ -307,13 +331,13 @@ if __name__ == '__main__':
     ss_schedule = SetSizeScheduler(SS_SCHEDULE) if args.anneal_set_size else None
     data_kwargs = {'set_size':args.set_size}
     print("Beginning training...")
-    model, (losses, accs, test_acc) = train(model, optimizer, train_generator, val_generator, test_generator, steps, 
+    model, (losses, accs, test_acc, initial_acc) = train(model, optimizer, train_generator, val_generator, test_generator, steps, 
         batch_size=batch_size, scheduler=scheduler, checkpoint_dir=checkpoint_dir, data_kwargs=data_kwargs, eval_every=eval_every, 
-        eval_steps=eval_steps, test_steps=args.test_steps, ss_schedule=ss_schedule)
+        eval_steps=eval_steps, test_steps=args.test_steps, ss_schedule=ss_schedule, eval_initial=(args.init_from is not None))
 
     print("Test Accuracy:", test_acc)
 
     model_out = model._modules['module'] if torch.cuda.device_count() > 1 else model
     torch.save(model_out, os.path.join(run_dir,"model.pt"))  
-    torch.save({'losses':losses, 'eval_accs': accs, 'test_acc': test_acc, 'args':args}, os.path.join(run_dir,"logs.pt"))  
+    torch.save({'losses':losses, 'eval_accs': accs, 'test_acc': test_acc, 'initial_acc': initial_acc, 'args':args}, os.path.join(run_dir,"logs.pt"))  
 

@@ -226,8 +226,10 @@ class CSAB(nn.Module):
         self._init_blocks(input_size, latent_size, hidden_size, num_heads, remove_diag, nn_attn, weight_sharing, rezero=rezero, ln=ln, **kwargs)
         self.merge = merge
         if self.merge == 'concat':
-            self.fc_X = nn.Linear(latent_size * 2, latent_size)
-            self.fc_Y = nn.Linear(latent_size * 2, latent_size)
+            self.fc_XX = nn.Linear(latent_size, latent_size)
+            self.fc_XY = nn.Linear(latent_size, latent_size)
+            self.fc_YX = nn.Linear(latent_size, latent_size)
+            self.fc_YX = nn.Linear(latent_size, latent_size)
         elif self.merge == 'lambda':
             self.fc_XX = nn.Linear(latent_size, latent_size)
             self.fc_XY = nn.Linear(latent_size, latent_size)
@@ -310,8 +312,12 @@ class CSAB(nn.Module):
             YY = self.MAB_YY(Y, Y, neighbours=N_YY)
         #backwards compatibility
         if getattr(self, "merge", None) is None or self.merge == "concat":
-            X_merge = self.fc_X(torch.cat([XX, XY], dim=-1))
-            Y_merge = self.fc_Y(torch.cat([YY, YX], dim=-1))
+            if getattr(self, "fc_X", None) is not None and getattr(self, "fc_Y", None) is not None: #backwards compatibility
+                X_merge = self.fc_X(torch.cat([XX, XY], dim=-1))
+                Y_merge = self.fc_Y(torch.cat([YY, YX], dim=-1))
+            else:
+                X_merge = self.fc_XX(XX) + self.fc_XY(XY)
+                Y_merge = self.fc_YX(YX) + self.fc_YY(YY)
         elif self.merge == "lambda":
             X_merge = self.lambda_x * self.fc_XX(XX) + (1-self.lambda_x) * self.fc_XY(XY)
             Y_merge = self.lambda_y * self.fc_YX(YX) + (1-self.lambda_y) * self.fc_YY(YY)
@@ -323,6 +329,28 @@ class CSAB(nn.Module):
         X_out = X_out if getattr(self, 'ln_x', None) is None else self.ln_x(X_out)
         Y_out = Y_out if getattr(self, 'ln_y', None) is None else self.ln_y(Y_out)
         return (X_out, Y_out)
+
+
+def csab_from_naive(X_block, Y_block, *args, **kwargs):
+    csab = CSAB(*args, **kwargs)
+    csab.MAB_XX = X_block.mab
+    csab.MAB_YY = Y_block.mab
+    nn.init.eye_(csab.fc_XX)
+    nn.init.eye_(csab.fc_YY)
+    return csab
+
+def csab_from_cross(crossonly_block, *args, **kwargs):
+    csab = CSAB(*args, **kwargs)
+    csab.MAB_XY = crossonly_block.MAB_XY
+    csab.MAB_YX = crossonly_block.MAB_YX
+    csab.fc_XY = crossonly_block.fc_X
+    csab.fc_YX = crossonly_block.fc_Y
+    if getattr(crossonly_block, 'ln_x', None) is not None:
+        csab.ln_x = crossonly_block.ln_x
+    if getattr(crossonly_block, 'ln_y', None) is not None:
+        csab.ln_y = crossonly_block.ln_y
+    return csab
+
 
 
 class ICSAB(nn.Module):
@@ -577,6 +605,36 @@ class CrossOnlyModel(nn.Module):
         ZY = self.pool_x(ZY)
         out = self.decoder(torch.cat([ZX, ZY], dim=-1))
         return out.squeeze(-1)
+
+
+def cst_from_naive(naive_model, input_size, latent_size, hidden_size, output_size, num_heads=4, num_blocks=2, remove_diag=False, ln=False, rezero=False, equi=False, 
+            dropout=0.1, merge='concat', **kwargs):
+    cst = MultiSetTransformer(input_size, latent_size, hidden_size, output_size, num_heads=num_heads, num_blocks=num_blocks, remove_diag=remove_diag, ln=ln, rezero=rezero, equi=equi, 
+            dropout=dropout, merge=merge, **kwargs)
+    csab_args=[latent_size, latent_size, hidden_size, num_heads]
+    csab_kwargs={'remove_diag':remove_diag, 'ln':ln, 'rezero':rezero, 'equi':equi, 'dropout':dropout, 'merge':merge}
+    cst.encoder = EncoderStack(*[csab_from_naive(naive_model.encoder1[i], naive_model.encoder2[i], *csab_args, **csab_kwargs) for i in range(num_blocks)])
+    cst.proj = naive_model.proj
+    cst.pool_x = naive_model.pool1
+    cst.pool_y = naive_model.pool2
+    cst.decoder = naive_model.decoder
+
+    return cst
+
+def cst_from_cross(crossonly_model, input_size, latent_size, hidden_size, output_size, num_heads=4, num_blocks=2, remove_diag=False, ln=False, rezero=False, equi=False, 
+            dropout=0.1, merge='concat', **kwargs):
+    cst = MultiSetTransformer(input_size, latent_size, hidden_size, output_size, num_heads=num_heads, num_blocks=num_blocks, remove_diag=remove_diag, ln=ln, rezero=rezero, equi=equi, 
+            dropout=dropout, merge=merge, **kwargs)
+    csab_args=[latent_size, latent_size, hidden_size, num_heads]
+    csab_kwargs={'remove_diag':remove_diag, 'ln':ln, 'rezero':rezero, 'equi':equi, 'dropout':dropout, 'merge':merge}
+    cst.encoder = EncoderStack(*[csab_from_cross(crossonly_model.encoder[i]), *csab_args, **csab_kwargs) for i in range(num_blocks)])
+    cst.proj = crossonly_model.proj
+    cst.pool_x = crossonly_model.pool_x
+    cst.pool_y = crossonly_model.pool_y
+    cst.decoder = crossonly_model.decoder
+    return cst
+    
+
 
 
 
