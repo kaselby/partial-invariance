@@ -627,7 +627,7 @@ def cst_from_cross(crossonly_model, input_size, latent_size, hidden_size, output
             dropout=dropout, merge=merge, **kwargs)
     csab_args=[latent_size, latent_size, hidden_size, num_heads]
     csab_kwargs={'remove_diag':remove_diag, 'ln':ln, 'rezero':rezero, 'equi':equi, 'dropout':dropout, 'merge':merge}
-    cst.encoder = EncoderStack(*[csab_from_cross(crossonly_model.encoder[i]), *csab_args, **csab_kwargs) for i in range(num_blocks)])
+    cst.encoder = EncoderStack(*[csab_from_cross(crossonly_model.encoder[i], *csab_args, **csab_kwargs) for i in range(num_blocks)])
     cst.proj = crossonly_model.proj
     cst.pool_x = crossonly_model.pool_x
     cst.pool_y = crossonly_model.pool_y
