@@ -193,6 +193,7 @@ def parse_args():
     parser.add_argument('--decoder_layers', type=int, default=1)
     parser.add_argument('--ln', action='store_true')
     parser.add_argument('--init_from', type=str, default=None)
+    parser.add_argument('--lambda0', type=float, default=0.5)
     return parser.parse_args()
 
 #IMG_SIZE=105
@@ -265,7 +266,8 @@ if __name__ == '__main__':
                 'dropout':args.dropout,
                 'equi':False,
                 'decoder_layers': args.decoder_layers,
-                'merge': args.merge_type
+                'merge': args.merge_type,
+                'lambda0': args.lambda0
             }
             set_model = MultiSetTransformer(input_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
         elif args.model == 'cross-only':

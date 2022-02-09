@@ -221,7 +221,7 @@ class CSABSimple(nn.Module):
         return (X_out, Y_out)
 
 class CSAB(nn.Module):
-    def __init__(self, input_size, latent_size, hidden_size, num_heads, remove_diag=False, nn_attn=False, rezero=False, weight_sharing='none', merge='concat', ln=False, **kwargs):
+    def __init__(self, input_size, latent_size, hidden_size, num_heads, remove_diag=False, nn_attn=False, rezero=False, weight_sharing='none', merge='concat', ln=False, lambda0=0.5, **kwargs):
         super(CSAB, self).__init__()
         self._init_blocks(input_size, latent_size, hidden_size, num_heads, remove_diag, nn_attn, weight_sharing, rezero=rezero, ln=ln, **kwargs)
         self.merge = merge
@@ -235,8 +235,8 @@ class CSAB(nn.Module):
             self.fc_XY = nn.Linear(latent_size, latent_size)
             self.fc_YX = nn.Linear(latent_size, latent_size)
             self.fc_YX = nn.Linear(latent_size, latent_size)
-            self.lambda_x = nn.Parameter(torch.tensor(0.5))
-            self.lambda_y = nn.Parameter(torch.tensor(0.5))
+            self.lambda_x = nn.Parameter(torch.tensor(lambda0))
+            self.lambda_y = nn.Parameter(torch.tensor(lambda0))
         else:
             self.fc_X = nn.Linear(latent_size, latent_size)
             self.fc_Y = nn.Linear(latent_size, latent_size)
@@ -320,7 +320,7 @@ class CSAB(nn.Module):
                 Y_merge = self.fc_YX(YX) + self.fc_YY(YY)
         elif self.merge == "lambda":
             X_merge = self.lambda_x * self.fc_XX(XX) + (1-self.lambda_x) * self.fc_XY(XY)
-            Y_merge = self.lambda_y * self.fc_YX(YX) + (1-self.lambda_y) * self.fc_YY(YY)
+            Y_merge = (1-self.lambda_y) * self.fc_YX(YX) + lambda_y * self.fc_YY(YY)
         else:
             X_merge = self.fc_X(XX + XY)
             Y_merge = self.fc_Y(YX + YY)
