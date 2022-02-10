@@ -223,6 +223,7 @@ class CSABSimple(nn.Module):
 class CSAB(nn.Module):
     def __init__(self, input_size, latent_size, hidden_size, num_heads, remove_diag=False, nn_attn=False, residual='base', weight_sharing='none', merge='concat', ln=False, lambda0=0.5, **kwargs):
         super(CSAB, self).__init__()
+        rezero = residual == "rezero"
         self._init_blocks(input_size, latent_size, hidden_size, num_heads, remove_diag, nn_attn, weight_sharing, rezero=rezero, ln=ln, **kwargs)
         self.merge = merge
         if self.merge == 'concat':
@@ -612,12 +613,12 @@ class CrossOnlyModel(nn.Module):
         return out.squeeze(-1)
 
 
-def cst_from_naive(naive_model, input_size, latent_size, hidden_size, output_size, num_heads=4, num_blocks=2, remove_diag=False, ln=False, rezero=False, equi=False, 
+def cst_from_naive(naive_model, input_size, latent_size, hidden_size, output_size, num_heads=4, num_blocks=2, remove_diag=False, ln=False, residual='base', equi=False, 
             dropout=0.1, merge='concat', **kwargs):
-    cst = MultiSetTransformer(input_size, latent_size, hidden_size, output_size, num_heads=num_heads, num_blocks=num_blocks, remove_diag=remove_diag, ln=ln, rezero=rezero, equi=equi, 
+    cst = MultiSetTransformer(input_size, latent_size, hidden_size, output_size, num_heads=num_heads, num_blocks=num_blocks, remove_diag=remove_diag, ln=ln, residual=residual, equi=equi, 
             dropout=dropout, merge=merge, **kwargs)
     csab_args=[latent_size, latent_size, hidden_size, num_heads]
-    csab_kwargs={'remove_diag':remove_diag, 'ln':ln, 'rezero':rezero, 'equi':equi, 'dropout':dropout, 'merge':merge}
+    csab_kwargs={'remove_diag':remove_diag, 'ln':ln, 'residual':residual, 'equi':equi, 'dropout':dropout, 'merge':merge}
     cst.encoder = EncoderStack(*[csab_from_naive(naive_model.encoder1[i], naive_model.encoder2[i], *csab_args, **csab_kwargs) for i in range(num_blocks)])
     cst.proj = naive_model.proj
     cst.pool_x = naive_model.pool1
@@ -626,12 +627,12 @@ def cst_from_naive(naive_model, input_size, latent_size, hidden_size, output_siz
 
     return cst
 
-def cst_from_cross(crossonly_model, input_size, latent_size, hidden_size, output_size, num_heads=4, num_blocks=2, remove_diag=False, ln=False, rezero=False, equi=False, 
+def cst_from_cross(crossonly_model, input_size, latent_size, hidden_size, output_size, num_heads=4, num_blocks=2, remove_diag=False, ln=False, residual='base', equi=False, 
             dropout=0.1, merge='concat', **kwargs):
-    cst = MultiSetTransformer(input_size, latent_size, hidden_size, output_size, num_heads=num_heads, num_blocks=num_blocks, remove_diag=remove_diag, ln=ln, rezero=rezero, equi=equi, 
+    cst = MultiSetTransformer(input_size, latent_size, hidden_size, output_size, num_heads=num_heads, num_blocks=num_blocks, remove_diag=remove_diag, ln=ln, residual=residual, equi=equi, 
             dropout=dropout, merge=merge, **kwargs)
     csab_args=[latent_size, latent_size, hidden_size, num_heads]
-    csab_kwargs={'remove_diag':remove_diag, 'ln':ln, 'rezero':rezero, 'equi':equi, 'dropout':dropout, 'merge':merge}
+    csab_kwargs={'remove_diag':remove_diag, 'ln':ln, 'residual':residual, 'equi':equi, 'dropout':dropout, 'merge':merge}
     cst.encoder = EncoderStack(*[csab_from_cross(crossonly_model.encoder[i], *csab_args, **csab_kwargs) for i in range(num_blocks)])
     cst.proj = crossonly_model.proj
     cst.pool_x = crossonly_model.pool_x
