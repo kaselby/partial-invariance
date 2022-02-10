@@ -439,7 +439,7 @@ class SetTransformer(nn.Module):
         return self.dec(ZX).squeeze(-1)
 
 class MultiSetTransformer(nn.Module):
-    def __init__(self, input_size, latent_size, hidden_size, output_size, num_heads=4, num_blocks=2, remove_diag=False, ln=False, rezero=False, equi=False, 
+    def __init__(self, input_size, latent_size, hidden_size, output_size, num_heads=4, num_blocks=2, remove_diag=False, ln=False, residual='base', equi=False, 
             nn_attn=False, weight_sharing='none', k_neighbours=5, dropout=0.1, num_inds=-1, decoder_layers=0, pool='pma', merge='concat', lambda0=0.5):
         super(MultiSetTransformer, self).__init__()
         if equi:
@@ -450,7 +450,7 @@ class MultiSetTransformer(nn.Module):
             self.enc = EncoderStack(*[ICSAB(latent_size, latent_size, hidden_size, num_heads, num_inds, ln=ln, remove_diag=remove_diag, 
                 equi=equi, weight_sharing=weight_sharing, dropout=dropout) for i in range(num_blocks)])
         else:
-            self.enc = EncoderStack(*[CSAB(latent_size, latent_size, hidden_size, num_heads, ln=ln, rezero=rezero, remove_diag=remove_diag, 
+            self.enc = EncoderStack(*[CSAB(latent_size, latent_size, hidden_size, num_heads, ln=ln, residual=residual, remove_diag=remove_diag, 
                 equi=equi, nn_attn=nn_attn, weight_sharing=weight_sharing, dropout=dropout, merge='concat', lambda0=lambda0) for i in range(num_blocks)])
         self.pool_method = pool
         if self.pool_method == "pma":
