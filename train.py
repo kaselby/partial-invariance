@@ -241,7 +241,7 @@ if __name__ == '__main__':
                 'weight_sharing':args.weight_sharing,
                 'decoder_layers':args.decoder_layers,
                 'merge': args.merge,
-                'rezero': args.rezero
+                #'residual': args.rezero
             }
             model=MultiSetTransformer(**model_kwargs).to(device)
         elif args.model == 'rn':
