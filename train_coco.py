@@ -192,7 +192,7 @@ def parse_args():
     parser.add_argument('--warmup_steps', type=int, default=1000)
     parser.add_argument('--decoder_layers', type=int, default=1)
     parser.add_argument('--ln', action='store_true')
-    parser.add_argument('--init_from', type=str, default=None)
+    parser.add_argument('--init_from', type=str, default="")
     parser.add_argument('--lambda0', type=float, default=0.5)
     parser.add_argument('--residual', type=str, default='base', choices=['base', 'none', 'rezero'])
     return parser.parse_args()
@@ -238,7 +238,7 @@ if __name__ == '__main__':
         test_generator = EmbeddingAlignmentGenerator(src_emb, tgt_emb, test_pairs, device=device)
         input_size = 300
     
-    if args.init_from is not None:
+    if args.init_from != "":
         model = torch.load(os.path.join(args.init_from, "model.pt")).to(device)
         load_args = torch.load(os.path.join(args.init_from, "logs.pt"))['args']
         model_kwargs={
@@ -337,7 +337,7 @@ if __name__ == '__main__':
     print("Beginning training...")
     model, (losses, accs, test_acc, initial_acc) = train(model, optimizer, train_generator, val_generator, test_generator, steps, 
         batch_size=batch_size, scheduler=scheduler, checkpoint_dir=checkpoint_dir, data_kwargs=data_kwargs, eval_every=eval_every, 
-        eval_steps=eval_steps, test_steps=args.test_steps, ss_schedule=ss_schedule, eval_initial=(args.init_from is not None))
+        eval_steps=eval_steps, test_steps=args.test_steps, ss_schedule=ss_schedule, eval_initial=(args.init_from != ""))
 
     print("Test Accuracy:", test_acc)
 

@@ -21,4 +21,4 @@ then
 fi
 
 
-python3 train_coco.py $1 --batch_size $2 --latent_size $3 --hidden_size $4 --lr $5 --num_blocks $6 --steps $7 --model $8 --set_size $9 ${10} --merge ${11} --dataset ${12} --warmup_steps ${13} --decoder_layers ${14} --lambda0 ${17} --residual ${18} --checkpoint_name $SLURM_JOB_ID
+python3 train_coco.py $1 --batch_size $2 --latent_size $3 --hidden_size $4 --lr $5 --num_blocks $6 --steps $7 --model $8 --set_size $9 ${10} --merge ${11} --dataset ${12} --warmup_steps ${13} --decoder_layers ${14} --lambda0 ${17} --residual ${18} --init_from ${19} --checkpoint_name $SLURM_JOB_ID
