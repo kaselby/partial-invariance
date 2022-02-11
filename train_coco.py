@@ -96,7 +96,7 @@ def make_model(set_model, text_model='bert', img_model='vgg', embed_dim=300):
 
 
 
-def train(model, optimizer, train_dataset, val_dataset, test_dataset, steps, scheduler=None, batch_size=64, eval_every=500, save_every=2000, eval_steps=100, test_steps=500, ss_schedule=None, checkpoint_dir=None, eval_initial=False, data_kwargs={}):
+def train(model, optimizer, train_dataset, val_dataset, test_dataset, steps, scheduler=None, batch_size=64, eval_every=500, save_every=2000, eval_steps=100, test_steps=500, ss_schedule=None, checkpoint_dir=None, eval_initial=False, grad_steps=1, data_kwargs={}):
     train_losses = []
     eval_accs = []
     initial_step=0
@@ -115,7 +115,7 @@ def train(model, optimizer, train_dataset, val_dataset, test_dataset, steps, sch
     avg_loss = 0
     loss_fct = nn.BCEWithLogitsLoss()
     for i in tqdm.tqdm(range(initial_step, steps)):
-        optimizer.zero_grad()
+        
         if ss_schedule is not None:
             set_size = ss_schedule.get_set_size(i)
             data_kwargs['set_size'] = set_size
@@ -125,9 +125,12 @@ def train(model, optimizer, train_dataset, val_dataset, test_dataset, steps, sch
         out = model(X,Y)
         loss = loss_fct(out.squeeze(-1), target)
         loss.backward()
-        optimizer.step()
-        if scheduler is not None:
-            scheduler.step()
+
+        if (i+1) % grad_steps == 0 or i == (steps - 1):
+            optimizer.step()
+            if scheduler is not None:
+                scheduler.step()
+            optimizer.zero_grad()
 
         avg_loss += loss.item()
         train_losses.append(loss.item())
@@ -195,6 +198,7 @@ def parse_args():
     parser.add_argument('--init_from', type=str, default="")
     parser.add_argument('--lambda0', type=float, default=0.5)
     parser.add_argument('--residual', type=str, default='base', choices=['base', 'none', 'rezero'])
+    parser.add_argument('--grad_steps', type=int, default=1)
     return parser.parse_args()
 
 #IMG_SIZE=105
@@ -291,7 +295,7 @@ if __name__ == '__main__':
                 'num_heads':args.num_heads,
                 'dropout':args.dropout,
                 'equi':False,
-                'decoder_layers': 1
+                'decoder_layers': args.decoder_layers
             }
             set_model = NaiveMultiSetModel(input_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
         elif args.model == 'pine':
@@ -328,6 +332,7 @@ if __name__ == '__main__':
         steps = int(steps/n_gpus)    
         eval_every = int(eval_every/n_gpus)
         eval_steps = int(eval_steps/n_gpus)
+    eval_every *= args.grad_steps
 
     optimizer = torch.optim.Adam(model.parameters(), args.lr)
     scheduler = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=1e-8, total_iters=args.warmup_steps) if args.warmup_steps > 0 else None
@@ -337,7 +342,7 @@ if __name__ == '__main__':
     print("Beginning training...")
     model, (losses, accs, test_acc, initial_acc) = train(model, optimizer, train_generator, val_generator, test_generator, steps, 
         batch_size=batch_size, scheduler=scheduler, checkpoint_dir=checkpoint_dir, data_kwargs=data_kwargs, eval_every=eval_every, 
-        eval_steps=eval_steps, test_steps=args.test_steps, ss_schedule=ss_schedule, eval_initial=(args.init_from != ""))
+        eval_steps=eval_steps, test_steps=args.test_steps, ss_schedule=ss_schedule, eval_initial=(args.init_from != ""), grad_steps=args.grad_steps)
 
     print("Test Accuracy:", test_acc)
 
