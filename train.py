@@ -49,12 +49,13 @@ def parse_args():
     parser.add_argument('--weight_sharing', type=str, choices=['none', 'cross', 'sym'], default='none')
     parser.add_argument('--merge', type=str, default='concat', choices=['concat', 'sum', 'lambda'])
     parser.add_argument('--warmup_steps', type=int, default=1000)
-    parser.add_argument('--rezero', action='store_true')
+    parser.add_argument('--residual', default='base', choices=['none', 'base', 'rezero'])
+    parser.add_argument('--scale_out', type=str, default='none', choices=['none', 'sq', 'exp'])
     return parser.parse_args()
 
 
 
-def evaluate(model, generator, label_fct, exact_loss=False, batch_size=64, sample_kwargs={}, label_kwargs={}, criterion=nn.L1Loss(), steps=5000, normalize=False, seed=None):
+def evaluate(model, generator, label_fct, exact_loss=False, batch_size=64, sample_kwargs={}, label_kwargs={}, criterion=nn.L1Loss(), steps=5000, normalize=False, seed=None, scale_output='none'):
     if seed is not None:
         torch.manual_seed(seed)
         np.random.seed(seed)
@@ -81,12 +82,16 @@ def evaluate(model, generator, label_fct, exact_loss=False, batch_size=64, sampl
                 out = model(*Xnorm).squeeze(-1)
             else:
                 out = model(*X).squeeze(-1)
+            if scale_output == 'sq':
+                out = torch.pow(out, 2)
+            elif scale_output == 'exp':
+                out = torch.exp(out)
             model_loss = criterion(out, labels)
             model_losses.append(model_loss.item())
     return sum(model_losses)/len(model_losses)
 
 def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(), batch_size=64, steps=3000, lr=1e-5, 
-    checkpoint_dir=None, save_every=1000, sample_kwargs={}, label_kwargs={}, normalize='none', clip=-1, warmup_steps=1000):
+    checkpoint_dir=None, save_every=1000, sample_kwargs={}, label_kwargs={}, normalize='none', clip=-1, warmup_steps=1000, scale_output='none'):
     #model.train(True)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     scheduler = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=1e-8, total_iters=warmup_steps) if warmup_steps > 0 else None
@@ -123,7 +128,12 @@ def train(model, sample_fct, label_fct, exact_loss=False, criterion=nn.L1Loss(),
             X, avg_norm = normalize_sets(*X)
         elif normalize == 'whiten':
             X = whiten_split(*X)
-        loss = criterion(model(*X).squeeze(-1), labels)
+        out = model(*X).squeeze(-1)
+        if scale_output == 'sq':
+            out = torch.pow(out, 2)
+        elif scale_output == 'exp':
+            out = torch.exp(out)
+        loss = criterion(out, labels)
         loss.backward()
         if clip > 0:
             torch.nn.utils.clip_grad_norm_(model.parameters(), clip)
@@ -241,7 +251,7 @@ if __name__ == '__main__':
                 'weight_sharing':args.weight_sharing,
                 'decoder_layers':args.decoder_layers,
                 'merge': args.merge,
-                #'residual': args.rezero
+                'residual': args.residual
             }
             model=MultiSetTransformer(**model_kwargs).to(device)
         elif args.model == 'rn':
@@ -275,6 +285,21 @@ if __name__ == '__main__':
                 'decoder_layers':args.decoder_layers
             }
             model = CrossOnlyModel(**model_kwargs).to(device)
+        elif args.model == 'naive':
+            model_kwargs={
+                'ln':True,
+                'num_blocks':args.num_blocks,
+                'equi':args.equi, 
+                'output_size':1,
+                'num_heads':args.num_heads,
+                'dropout':args.dropout,
+                'input_size':args.dim,
+                'latent_size':args.latent_size,
+                'hidden_size':args.hidden_size,
+                'weight_sharing':args.weight_sharing,
+                'decoder_layers':args.decoder_layers
+            }
+            model = NaiveMultiSetModel(**model_kwargs)
         else:
             raise NotImplementedError()
     else:
@@ -307,10 +332,10 @@ if __name__ == '__main__':
 
     model, losses = train(model, generator, label_fct, checkpoint_dir=os.path.join(args.checkpoint_dir, args.checkpoint_name), \
         exact_loss=exact_loss, criterion=criterion, steps=steps, lr=args.lr, batch_size=batch_size, \
-        sample_kwargs=sample_kwargs, label_kwargs=label_kwargs, normalize=args.normalize, clip=args.clip, warmup_steps=args.warmup_steps)
+        sample_kwargs=sample_kwargs, label_kwargs=label_kwargs, normalize=args.normalize, clip=args.clip, warmup_steps=args.warmup_steps, scale_output=args.scale_out)
 
     eval_loss = evaluate(model, generator, label_fct, exact_loss=exact_loss, steps=1000, batch_size=batch_size, \
-        sample_kwargs=sample_kwargs, label_kwargs=label_kwargs, normalize=args.normalize)
+        sample_kwargs=sample_kwargs, label_kwargs=label_kwargs, normalize=args.normalize, scale_output=args.scale_out)
 
     model_out = model._modules['module'] if torch.cuda.device_count() > 1 else model
     torch.save(model_out, os.path.join(run_dir,"model.pt"))  

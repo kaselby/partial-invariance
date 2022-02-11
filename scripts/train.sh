@@ -29,7 +29,8 @@ merge=${17}
 warmup=${18}
 steps=${19}
 dl=${20}
-rezero=${21}
+residual=${21}
+scale_out=${22}
 
 if [ $target == "w1" ]
 then
@@ -57,9 +58,6 @@ if [ $nn -eq 1 ]
 then
     argstring="${argstring} --nn"
 fi
-if [ $rezero -eq 1 ]
-then
-    argstring="${argstring} --rezero"
-fi
 
-python3 train.py $run_name --target $target --data $data --model $model --num_inds $num_inds --dim $is --latent_size $lts --hidden_size $hs --lr $lr --clip $clip --basedir $basedir --num_blocks $nb --set_size $ss1 $ss2 --merge $merge --warmup_steps $warmup --steps $steps --decoder_layers $dl --checkpoint_name $SLURM_JOB_ID $argstring 
+
+python3 train.py $run_name --target $target --data $data --model $model --num_inds $num_inds --dim $is --latent_size $lts --hidden_size $hs --lr $lr --clip $clip --basedir $basedir --num_blocks $nb --set_size $ss1 $ss2 --merge $merge --warmup_steps $warmup --steps $steps --decoder_layers $dl --scale_out $scale_out --residual $residual  --checkpoint_name $SLURM_JOB_ID $argstring 
