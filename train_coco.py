@@ -23,6 +23,7 @@ from train_omniglot import ConvEncoder
 
 
 SS_SCHEDULE=[{'set_size':(1,5), 'steps':4000}, {'set_size':(3,10), 'steps':6000}, {'set_size':(8,15), 'steps':10000}]
+SS_SCHEDULE_30=[{'set_size':(1,5), 'steps':4000}, {'set_size':(3,10), 'steps':6000}, {'set_size':(8,15), 'steps':10000}, {'set_size':(10,30), 'steps':20000}]
 
 class SetSizeScheduler():
     def __init__(self, schedule):
@@ -337,7 +338,7 @@ if __name__ == '__main__':
     optimizer = torch.optim.Adam(model.parameters(), args.lr)
     scheduler = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=1e-8, total_iters=args.warmup_steps) if args.warmup_steps > 0 else None
     checkpoint_dir = os.path.join(args.checkpoint_dir, args.checkpoint_name) if args.checkpoint_name is not None else None
-    ss_schedule = SetSizeScheduler(SS_SCHEDULE) if args.anneal_set_size else None
+    ss_schedule = SetSizeScheduler(SS_SCHEDULE_30) if args.anneal_set_size else None
     data_kwargs = {'set_size':args.set_size}
     print("Beginning training...")
     model, (losses, accs, test_acc, initial_acc) = train(model, optimizer, train_generator, val_generator, test_generator, steps, 
