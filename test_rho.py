@@ -49,7 +49,7 @@ if __name__ == '__main__':
             for i in range(rho.size(0)):
                 X, T = generator(N, n=args.n, corr=rho[i])
                 out = model(*X).squeeze(-1)
-                if model.args.scale_out == "sq":
+                if model_args.scale_out == "sq":
                     out = torch.pow(out, 2)
                 elif model_args.scale_out == "exp":
                     out = torch.exp(out)
