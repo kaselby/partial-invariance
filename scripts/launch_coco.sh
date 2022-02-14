@@ -20,7 +20,7 @@ ln=1
 anneal_ss=0
 lambda0=0.5
 residual="base"
-init_from=""
+init_from="none"
 grad_steps=1
 
 for (( i = 0 ; i < $n_runs ; i++ ))

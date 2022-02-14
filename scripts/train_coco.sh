@@ -19,7 +19,7 @@ if [ ${16} -eq 1 ]
 then
     argstring="${argstring} --anneal_set_size"
 fi
-if [ -n "${19}" ]
+if [ ${19} != "none" ]
 then
     argstring="${argstring} --init_from ${19}"
 fi
