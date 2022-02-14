@@ -28,7 +28,7 @@ def parse_args():
     parser.add_argument('--scaling', type=float, default=0.5)
     parser.add_argument('--blur', type=float, default=0.05)
     parser.add_argument('--equi', action='store_true')
-    parser.add_argument('--vardim', action='store_false')
+    parser.add_argument('--vardim', action='store_true')
     parser.add_argument('--num_inds', type=int, default=-1)
     parser.add_argument('--num_blocks', type=int, default=2)
     parser.add_argument('--num_heads', type=int, default=4)
