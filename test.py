@@ -83,10 +83,12 @@ if __name__ == '__main__':
                 avg_loss=0
                 for run_num in all_runs:
                     model_path = os.path.join(run_path, run_num, "model.pt")
+                    log_path = os.path.join(run_path, run_num, "logs.pt")
                     if os.path.exists(model_path):
                         model = torch.load(model_path)
+                        model_args = torch.load(log_path)["args"]
                         model_loss_i = evaluate(model, generator, label_fct, 
-                            sample_kwargs=sample_kwargs, steps=args.steps, criterion=nn.L1Loss(), normalize=normalize, exact_loss=exact_loss, seed=seed)
+                            sample_kwargs=sample_kwargs, steps=args.steps, criterion=nn.L1Loss(), normalize=normalize, exact_loss=exact_loss, seed=seed, scale_output=model_args.scale_out)
                         results[run_name][name]['all_losses'].append(model_loss_i)
                         avg_loss += model_loss_i
                         print("%s-%s Loss: %f" % (run_name, run_num, model_loss_i))
@@ -96,8 +98,9 @@ if __name__ == '__main__':
                 results[run_name][name]['avg_loss'] = avg_loss
             else:
                 model = torch.load(os.path.join(run_path, "model.pt"))
+                model_args = torch.load(log_path)["args"]
                 model_loss = evaluate(model, generator, label_fct, 
-                    sample_kwargs=sample_kwargs, steps=args.steps, criterion=nn.L1Loss(), normalize=normalize, exact_loss=exact_loss, seed=seed)
+                    sample_kwargs=sample_kwargs, steps=args.steps, criterion=nn.L1Loss(), normalize=normalize, exact_loss=exact_loss, seed=seed, scale_output=model_args.scale_out)
                 print("%s Loss: %f" % (run_name, model_loss))
                 results[run_name][name] = model_loss
         for baseline_name, baseline_fct in baselines.items():
