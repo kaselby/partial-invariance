@@ -540,7 +540,7 @@ class NaiveMultiSetModel(nn.Module):
             self.pool2 = pool
         self.decoder = self._make_decoder(latent_size, hidden_size, output_size, decoder_layers)
 
-    def _init_block(self, latent_size, hidden_size, num_heads, equi=False, **encoder_kwargs):
+    def _init_block(self, input_size, latent_size, hidden_size, num_heads, equi=False, **encoder_kwargs):
         pass
 
     def _make_decoder(self, latent_size, hidden_size, output_size, n_layers):
@@ -576,11 +576,11 @@ class NaiveMultiSetModel(nn.Module):
         return out.squeeze(-1)
 
 class NaiveSetTransformer(NaiveMultiSetModel):
-    def _init_block(self, latent_size, hidden_size, num_heads, ln, remove_diag, equi, dropout):
-        return SAB(latent_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, equi=equi, dropout=dropout)
+    def _init_block(self, input_size, latent_size, hidden_size, num_heads, ln, remove_diag, equi, dropout):
+        return SAB(input_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, equi=equi, dropout=dropout)
 class NaiveRelationNetwork(NaiveMultiSetModel):
-    def _init_block(self, latent_size, hidden_size, num_heads, ln, remove_diag, pool, equi, dropout):
-        return RNBlock(latent_size, latent_size, hidden_size, pool=pool, ln=ln, remove_diag=remove_diag, equi=equi, dropout=dropout)
+    def _init_block(self, input_size, latent_size, hidden_size, num_heads, ln, remove_diag, pool, equi, dropout):
+        return RNBlock(input_size, latent_size, hidden_size, pool=pool, ln=ln, remove_diag=remove_diag, equi=equi, dropout=dropout)
 
 
 class CrossOnlyModel(nn.Module):
