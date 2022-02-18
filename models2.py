@@ -516,7 +516,7 @@ class MultiSetTransformer(nn.Module):
 
 class NaiveMultiSetModel(nn.Module):
     def __init__(self, input_size, latent_size, hidden_size, output_size, num_blocks, num_heads,
-            equi=False, weight_sharing='none', decoder_layers=1, **encoder_kwargs):
+            equi=False, weight_sharing='none', decoder_layers=1, ln=False, **encoder_kwargs):
         super().__init__()
         self.equi = equi
         if equi:
@@ -524,15 +524,15 @@ class NaiveMultiSetModel(nn.Module):
         self.input_size = input_size
         self.proj = None if input_size == latent_size else nn.Linear(input_size, latent_size)
         if weight_sharing == 'none':
-            self.encoder1 = nn.Sequential(*[self._init_block(latent_size, latent_size, hidden_size, num_heads, equi=equi, **encoder_kwargs) for _ in range(num_blocks)])
-            self.encoder2 = nn.Sequential(*[self._init_block(latent_size, latent_size, hidden_size, num_heads, equi=equi, **encoder_kwargs) for _ in range(num_blocks)])
+            self.encoder1 = nn.Sequential(*[self._init_block(latent_size, latent_size, hidden_size, num_heads, equi=equi, ln=ln, **encoder_kwargs) for _ in range(num_blocks)])
+            self.encoder2 = nn.Sequential(*[self._init_block(latent_size, latent_size, hidden_size, num_heads, equi=equi, ln=ln, **encoder_kwargs) for _ in range(num_blocks)])
             self.pool1 = PMA(latent_size, hidden_size, num_heads, 1, ln=ln)
             self.pool2 = PMA(latent_size, hidden_size, num_heads, 1, ln=ln)
             #self.encoder1 = SetTransformer(input_size, latent_size, hidden_size, latent_size, num_heads, num_blocks, remove_diag, ln, equi)
             #self.encoder2 = SetTransformer(input_size, latent_size, hidden_size, latent_size, num_heads, num_blocks, remove_diag, ln, equi)
         else:
             #encoder = SetTransformer(input_size, latent_size, hidden_size, latent_size, num_heads, num_blocks, remove_diag, ln, equi)
-            encoder = nn.Sequential(*[self._init_block(latent_size, latent_size, hidden_size, num_heads, equi=equi, **encoder_kwargs) for _ in range(num_blocks)])
+            encoder = nn.Sequential(*[self._init_block(latent_size, latent_size, hidden_size, num_heads, equi=equi, ln=ln, **encoder_kwargs) for _ in range(num_blocks)])
             pool = PMA(latent_size, hidden_size, num_heads, 1, ln=ln)
             self.encoder1 = encoder
             self.encoder2 = encoder
