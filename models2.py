@@ -515,8 +515,8 @@ class MultiSetTransformer(nn.Module):
 
 
 class NaiveMultiSetModel(nn.Module):
-    def __init__(self, input_size, latent_size, hidden_size, output_size, num_blocks, num_heads, remove_diag=False, ln=False,
-            equi=False, weight_sharing='none', dropout=0.1, decoder_layers=1):
+    def __init__(self, input_size, latent_size, hidden_size, output_size, num_blocks, num_heads,
+            equi=False, weight_sharing='none', decoder_layers=1, **encoder_kwargs):
         super().__init__()
         self.equi = equi
         if equi:
@@ -524,21 +524,24 @@ class NaiveMultiSetModel(nn.Module):
         self.input_size = input_size
         self.proj = None if input_size == latent_size else nn.Linear(input_size, latent_size)
         if weight_sharing == 'none':
-            self.encoder1 = nn.Sequential(*[SAB(latent_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, equi=equi, dropout=dropout) for _ in range(num_blocks)])
-            self.encoder2 = nn.Sequential(*[SAB(latent_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, equi=equi, dropout=dropout) for _ in range(num_blocks)])
+            self.encoder1 = nn.Sequential(*[self._init_block(latent_size, latent_size, hidden_size, num_heads, equi=equi, **encoder_kwargs) for _ in range(num_blocks)])
+            self.encoder2 = nn.Sequential(*[self._init_block(latent_size, latent_size, hidden_size, num_heads, equi=equi, **encoder_kwargs) for _ in range(num_blocks)])
             self.pool1 = PMA(latent_size, hidden_size, num_heads, 1, ln=ln)
             self.pool2 = PMA(latent_size, hidden_size, num_heads, 1, ln=ln)
             #self.encoder1 = SetTransformer(input_size, latent_size, hidden_size, latent_size, num_heads, num_blocks, remove_diag, ln, equi)
             #self.encoder2 = SetTransformer(input_size, latent_size, hidden_size, latent_size, num_heads, num_blocks, remove_diag, ln, equi)
         else:
             #encoder = SetTransformer(input_size, latent_size, hidden_size, latent_size, num_heads, num_blocks, remove_diag, ln, equi)
-            encoder = nn.Sequential(*[SAB(latent_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, equi=equi, dropout=dropout) for _ in range(num_blocks)])
+            encoder = nn.Sequential(*[self._init_block(latent_size, latent_size, hidden_size, num_heads, equi=equi, **encoder_kwargs) for _ in range(num_blocks)])
             pool = PMA(latent_size, hidden_size, num_heads, 1, ln=ln)
             self.encoder1 = encoder
             self.encoder2 = encoder
             self.pool1 = pool
             self.pool2 = pool
         self.decoder = self._make_decoder(latent_size, hidden_size, output_size, decoder_layers)
+
+    def _init_block(self, latent_size, latent_size, hidden_size, num_heads, equi=False, **encoder_kwargs):
+        pass
 
     def _make_decoder(self, latent_size, hidden_size, output_size, n_layers):
         if n_layers == 0:
@@ -571,6 +574,13 @@ class NaiveMultiSetModel(nn.Module):
         ZY = self.pool2(ZY)
         out = self.decoder(torch.cat([ZX, ZY], dim=-1))
         return out.squeeze(-1)
+
+class NaiveSetTransformer(NaiveMultiSetModel):
+    def _init_block(self, latent_size, hidden_size, num_heads, ln, remove_diag, equi, dropout):
+        return SAB(latent_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, equi=equi, dropout=dropout)
+class NaiveRelationNetwork(NaiveMultiSetModel):
+    def _init_block(self, latent_size, hidden_size, num_heads, ln, remove_diag, pool, equi, dropout):
+        return RNBlock(latent_size, latent_size, hidden_size, pool=pool, ln=ln, remove_diag=remove_diag, equi=equi, dropout=dropout)
 
 
 class CrossOnlyModel(nn.Module):

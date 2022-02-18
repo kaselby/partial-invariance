@@ -399,21 +399,23 @@ class CaptionGenerator():
         #return encoded_batch.view(bs, ss, -1)
         
 
-    def _generate(self, batch_size, set_size=(25,50)):
+    def _generate(self, batch_size, set_size=(25,50), overlap_mult=3):
         aligned = (torch.rand(batch_size) < self.p).to(self.device)
         n_samples = torch.randint(*set_size, (1,)).item()
 
         indices = torch.randperm(self.N)
         X, Y = [], []
         for i in range(batch_size):
-            mindex = n_samples * 2 * i
+            mindex = n_samples * overlap_mult * i
+
             imgs, captions = zip(*[self.dataset[i] for i in indices[mindex:mindex+n_samples]])
             X.append(imgs)
             if aligned[i].item():
                 Y.append(captions)
                 #Y.append(["y" for _ in captions])
             else:
-                _, captions2 = zip(*[self.dataset[i] for i in indices[mindex+n_samples:mindex+n_samples*2]])
+                unaligned_indices = torch.multinomial(torch.ones(n_samples * overlap_mult), n_samples)
+                _, captions2 = zip(*[self.dataset[indices[mindex+i]] for i in unaligned_indices])
                 Y.append(captions2)
                 #Y.append(["n" for _ in captions])
 

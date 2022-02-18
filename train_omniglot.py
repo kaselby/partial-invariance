@@ -558,7 +558,7 @@ if __name__ == '__main__':
 
     if args.model == 'csab':
         model_kwargs={
-            'ln':True,
+            'ln':args.ln,
             'remove_diag':False,
             'num_blocks':args.num_blocks,
             'num_heads':args.num_heads,
@@ -570,7 +570,7 @@ if __name__ == '__main__':
         set_model = MultiSetTransformer(args.latent_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
     elif args.model == 'cross-only':
         model_kwargs={
-            'ln':True,
+            'ln':args.ln,
             'num_blocks':args.num_blocks,
             'num_heads':args.num_heads,
             'dropout':args.dropout,
@@ -580,7 +580,7 @@ if __name__ == '__main__':
         set_model = CrossOnlyModel(args.latent_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
     elif args.model == 'naive':
         model_kwargs={
-            'ln':True,
+            'ln':args.ln,
             'remove_diag':False,
             'num_blocks':args.num_blocks,
             'num_heads':args.num_heads,
@@ -593,7 +593,7 @@ if __name__ == '__main__':
         set_model = PINE(args.latent_size, int(args.latent_size/4), 16, 2, args.hidden_size, 1)
     elif args.model == 'rn':
         model_kwargs={
-            'ln':True,
+            'ln':args.ln,
             'remove_diag':False,
             'num_blocks':args.num_blocks,
             'dropout':args.dropout,
