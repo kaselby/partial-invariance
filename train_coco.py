@@ -14,7 +14,7 @@ import tqdm
 import json
 import fasttext
 
-from models2 import MultiSetTransformer, PINE, MultiSetModel, NaiveMultiSetModel, BertEncoderWrapper, ImageEncoderWrapper, EmbeddingEncoderWrapper, CrossOnlyModel, MultiRNModel, cst_from_cross, cst_from_naive
+from models2 import MultiSetTransformer, PINE, MultiSetModel, NaiveMultiSetModel, NaiveSetTransformer, BertEncoderWrapper, ImageEncoderWrapper, EmbeddingEncoderWrapper, CrossOnlyModel, MultiRNModel, cst_from_cross, cst_from_naive
 from generators import CaptionGenerator, bert_tokenize_batch, fasttext_tokenize_batch, EmbeddingAlignmentGenerator, load_pairs, split_pairs
 from train_omniglot import ConvEncoder
 
@@ -300,7 +300,7 @@ if __name__ == '__main__':
                 'equi':False,
                 'decoder_layers': args.decoder_layers
             }
-            set_model = NaiveMultiSetModel(input_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
+            set_model = NaiveSetTransformer(input_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
         elif args.model == 'pine':
             set_model = PINE(input_size, int(args.latent_size/4), 16, 2, args.hidden_size, 1)
         elif args.model == 'rn':

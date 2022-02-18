@@ -540,7 +540,7 @@ class NaiveMultiSetModel(nn.Module):
             self.pool2 = pool
         self.decoder = self._make_decoder(latent_size, hidden_size, output_size, decoder_layers)
 
-    def _init_block(self, latent_size, latent_size, hidden_size, num_heads, equi=False, **encoder_kwargs):
+    def _init_block(self, latent_size, hidden_size, num_heads, equi=False, **encoder_kwargs):
         pass
 
     def _make_decoder(self, latent_size, hidden_size, output_size, n_layers):
