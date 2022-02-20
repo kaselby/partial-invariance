@@ -513,7 +513,7 @@ class EmbeddingAlignmentGenerator():
         return (X, Y), aligned.float()
 
     def _generate_overlap(self, batch_size, p_aligned=0.5, set_size=(10,30), overlap_mult=3):
-        aligned = (torch.rand(batch_size) < self.p).to(self.device)
+        aligned = (torch.rand(batch_size) < p_aligned).to(self.device)
         n_samples = torch.randint(*set_size, (1,)).item()
 
         indices = torch.randperm(self.N)
