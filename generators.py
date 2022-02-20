@@ -500,7 +500,7 @@ class EmbeddingAlignmentGenerator():
             Y.append(self.tgt_emb[word_y])
         return torch.tensor(np.array(X)), torch.tensor(np.array(Y))
 
-    def _generate(self, batch_size, p_aligned=0.5, set_size=(10,30)):
+    def _generate(self, batch_size, p_aligned=0.5, set_size=(10,30), overlap_mult=3):
         aligned = (torch.rand(batch_size) < p_aligned).to(self.device)
         n_samples = torch.randint(*set_size, (1,)).item()
         indices = torch.randperm(self.N)
@@ -512,8 +512,29 @@ class EmbeddingAlignmentGenerator():
         Y = torch.where(aligned.view(-1,1,1), Y_aligned, Y_unaligned)
         return (X, Y), aligned.float()
 
+    def _generate_overlap(self, batch_size, p_aligned=0.5, set_size=(10,30), overlap_mult=3):
+        aligned = (torch.rand(batch_size) < self.p).to(self.device)
+        n_samples = torch.randint(*set_size, (1,)).item()
+
+        indices = torch.randperm(self.N)
+        X, Y = [], []
+        for i in range(batch_size):
+            mindex = n_samples * overlap_mult * i
+            X_i, Y_aligned_i = self._generate_sets(indices[mindex:mindex+n_samples])
+            X.append(X_i)
+            if aligned[i].item():
+                Y.append(Y_aligned_i)
+                #Y.append(["y" for _ in captions])
+            else:
+                unaligned_indices = torch.multinomial(torch.ones(n_samples * overlap_mult), n_samples)
+                _, Y_unaligned_i = self._generate_sets(indices[mindex+unaligned_indices])
+                Y.append(Y_unaligned_i)
+        X = torch.stack(X, dim=0)
+        Y = torch.stack(Y, dim=0)
+        return (X, Y), aligned.float()
+
     def __call__(self, *args, **kwargs):
-        return self._generate(*args, **kwargs)
+        return self._generate_overlap(*args, **kwargs)
 
 
 '''

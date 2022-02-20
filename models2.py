@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import math
 
-from utils import cross_knn_inds
+from utils import cross_knn_inds, linear_block
 
 use_cuda=torch.cuda.is_available()
 
@@ -551,7 +551,7 @@ class NaiveMultiSetModel(nn.Module):
             for _ in range(n_layers-1): 
                 hidden_layers += [nn.Linear(hidden_size, hidden_size), nn.ReLU()]
             return nn.Sequential(
-                nn.Linear(2*latent_size, hidden_size),
+                nn.Line(2*latenart_size, hidden_size),
                 nn.ReLU(),
                 *hidden_layers,
                 nn.Linear(hidden_size, output_size)
@@ -580,7 +580,39 @@ class NaiveSetTransformer(NaiveMultiSetModel):
         return SAB(input_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, equi=equi, dropout=dropout)
 class NaiveRelationNetwork(NaiveMultiSetModel):
     def _init_block(self, input_size, latent_size, hidden_size, num_heads, ln, remove_diag, pool, equi, dropout):
-        return RNBlock(input_size, latent_size, hidden_size, pool=pool, ln=ln, remove_diag=remove_diag, equi=equi, dropout=dropout)
+        return RNBlock(latent_size, hidden_size, pool=pool, ln=ln, remove_diag=remove_diag, equi=equi, dropout=dropout)
+class NaiveRFF(NaiveMultiSetModel):
+    def _init_block(self, input_size, latent_size, hidden_size, num_heads, ln, remove_diag, equi, dropout):
+        return RFFBlock(latent_size, hidden_size, ln=ln, dropout=dropout)
+
+class DeepSet(nn.Module):
+    def __init__(self, input_size, latent_size, hidden_size, output_size, num_layers=3):
+        super(DeepSet, self).__init__()
+        self.output_size = output_size
+        self.enc = linear_block(input_size, hidden_size, latent_size, num_layers)
+        self.dec = linear_block(latent_size, hidden_size, output_size, num_layers)
+
+    def forward(self, X):
+        X = self.enc(X).mean(-2)
+        X = self.dec(X)
+        return X
+
+class RFFBlock(nn.Module):
+    def __init__(self, latent_size, hidden_size, num_layers=2, ln=False, dropout=0):
+        self.enc = linear_block(latent_size, hidden_size, latent_size, num_layers)
+        if dropout > 0:
+            self.dropout = nn.Dropout(dropout)
+        if ln:
+            self.ln = nn.LayerNorm(latent_size)
+
+    def forward(self, X, mask=None):
+        Z = self.enc(X)
+        Z = Z if getattr(self, 'dropout', None) is None else self.dropout(Z)
+        Z = Z if getattr(self, 'ln1', None) is None else self.ln(Z)
+        return Z
+    
+    def forward(self, X):
+        return self.enc(X)
 
 
 class CrossOnlyModel(nn.Module):
@@ -795,6 +827,13 @@ class RNBlock(nn.Module):
         Z = Z if getattr(self, 'dropout', None) is None else self.dropout(Z)
         Z = Z if getattr(self, 'ln1', None) is None else self.ln1(Z)
         return Z
+
+class SingleRNBlock(nn.Module):
+    def __init__(self, latent_size, hidden_size, ln=False, pool='sum', dropout=0.1, equi=False):
+        self.rn = RNBlock(latent_size, hidden_size, ln=False, pool='sum', dropout=0.1, equi=False)
+    
+    def forward(self, X):
+        return self.rn(X)
 
 class MultiRNBlock(nn.Module):
     def __init__(self, latent_size, hidden_size, remove_diag=False, pool='max', ln=False, weight_sharing='none', **kwargs):
