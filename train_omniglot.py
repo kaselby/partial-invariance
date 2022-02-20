@@ -12,7 +12,7 @@ import argparse
 import math
 import tqdm
 
-from models2 import MultiSetTransformer, PINE, MultiSetModel, NaiveMultiSetModel, CrossOnlyModel, MultiRNModel
+from models2 import *
 from generators import ImageCooccurenceGenerator, OmniglotCooccurenceGenerator, CIFARCooccurenceGenerator
 
 
@@ -588,7 +588,7 @@ if __name__ == '__main__':
             'equi':False,
             'weight_sharing': args.weight_sharing
         }
-        set_model = NaiveMultiSetModel(args.latent_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
+        set_model = NaiveSetTransformer(args.latent_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
     elif args.model == 'pine':
         set_model = PINE(args.latent_size, int(args.latent_size/4), 16, 2, args.hidden_size, 1)
     elif args.model == 'rn':
