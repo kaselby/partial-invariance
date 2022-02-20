@@ -202,6 +202,7 @@ def parse_args():
     parser.add_argument('--lambda0', type=float, default=0.5)
     parser.add_argument('--residual', type=str, default='base', choices=['base', 'none', 'rezero'])
     parser.add_argument('--grad_steps', type=int, default=1)
+    parser.add_argument('--overlap_mult', type=int, default=-1)
     return parser.parse_args()
 
 #IMG_SIZE=105
@@ -363,6 +364,9 @@ if __name__ == '__main__':
     checkpoint_dir = os.path.join(args.checkpoint_dir, args.checkpoint_name) if args.checkpoint_name is not None else None
     ss_schedule = None if args.ss_schedule not in SS_SCHEDULES else SetSizeScheduler(SS_SCHEDULES[args.ss_schedule])
     data_kwargs = {'set_size':args.set_size}
+    if args.overlap_mult > 0:
+        data_kwargs['overlap'] = True
+        data_kwargs['overlap_mult'] = args.overlap_mult
     print("Beginning training...")
     model, (losses, accs, test_acc, initial_acc) = train(model, optimizer, train_generator, val_generator, test_generator, steps, 
         batch_size=batch_size, scheduler=scheduler, checkpoint_dir=checkpoint_dir, data_kwargs=data_kwargs, eval_every=eval_every, 

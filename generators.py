@@ -446,8 +446,11 @@ class CaptionGenerator():
         Y = self._build_text_batch(Y)
         return (X, Y), aligned.float()
     
-    def __call__(self, *args, **kwargs):
-        return self._generate(*args, **kwargs)
+    def __call__(self, *args, overlap=False, **kwargs):
+        if overlap:
+            return self._generate_overlap(*args, **kwargs)
+        else:
+            return self._generate(*args, **kwargs)
 
 
 def bert_tokenize_batch(captions, tokenizer, device=torch.device("cpu"), use_first=True):
@@ -556,8 +559,11 @@ class EmbeddingAlignmentGenerator():
         Y = torch.stack(Y, dim=0).to(self.device)
         return (X, Y), aligned.float()
 
-    def __call__(self, *args, **kwargs):
-        return self._generate(*args, **kwargs)
+    def __call__(self, *args, overlap=False, **kwargs):
+        if overlap:
+            return self._generate_overlap(*args, **kwargs)
+        else:
+            return self._generate(*args, **kwargs)
 
 
 '''
