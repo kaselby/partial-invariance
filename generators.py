@@ -529,8 +529,8 @@ class EmbeddingAlignmentGenerator():
                 unaligned_indices = torch.multinomial(torch.ones(n_samples * overlap_mult), n_samples)
                 _, Y_unaligned_i = self._generate_sets(indices[mindex+unaligned_indices])
                 Y.append(Y_unaligned_i)
-        X = torch.stack(X, dim=0)
-        Y = torch.stack(Y, dim=0)
+        X = torch.stack(X, dim=0).to(self.device)
+        Y = torch.stack(Y, dim=0).to(self.device)
         return (X, Y), aligned.float()
 
     def __call__(self, *args, **kwargs):
