@@ -14,7 +14,7 @@ import tqdm
 import json
 import fasttext
 
-from models2 import MultiSetTransformer, PINE, MultiSetModel, NaiveMultiSetModel, NaiveSetTransformer, BertEncoderWrapper, ImageEncoderWrapper, EmbeddingEncoderWrapper, CrossOnlyModel, MultiRNModel, cst_from_cross, cst_from_naive
+from models2 import *
 from generators import CaptionGenerator, bert_tokenize_batch, fasttext_tokenize_batch, EmbeddingAlignmentGenerator, load_pairs, split_pairs
 from train_omniglot import ConvEncoder
 
@@ -171,7 +171,7 @@ def evaluate(model, eval_dataset, steps, batch_size=64, data_kwargs={}):
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('run_name', type=str)
-    parser.add_argument('--model', type=str, default='csab', choices=['csab', 'rn', 'pine', 'naive', 'cross-only'])
+    parser.add_argument('--model', type=str, default='csab', choices=['csab', 'rn', 'pine', 'naive', 'naive-rn', 'naive-rff', 'cross-only'])
     parser.add_argument('--dataset', type=str, default='coco', choices=['coco', 'flickr30k', 'fasttext'])
     parser.add_argument('--checkpoint_dir', type=str, default="/checkpoint/kaselby")
     parser.add_argument('--checkpoint_name', type=str, default=None)
@@ -301,6 +301,26 @@ if __name__ == '__main__':
                 'decoder_layers': args.decoder_layers
             }
             set_model = NaiveSetTransformer(input_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
+        elif args.model == 'naive-rn':
+            model_kwargs={
+                'ln':args.ln,
+                'remove_diag':False,
+                'num_blocks':args.num_blocks,
+                'dropout':args.dropout,
+                'equi':False,
+                'pool': 'max',
+                'decoder_layers': args.decoder_layers
+            }
+            set_model = NaiveRelationNetwork(input_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
+        elif args.model == 'naive-rff':
+            model_kwargs={
+                'ln':args.ln,
+                'num_blocks':args.num_blocks,
+                'dropout':args.dropout,
+                'equi':False,
+                'decoder_layers': args.decoder_layers
+            }
+            set_model = NaiveRFF(input_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
         elif args.model == 'pine':
             set_model = PINE(input_size, int(args.latent_size/4), 16, 2, args.hidden_size, 1)
         elif args.model == 'rn':
