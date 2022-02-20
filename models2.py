@@ -551,7 +551,7 @@ class NaiveMultiSetModel(nn.Module):
             for _ in range(n_layers-1): 
                 hidden_layers += [nn.Linear(hidden_size, hidden_size), nn.ReLU()]
             return nn.Sequential(
-                nn.Line(2*latenart_size, hidden_size),
+                nn.Linear(2*latent_size, hidden_size),
                 nn.ReLU(),
                 *hidden_layers,
                 nn.Linear(hidden_size, output_size)
