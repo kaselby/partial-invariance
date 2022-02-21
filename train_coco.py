@@ -305,8 +305,8 @@ if __name__ == '__main__':
         elif args.model == 'naive-rn':
             model_kwargs={
                 'ln':args.ln,
-                'remove_diag':False,
                 'num_blocks':args.num_blocks,
+                'num_heads':args.num_heads,
                 'dropout':args.dropout,
                 'equi':False,
                 'pool': 'max',
@@ -317,6 +317,7 @@ if __name__ == '__main__':
             model_kwargs={
                 'ln':args.ln,
                 'num_blocks':args.num_blocks,
+                'num_heads':args.num_heads,
                 'dropout':args.dropout,
                 'equi':False,
                 'decoder_layers': args.decoder_layers
