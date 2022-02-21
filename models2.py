@@ -579,8 +579,8 @@ class NaiveSetTransformer(NaiveMultiSetModel):
     def _init_block(self, input_size, latent_size, hidden_size, num_heads, ln, remove_diag, equi, dropout):
         return SAB(input_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, equi=equi, dropout=dropout)
 class NaiveRelationNetwork(NaiveMultiSetModel):
-    def _init_block(self, input_size, latent_size, hidden_size, num_heads, remove_diag, ln, pool, equi, dropout):
-        return RNBlock(latent_size, hidden_size, pool=pool, ln=ln, remove_diag=remove_diag, equi=equi, dropout=dropout)
+    def _init_block(self, input_size, latent_size, hidden_size, num_heads, ln, pool, equi, dropout):
+        return RNBlock(latent_size, hidden_size, pool=pool, ln=ln equi=equi, dropout=dropout)
 class NaiveRFF(NaiveMultiSetModel):
     def _init_block(self, input_size, latent_size, hidden_size, num_heads, ln, equi, dropout):
         return RFFBlock(latent_size, hidden_size, ln=ln, dropout=dropout)
@@ -599,6 +599,7 @@ class DeepSet(nn.Module):
 
 class RFFBlock(nn.Module):
     def __init__(self, latent_size, hidden_size, num_layers=2, ln=False, dropout=0):
+        super().__init__()
         self.enc = linear_block(latent_size, hidden_size, latent_size, num_layers)
         if dropout > 0:
             self.dropout = nn.Dropout(dropout)
