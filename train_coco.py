@@ -363,10 +363,9 @@ if __name__ == '__main__':
     scheduler = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=1e-8, total_iters=args.warmup_steps) if args.warmup_steps > 0 else None
     checkpoint_dir = os.path.join(args.checkpoint_dir, args.checkpoint_name) if args.checkpoint_name is not None else None
     ss_schedule = None if args.ss_schedule not in SS_SCHEDULES else SetSizeScheduler(SS_SCHEDULES[args.ss_schedule])
-    data_kwargs = {'set_size':args.set_size}
+    data_kwargs = {'set_size':args.set_size, 'overlap_mult':args.overlap_mult}
     if args.overlap_mult > 0:
         data_kwargs['overlap'] = True
-        data_kwargs['overlap_mult'] = args.overlap_mult
     print("Beginning training...")
     model, (losses, accs, test_acc, initial_acc) = train(model, optimizer, train_generator, val_generator, test_generator, steps, 
         batch_size=batch_size, scheduler=scheduler, checkpoint_dir=checkpoint_dir, data_kwargs=data_kwargs, eval_every=eval_every, 
