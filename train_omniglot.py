@@ -603,6 +603,27 @@ if __name__ == '__main__':
             'pool2': 'max'
         }
         set_model = MultiRNModel(args.latent_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
+        elif args.model == 'naive-rn':
+        model_kwargs={
+            'ln':args.ln,
+            'num_blocks':args.num_blocks,
+            'num_heads':args.num_heads,
+            'dropout':args.dropout,
+            'equi':False,
+            'pool': 'max',
+            'decoder_layers': args.decoder_layers
+        }
+        set_model = NaiveRelationNetwork(input_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
+    elif args.model == 'naive-rff':
+        model_kwargs={
+            'ln':args.ln,
+            'num_blocks':args.num_blocks,
+            'num_heads':args.num_heads,
+            'dropout':args.dropout,
+            'equi':False,
+            'decoder_layers': args.decoder_layers
+        }
+        set_model = NaiveRFF(input_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
     else:
         raise NotImplementedError("Model type not recognized.")
     model = MultiSetImageModel(conv_encoder, set_model).to(device)
