@@ -32,7 +32,7 @@ do
     #sbatch scripts/train_coco.sh "${run_name}_rn/${i}" $batch_size $latent_size $hidden_size $lr $num_blocks $steps "rn" $set_size1 $set_size2 $merge $dataset $warmup_steps $decoder_layers $ln $anneal_ss $lambda0 $residual $init_from $grad_steps $overlap_mult
     #sbatch scripts/train_coco.sh "${run_name}_cross-only/${i}" $batch_size $latent_size $hidden_size $lr $num_blocks $steps "cross-only" $set_size1 $set_size2 $merge $dataset $warmup_steps $decoder_layers $ln $anneal_ss $lambda0 $residual $init_from $grad_steps $overlap_mult
     
-    #sbatch scripts/train_coco.sh "${run_name}_sum-merge/${i}" $batch_size $latent_size $hidden_size $lr $num_blocks $steps "csab" $set_size1 $set_size2 "sum" $dataset $warmup_steps $decoder_layers
+    #sbatch scripts/train_coco.sh "${run_name}_sum-merge/${i}" $batch_size $latent_size $hidden_size $lr $num_blocks $steps "csab" $set_size1 $set_size2 "sum" $dataset $warmup_steps $decoder_layers $ln $anneal_ss $lambda0 $residual $init_from $grad_steps $overlap_mult
     #sbatch scripts/train_coco.sh "${run_name}_naive-rn/${i}" $batch_size $latent_size $hidden_size $lr $num_blocks $steps "naive-rn" $set_size1 $set_size2 $merge $dataset $warmup_steps $decoder_layers $ln $anneal_ss $lambda0 $residual $init_from $grad_steps $overlap_mult
     #sbatch scripts/train_coco.sh "${run_name}_naive-rff/${i}" $batch_size $latent_size $hidden_size $lr $num_blocks $steps "naive-rff" $set_size1 $set_size2 $merge $dataset $warmup_steps $decoder_layers $ln $anneal_ss $lambda0 $residual $init_from $grad_steps $overlap_mult
 done
