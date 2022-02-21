@@ -5,7 +5,7 @@ import torch.nn as nn
 from train_omniglot import ConvEncoder, ConvBlock, ConvLayer, MultiSetImageModel
 from md_generator import MetaDatasetGenerator
 from meta_dataset.dataset_spec import Split
-from models2 import MultiSetTransformer, PINE, NaiveMultiSetModel, MultiRNModel, CrossOnlyModel
+from models2 import *
 from generators import DistinguishabilityGenerator
 
 import argparse
@@ -310,7 +310,7 @@ def train_gen(generator, discriminator, optimizer, train_dataset, steps, batch_s
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('run_name', type=str)
-    parser.add_argument('--model', type=str, default='csab', choices=['csab', 'naive', 'cross-only', 'pine', 'rn'])
+    parser.add_argument('--model', type=str, default='csab', choices=['csab', 'naive', 'cross-only', 'pine', 'rn', 'naive-rn', 'naive-rff'])
     parser.add_argument('--checkpoint_dir', type=str, default="/checkpoint/kaselby")
     parser.add_argument('--checkpoint_name', type=str, default=None)
     parser.add_argument('--num_blocks', type=int, default=1)
@@ -388,7 +388,7 @@ if __name__ == '__main__':
             'weight_sharing': args.weight_sharing,
             'decoder_layers': args.decoder_layers
         }
-        set_model = NaiveMultiSetModel(input_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
+        set_model = NaiveSetTransformer(input_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
     elif args.model == 'pine':
         set_model = PINE(input_size, int(args.latent_size/4), 16, 2, 4*args.hidden_size, 1)
     elif args.model == 'rn':
@@ -404,6 +404,26 @@ if __name__ == '__main__':
             'decoder_layers': args.decoder_layers
         }
         set_model = MultiRNModel(input_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
+    elif args.model == 'naive-rn':
+        model_kwargs={
+            'ln':args.ln,
+            'remove_diag':False,
+            'num_blocks':args.num_blocks,
+            'dropout':args.dropout,
+            'equi':False,
+            'pool': 'max',
+            'decoder_layers': args.decoder_layers
+        }
+        set_model = NaiveRelationNetwork(input_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
+    elif args.model == 'naive-rff':
+        model_kwargs={
+            'ln':args.ln,
+            'num_blocks':args.num_blocks,
+            'dropout':args.dropout,
+            'equi':False,
+            'decoder_layers': args.decoder_layers
+        }
+        set_model = NaiveRFF(input_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
     else:
         raise NotImplementedError
 
