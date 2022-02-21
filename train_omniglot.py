@@ -603,7 +603,7 @@ if __name__ == '__main__':
             'pool2': 'max'
         }
         set_model = MultiRNModel(args.latent_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
-        elif args.model == 'naive-rn':
+    elif args.model == 'naive-rn':
         model_kwargs={
             'ln':args.ln,
             'num_blocks':args.num_blocks,
