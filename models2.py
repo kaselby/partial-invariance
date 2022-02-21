@@ -324,8 +324,8 @@ class CSAB(nn.Module):
             X_merge = self.lambda_x * self.fc_XX(XX) + (1-self.lambda_x) * self.fc_XY(XY)
             Y_merge = (1-self.lambda_y) * self.fc_YX(YX) + lambda_y * self.fc_YY(YY)
         else:
-            X_merge = self.fc_X(XX + XY)
-            Y_merge = self.fc_Y(YX + YY)
+            X_merge = XX + XY)
+            Y_merge = YX + YY
         if getattr(self, 'residual', None) is not None and self.residual == 'none':
             X_out = X_merge
             Y_out = Y_merge
