@@ -579,10 +579,10 @@ class NaiveSetTransformer(NaiveMultiSetModel):
     def _init_block(self, input_size, latent_size, hidden_size, num_heads, ln, remove_diag, equi, dropout):
         return SAB(input_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, equi=equi, dropout=dropout)
 class NaiveRelationNetwork(NaiveMultiSetModel):
-    def _init_block(self, input_size, latent_size, hidden_size, num_heads, ln, remove_diag, pool, equi, dropout):
+    def _init_block(self, input_size, latent_size, hidden_size, num_heads, remove_diag, ln, pool, equi, dropout):
         return RNBlock(latent_size, hidden_size, pool=pool, ln=ln, remove_diag=remove_diag, equi=equi, dropout=dropout)
 class NaiveRFF(NaiveMultiSetModel):
-    def _init_block(self, input_size, latent_size, hidden_size, num_heads, ln, remove_diag, equi, dropout):
+    def _init_block(self, input_size, latent_size, hidden_size, num_heads, ln, equi, dropout):
         return RFFBlock(latent_size, hidden_size, ln=ln, dropout=dropout)
 
 class DeepSet(nn.Module):
