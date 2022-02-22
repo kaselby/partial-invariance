@@ -16,6 +16,28 @@ from models2 import *
 from generators import ImageCooccurenceGenerator, OmniglotCooccurenceGenerator, CIFARCooccurenceGenerator
 
 
+SS_SCHEDULE_15=[{'set_size':(1,5), 'steps':10000}, {'set_size':(3,10), 'steps':5000}, {'set_size':(8,15), 'steps':5000}]
+SS_SCHEDULE_30=[{'set_size':(1,5), 'steps':10000}, {'set_size':(3,10), 'steps':5000}, {'set_size':(8,15), 'steps':5000}, {'set_size':(10,30), 'steps':5000}]
+SS_SCHEDULE_75=[{'set_size':(1,5), 'steps':10000}, {'set_size':(3,10), 'steps':5000}, {'set_size':(8,15), 'steps':5000}, {'set_size':(10,30), 'steps':5000}, {'set_size':(25,50), 'steps':5000}, {'set_size':(50,75), 'steps':5000}]
+SS_SCHEDULES={15:SS_SCHEDULE_15, 30:SS_SCHEDULE_30, 75:SS_SCHEDULE_75}
+
+class SetSizeScheduler():
+    def __init__(self, schedule, step_mult=1):
+        self.schedule=schedule
+        self.N = sum([entry['steps'] for entry in schedule])
+        self.step_mult=step_mult
+
+    def get_set_size(self, iter_id):
+        if iter_id >= 0:    #return last set size for iter_id -1
+            step=0
+            for entry in self.schedule:
+                step += entry['steps']
+                if self.step_mult * iter_id < step:
+                    return entry['set_size']
+        return self.schedule[-1]['set_size']    #fallback for now
+        
+
+
 '''
 class ImageCooccurenceDataset(IterableDataset):
     def __init__(self, dataset, set_size):
@@ -378,7 +400,7 @@ def load_cifar(root_folder="./data"):
 def poisson_loss(outputs, targets):
     return -1 * (targets * outputs - torch.exp(outputs)).mean()
 
-def train(model, optimizer, train_generator, val_generator, test_generator, steps, scheduler=None, poisson=False, batch_size=64, eval_every=500, save_every=2000, eval_steps=200, test_steps=500, checkpoint_dir=None, data_kwargs={}):
+def train(model, optimizer, train_generator, val_generator, test_generator, steps, scheduler=None, ss_schedule=None, poisson=False, batch_size=64, eval_every=500, save_every=2000, eval_steps=200, test_steps=500, checkpoint_dir=None, data_kwargs={}):
     losses = []
     eval_accs = []
     initial_step=1
@@ -395,6 +417,10 @@ def train(model, optimizer, train_generator, val_generator, test_generator, step
     avg_loss=0
     for i in tqdm.tqdm(range(initial_step, steps)):
         optimizer.zero_grad()
+
+        if ss_schedule is not None:
+            set_size = ss_schedule.get_set_size(i)
+            data_kwargs['set_size'] = set_size
 
         (X,Y), target = train_generator(batch_size, **data_kwargs)
 
@@ -420,6 +446,9 @@ def train(model, optimizer, train_generator, val_generator, test_generator, step
                 os.remove(checkpoint_path)
             torch.save({'model':model,'optimizer':optimizer, 'scheduler':scheduler, 'step': i, 'losses':losses, 'accs': eval_accs}, checkpoint_path)
     
+    if ss_schedule is not None:
+        set_size = ss_schedule.get_set_size(-1)
+        data_kwargs['set_size'] = set_size
     test_acc = evaluate(model, test_generator, test_steps, poisson, batch_size, data_kwargs)
     
     return model, (losses, eval_accs, test_acc)
@@ -504,6 +533,7 @@ def parse_args():
     parser.add_argument('--warmup_steps', type=int, default=1000)
     parser.add_argument('--ln', action='store_true')
     parser.add_argument('--decoder_layers', type=int, default=0)
+    parser.add_argument('--ss_schedule', type=int, choices=[-1, 15, 30, 75], default=-1)
     return parser.parse_args()
 
 if __name__ == '__main__':
@@ -628,6 +658,11 @@ if __name__ == '__main__':
         raise NotImplementedError("Model type not recognized.")
     model = MultiSetImageModel(conv_encoder, set_model).to(device)
 
+    ss_schedule=None
+    if args.ss_schedule in SS_SCHEDULES:
+        ss_schedule = SetSizeScheduler(SS_SCHEDULES[args.ss_schedule], step_mult=torch.cuda.device_count()/args.grad_steps)
+        steps = ss_schedule.N
+
     batch_size = args.batch_size
     steps = args.steps
     eval_every=args.eval_every
@@ -647,7 +682,7 @@ if __name__ == '__main__':
     scheduler = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=1e-8, total_iters=args.warmup_steps) if args.warmup_steps > 0 else None
     checkpoint_dir = os.path.join(args.checkpoint_dir, args.checkpoint_name) if args.checkpoint_name is not None else None
     model, (losses, accs, test_acc) = train(model, optimizer, train_generator, val_generator, test_generator, steps, 
-        scheduler=scheduler, batch_size=batch_size, poisson=args.poisson, checkpoint_dir=checkpoint_dir, data_kwargs=data_kwargs, eval_every=eval_every, eval_steps=eval_steps)
+        scheduler=scheduler, ss_schedule=ss_schedule, batch_size=batch_size, poisson=args.poisson, checkpoint_dir=checkpoint_dir, data_kwargs=data_kwargs, eval_every=eval_every, eval_steps=eval_steps)
 
     print("Test Accuracy:", test_acc)
 
