@@ -17,7 +17,7 @@ steps=100000
 
 warmup=(-1)
 lrs=("1e-3" "1e-4")
-nblocks=(2 4 6)
+nblocks=(4)
 dls=(1)
 latents=(16 32)
 
