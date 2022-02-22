@@ -22,9 +22,9 @@ from train_omniglot import ConvEncoder
 #def fasttext_encoder_preproc():
 
 
-SS_SCHEDULE_15=[{'set_size':(1,5), 'steps':20000}, {'set_size':(3,10), 'steps':20000}, {'set_size':(8,15), 'steps':10000}]
-SS_SCHEDULE_30=[{'set_size':(1,5), 'steps':20000}, {'set_size':(3,10), 'steps':10000}, {'set_size':(8,15), 'steps':10000}, {'set_size':(10,30), 'steps':10000}]
-SS_SCHEDULE_75=[{'set_size':(1,5), 'steps':20000}, {'set_size':(3,10), 'steps':10000}, {'set_size':(8,15), 'steps':10000}, {'set_size':(10,30), 'steps':10000}, {'set_size':(25,50), 'steps':10000}, {'set_size':(50,75), 'steps':15000}]
+SS_SCHEDULE_15=[{'set_size':(1,5), 'steps':10000}, {'set_size':(3,10), 'steps':5000}, {'set_size':(8,15), 'steps':5000}]
+SS_SCHEDULE_30=[{'set_size':(1,5), 'steps':10000}, {'set_size':(3,10), 'steps':5000}, {'set_size':(8,15), 'steps':5000}, {'set_size':(10,30), 'steps':5000}]
+SS_SCHEDULE_75=[{'set_size':(1,5), 'steps':10000}, {'set_size':(3,10), 'steps':5000}, {'set_size':(8,15), 'steps':5000}, {'set_size':(10,30), 'steps':5000}, {'set_size':(25,50), 'steps':5000}, {'set_size':(50,75), 'steps':5000}]
 SS_SCHEDULES={15:SS_SCHEDULE_15, 30:SS_SCHEDULE_30, 75:SS_SCHEDULE_75}
 
 class SetSizeScheduler():
@@ -151,7 +151,9 @@ def train(model, optimizer, train_dataset, val_dataset, test_dataset, steps, sch
                 os.remove(checkpoint_path)
             torch.save({'model':model,'optimizer':optimizer, 'scheduler':scheduler, 'step': i, 'losses':train_losses, 'accs': eval_accs, 'initial_acc': initial_acc}, checkpoint_path)
 
-    
+    if ss_schedule is not None:
+        set_size = ss_schedule.get_set_size(-1)
+        data_kwargs['set_size'] = set_size
     test_acc = evaluate(model, test_dataset, test_steps, batch_size, data_kwargs)
     
     return model, (train_losses, eval_accs, test_acc, initial_acc)
@@ -241,7 +243,7 @@ if __name__ == '__main__':
         src_emb = fasttext.load_model(os.path.join(dataset_dir, "cc.en.300.bin"))
         tgt_emb = fasttext.load_model(os.path.join(dataset_dir, "cc.fr.300.bin"))
         pairs = load_pairs(os.path.join(dataset_dir, "valid_en-fr.txt"))
-        train_pairs, test_pairs = split_pairs(pairs, 0.1)
+        train_pairs, val_pairs, test_pairs = split_pairs(pairs, 0.1,0.1)
         train_generator = EmbeddingAlignmentGenerator(src_emb, tgt_emb, train_pairs, device=device)
         val_generator = train_generator
         test_generator = EmbeddingAlignmentGenerator(src_emb, tgt_emb, test_pairs, device=device)

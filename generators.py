@@ -497,10 +497,12 @@ def load_pairs(pair_file):
     pairs = [line.strip().split(" ") for line in lines]
     return pairs
 
-def split_pairs(pairs, test_frac):
+def split_pairs(pairs, val_frac, test_frac):
     N = len(pairs)
-    r = int(round(test_frac * N))
-    return pairs[:r], pairs[r:]
+    shuffled_pairs = sample(pairs, k=N)
+    r1 = int(round(val_frac * N))
+    r2 = int(round(test_frac * N))
+    return shuffled_pairs[:N-r1-r2], shuffled_pairs[N-r1-r2:N-r2], shuffled_pairs[N-r2:]
 
 import fasttext
 class EmbeddingAlignmentGenerator():
