@@ -22,9 +22,9 @@ from train_omniglot import ConvEncoder
 #def fasttext_encoder_preproc():
 
 
-SS_SCHEDULE_15=[{'set_size':(1,5), 'steps':4000}, {'set_size':(3,10), 'steps':6000}, {'set_size':(8,15), 'steps':10000}]
-SS_SCHEDULE_30=[{'set_size':(1,5), 'steps':4000}, {'set_size':(3,10), 'steps':6000}, {'set_size':(8,15), 'steps':10000}, {'set_size':(10,30), 'steps':20000}]
-SS_SCHEDULE_75=[{'set_size':(1,5), 'steps':4000}, {'set_size':(3,10), 'steps':6000}, {'set_size':(8,15), 'steps':6000}, {'set_size':(10,30), 'steps':6000}, {'set_size':(25,50), 'steps':10000}, {'set_size':(50,75), 'steps':15000}]
+SS_SCHEDULE_15=[{'set_size':(1,5), 'steps':15000}, {'set_size':(3,10), 'steps':10000}, {'set_size':(8,15), 'steps':10000}]
+SS_SCHEDULE_30=[{'set_size':(1,5), 'steps':15000}, {'set_size':(3,10), 'steps':10000}, {'set_size':(8,15), 'steps':10000}, {'set_size':(10,30), 'steps':10000}]
+SS_SCHEDULE_75=[{'set_size':(1,5), 'steps':15000}, {'set_size':(3,10), 'steps':10000}, {'set_size':(8,15), 'steps':10000}, {'set_size':(10,30), 'steps':10000}, {'set_size':(25,50), 'steps':10000}, {'set_size':(50,75), 'steps':15000}]
 SS_SCHEDULES={15:SS_SCHEDULE_15, 30:SS_SCHEDULE_30, 75:SS_SCHEDULE_75}
 
 class SetSizeScheduler():
