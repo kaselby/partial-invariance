@@ -28,16 +28,17 @@ SS_SCHEDULE_75=[{'set_size':(1,5), 'steps':4000}, {'set_size':(3,10), 'steps':60
 SS_SCHEDULES={15:SS_SCHEDULE_15, 30:SS_SCHEDULE_30, 75:SS_SCHEDULE_75}
 
 class SetSizeScheduler():
-    def __init__(self, schedule):
+    def __init__(self, schedule, step_mult=1):
         self.schedule=schedule
         self.N = sum([entry['steps'] for entry in schedule])
+        self.step_mult=step_mult
 
     def get_set_size(self, iter_id):
         if iter_id >= 0:    #return last set size for iter_id -1
             step=0
             for entry in self.schedule:
                 step += entry['steps']
-                if iter_id < step:
+                if self.step_mult * iter_id < step:
                     return entry['set_size']
         return self.schedule[-1]['set_size']    #fallback for now
         
@@ -344,6 +345,11 @@ if __name__ == '__main__':
             model = make_model(set_model, text_model=args.text_model, img_model=args.img_model, embed_dim=args.embed_dim).to(device)
         else:
             model = set_model.to(device)
+    
+    ss_schedule=None
+    if args.ss_schedule in SS_SCHEDULES:
+        ss_schedule = SetSizeScheduler(SS_SCHEDULES[args.ss_schedule], step_mult=torch.cuda.device_count()/args.grad_steps)
+        steps = ss_schedule.N
 
     batch_size = args.batch_size
     steps = args.steps
@@ -363,7 +369,6 @@ if __name__ == '__main__':
     optimizer = torch.optim.Adam(model.parameters(), args.lr)
     scheduler = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=1e-8, total_iters=args.warmup_steps) if args.warmup_steps > 0 else None
     checkpoint_dir = os.path.join(args.checkpoint_dir, args.checkpoint_name) if args.checkpoint_name is not None else None
-    ss_schedule = None if args.ss_schedule not in SS_SCHEDULES else SetSizeScheduler(SS_SCHEDULES[args.ss_schedule])
     data_kwargs = {'set_size':args.set_size, 'overlap_mult':args.overlap_mult}
     if args.overlap_mult > 0:
         data_kwargs['overlap'] = True
