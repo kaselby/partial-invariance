@@ -32,6 +32,7 @@ dl=${20}
 residual=${21}
 scale_out=${22}
 vardim=${23}
+bs=${24}
 
 if [ $target == "w1" ]
 then
