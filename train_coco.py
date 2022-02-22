@@ -243,9 +243,9 @@ if __name__ == '__main__':
         src_emb = fasttext.load_model(os.path.join(dataset_dir, "cc.en.300.bin"))
         tgt_emb = fasttext.load_model(os.path.join(dataset_dir, "cc.fr.300.bin"))
         pairs = load_pairs(os.path.join(dataset_dir, "valid_en-fr.txt"))
-        train_pairs, val_pairs, test_pairs = split_pairs(pairs, 0.1,0.1)
+        train_pairs, val_pairs, test_pairs = split_pairs(pairs, 0.1, 0.1)
         train_generator = EmbeddingAlignmentGenerator(src_emb, tgt_emb, train_pairs, device=device)
-        val_generator = train_generator
+        val_generator = EmbeddingAlignmentGenerator(src_emb, tgt_emb, val_pairs, device=device)
         test_generator = EmbeddingAlignmentGenerator(src_emb, tgt_emb, test_pairs, device=device)
         input_size = 300
     
