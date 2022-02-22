@@ -831,6 +831,7 @@ class RNBlock(nn.Module):
 
 class SingleRNBlock(nn.Module):
     def __init__(self, latent_size, hidden_size, ln=False, pool='sum', dropout=0.1, equi=False):
+        super().__init__()
         self.rn = RNBlock(latent_size, hidden_size, ln=False, pool='sum', dropout=0.1, equi=False)
     
     def forward(self, X):
