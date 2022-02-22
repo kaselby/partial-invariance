@@ -613,7 +613,7 @@ if __name__ == '__main__':
             'pool': 'max',
             'decoder_layers': args.decoder_layers
         }
-        set_model = NaiveRelationNetwork(input_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
+        set_model = NaiveRelationNetwork(args.latent_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
     elif args.model == 'naive-rff':
         model_kwargs={
             'ln':args.ln,
@@ -623,7 +623,7 @@ if __name__ == '__main__':
             'equi':False,
             'decoder_layers': args.decoder_layers
         }
-        set_model = NaiveRFF(input_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
+        set_model = NaiveRFF(args.latent_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
     else:
         raise NotImplementedError("Model type not recognized.")
     model = MultiSetImageModel(conv_encoder, set_model).to(device)
