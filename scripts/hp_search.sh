@@ -14,8 +14,11 @@ ss1=100
 ss2=150
 merge="concat"
 steps=100000
+residual="base"
+scale_out="none"
+warmup=-1
 
-warmup=(-1)
+vardims=(0 1)
 lrs=("1e-3" "1e-4")
 nblocks=(4)
 dls=(1)
@@ -25,7 +28,7 @@ for lr in "${lrs[@]}"
 do
     for nb in "${nblocks[@]}"
     do
-        for wsteps in "${warmup[@]}"
+        for vardim in "${vardims[@]}"
         do
             for dl in "${dls[@]}"
             do
@@ -33,7 +36,7 @@ do
                 do
                     for (( i = 0 ; i < $n_runs ; i++ ))
                     do
-                        sbatch scripts/train.sh "${run_name}_kl_ls${ls}_nb${nb}_lr${lr}/${i}" $target $data -1 1 $dim $ls $(( 2*latent_size )) $lr $clip "csab" $basedir 0 $nb $ss1 $ss2 $merge $wsteps $steps $dl
+                        sbatch scripts/train.sh "${run_name}_kl_ls${ls}_lr${lr}_vardim${vardim}/${i}" $target $data -1 1 $dim $ls $(( 2*latent_size )) $lr $clip "csab" $basedir 0 $nb $ss1 $ss2 $merge $warmup $steps $dl $residual $scale_out $vardim
                     done
                 done
             done
