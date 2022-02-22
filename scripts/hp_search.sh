@@ -2,8 +2,8 @@
 
 n_runs=3
 
-target='mi'
-data='corr'
+target='kl'
+data='gmm'
 dim=2
 latent_size=16
 hidden_size=32
@@ -13,12 +13,13 @@ run_name=$1
 ss1=100
 ss2=150
 merge="concat"
-steps=120000
+steps=100000
 
-warmup=(-1 20000 40000)
-lrs=("1e-3")
-nblocks=(3 4 5 6)
-dls=(0 1)
+warmup=(-1)
+lrs=("1e-3" "1e-4")
+nblocks=(2 4 6)
+dls=(1)
+latents=(16 32)
 
 for lr in "${lrs[@]}"
 do
@@ -28,9 +29,12 @@ do
         do
             for dl in "${dls[@]}"
             do
-                for (( i = 0 ; i < $n_runs ; i++ ))
+                for ls in "${latents[@]}"
                 do
-                    sbatch scripts/train.sh "${run_name}_${lr}_${nb}_${dl}_w${wsteps}/${i}" $target $data -1 1 $dim $latent_size $hidden_size $lr $clip "csab" $basedir 0 $nb $ss1 $ss2 $merge $wsteps $steps $dl
+                    for (( i = 0 ; i < $n_runs ; i++ ))
+                    do
+                        sbatch scripts/train.sh "${run_name}_kl_ls${ls}_nb${nb}_lr${lr}/${i}" $target $data -1 1 $dim $ls $(( 2*latent_size )) $lr $clip "csab" $basedir 0 $nb $ss1 $ss2 $merge $wsteps $steps $dl
+                    done
                 done
             done
         done
