@@ -835,7 +835,7 @@ class SingleRNBlock(nn.Module):
         self.rn = RNBlock(latent_size, hidden_size, ln=False, pool='sum', dropout=0.1, equi=False)
     
     def forward(self, X):
-        return self.rn(X)
+        return self.rn(X, X)
 
 class MultiRNBlock(nn.Module):
     def __init__(self, latent_size, hidden_size, remove_diag=False, pool='max', ln=False, weight_sharing='none', **kwargs):
