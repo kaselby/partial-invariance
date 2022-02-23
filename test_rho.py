@@ -52,10 +52,11 @@ if __name__ == '__main__':
                 for i in range(rho.size(0)):
                     X, T = generator(N, n=args.n, corr=rho[i])
                     out = model(*X).squeeze(-1)
-                    if model_args.scale_out == "sq":
-                        out = torch.pow(out, 2)
-                    elif model_args.scale_out == "exp":
-                        out = torch.exp(out)
+                    if getattr(model_args, "scale_out", None) is not None:
+                        if model_args.scale_out == "sq":
+                            out = torch.pow(out, 2)
+                        elif model_args.scale_out == "exp":
+                            out = torch.exp(out)
                     mi_model[i] += out.mean()
                 n_runs += 1
         mi_model /= n_runs
