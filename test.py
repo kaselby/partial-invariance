@@ -88,7 +88,7 @@ if __name__ == '__main__':
                         model = torch.load(model_path)
                         model_args = torch.load(log_path)["args"]
                         model_loss_i = evaluate(model, generator, label_fct, 
-                            sample_kwargs=sample_kwargs, steps=args.steps, criterion=nn.L1Loss(), normalize=normalize, exact_loss=exact_loss, seed=seed, scale_output=model_args.scale_out)
+                            sample_kwargs=sample_kwargs, steps=args.steps, criterion=nn.L1Loss(), normalize=normalize, exact_loss=exact_loss, seed=seed, scale_output=getattr(model_args, "scale_out", "none"))
                         results[run_name][name]['all_losses'].append(model_loss_i)
                         avg_loss += model_loss_i
                         print("%s-%s Loss: %f" % (run_name, run_num, model_loss_i))
@@ -100,7 +100,7 @@ if __name__ == '__main__':
                 model = torch.load(os.path.join(run_path, "model.pt"))
                 model_args = torch.load(log_path)["args"]
                 model_loss = evaluate(model, generator, label_fct, 
-                    sample_kwargs=sample_kwargs, steps=args.steps, criterion=nn.L1Loss(), normalize=normalize, exact_loss=exact_loss, seed=seed, scale_output=model_args.scale_out)
+                    sample_kwargs=sample_kwargs, steps=args.steps, criterion=nn.L1Loss(), normalize=normalize, exact_loss=exact_loss, seed=seed, scale_output=getattr(model_args, "scale_out", "none"))
                 print("%s Loss: %f" % (run_name, model_loss))
                 results[run_name][name] = model_loss
         for baseline_name, baseline_fct in baselines.items():
