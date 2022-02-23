@@ -43,18 +43,22 @@ if __name__ == '__main__':
             mi_kraskov[i] = kraskov_mi1(*X).mean()
         modeldir = os.path.join(args.basedir, "mi", args.run_name)
         all_runs = get_runs(modeldir)
+        n_runs = 0
         for run_num in all_runs:
-            model = torch.load(os.path.join(modeldir, run_num, "model.pt"))
-            model_args = torch.load(os.path.join(modeldir, run_num, "logs.pt"))['args']
-            for i in range(rho.size(0)):
-                X, T = generator(N, n=args.n, corr=rho[i])
-                out = model(*X).squeeze(-1)
-                if model_args.scale_out == "sq":
-                    out = torch.pow(out, 2)
-                elif model_args.scale_out == "exp":
-                    out = torch.exp(out)
-                mi_model[i] += out.mean()
-            mi_model /= len(all_runs)
+            model_path = os.path.join(modeldir, run_num, "model.pt")
+            if os.path.exists(model_path):
+                model = torch.load(os.path.join(modeldir, run_num, "model.pt"))
+                model_args = torch.load(os.path.join(modeldir, run_num, "logs.pt"))['args']
+                for i in range(rho.size(0)):
+                    X, T = generator(N, n=args.n, corr=rho[i])
+                    out = model(*X).squeeze(-1)
+                    if model_args.scale_out == "sq":
+                        out = torch.pow(out, 2)
+                    elif model_args.scale_out == "exp":
+                        out = torch.exp(out)
+                    mi_model[i] += out.mean()
+                n_runs += 1
+        mi_model /= n_runs
 
 
     torch.save({'rho':rho.cpu(), 'true':mi_true.cpu(), 'model':mi_model.cpu(), 'kraskov':mi_kraskov.cpu()}, 
