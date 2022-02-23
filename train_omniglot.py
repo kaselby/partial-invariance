@@ -660,7 +660,7 @@ if __name__ == '__main__':
 
     ss_schedule=None
     if args.ss_schedule in SS_SCHEDULES:
-        ss_schedule = SetSizeScheduler(SS_SCHEDULES[args.ss_schedule], step_mult=torch.cuda.device_count()/args.grad_steps)
+        ss_schedule = SetSizeScheduler(SS_SCHEDULES[args.ss_schedule], step_mult=torch.cuda.device_count())
         steps = ss_schedule.N
 
     batch_size = args.batch_size
