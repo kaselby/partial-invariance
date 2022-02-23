@@ -24,6 +24,7 @@ from train_omniglot import ConvEncoder
 
 SS_SCHEDULE_15=[{'set_size':(1,5), 'steps':10000}, {'set_size':(3,10), 'steps':5000}, {'set_size':(8,15), 'steps':5000}]
 SS_SCHEDULE_30=[{'set_size':(1,5), 'steps':10000}, {'set_size':(3,10), 'steps':5000}, {'set_size':(8,15), 'steps':5000}, {'set_size':(10,30), 'steps':5000}]
+SS_SCHEDULE_50=[{'set_size':(1,5), 'steps':10000}, {'set_size':(3,10), 'steps':5000}, {'set_size':(8,15), 'steps':5000}, {'set_size':(10,30), 'steps':5000}, {'set_size':(25,50), 'steps':10000}]
 SS_SCHEDULE_75=[{'set_size':(1,5), 'steps':10000}, {'set_size':(3,10), 'steps':5000}, {'set_size':(8,15), 'steps':5000}, {'set_size':(10,30), 'steps':5000}, {'set_size':(25,50), 'steps':5000}, {'set_size':(50,75), 'steps':5000}]
 SS_SCHEDULES={15:SS_SCHEDULE_15, 30:SS_SCHEDULE_30, 75:SS_SCHEDULE_75}
 
@@ -187,7 +188,7 @@ def parse_args():
     parser.add_argument('--latent_size', type=int, default=256)
     parser.add_argument('--hidden_size', type=int, default=512)
     parser.add_argument('--set_size', type=int, nargs=2, default=[6,10])
-    parser.add_argument('--ss_schedule', type=int, choices=[-1, 15, 30, 75], default=-1)
+    parser.add_argument('--ss_schedule', type=int, choices=[-1, 15, 30, 50, 75], default=-1)
     parser.add_argument('--basedir', type=str, default="final-runs2")
     parser.add_argument('--data_dir', type=str, default='./data')
     parser.add_argument('--eval_every', type=int, default=500)
