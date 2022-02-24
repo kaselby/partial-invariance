@@ -300,7 +300,7 @@ if __name__ == '__main__':
                 'weight_sharing':args.weight_sharing,
                 'decoder_layers':args.decoder_layers
             }
-            model = NaiveSetTransformer(**model_kwargs)
+            model = NaiveSetTransformer(**model_kwargs).to(device)
         elif args.model == 'naive-rn':
             model_kwargs={
                 'ln':True,
@@ -311,7 +311,7 @@ if __name__ == '__main__':
                 'pool': 'max',
                 'decoder_layers': args.decoder_layers
             }
-            model = NaiveRelationNetwork(args.dim, args.latent_size, args.hidden_size, 1, **model_kwargs)
+            model = NaiveRelationNetwork(args.dim, args.latent_size, args.hidden_size, 1, **model_kwargs).to(device)
         elif args.model == 'naive-rff':
             model_kwargs={
                 'ln':True,
@@ -321,7 +321,7 @@ if __name__ == '__main__':
                 'equi':False,
                 'decoder_layers': args.decoder_layers
             }
-            model = NaiveRFF(args.dim, args.latent_size, args.hidden_size, 1, **model_kwargs)
+            model = NaiveRFF(args.dim, args.latent_size, args.hidden_size, 1, **model_kwargs).to(device)
         else:
             raise NotImplementedError()
     else:
