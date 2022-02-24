@@ -288,6 +288,7 @@ if __name__ == '__main__':
         elif args.model == 'naive':
             model_kwargs={
                 'ln':True,
+                'remove_diag': True,
                 'num_blocks':args.num_blocks,
                 'equi':args.equi, 
                 'output_size':1,
@@ -302,7 +303,7 @@ if __name__ == '__main__':
             model = NaiveSetTransformer(**model_kwargs)
         elif args.model == 'naive-rn':
             model_kwargs={
-                'ln':args.ln,
+                'ln':True,
                 'num_blocks':args.num_blocks,
                 'num_heads':args.num_heads,
                 'dropout':args.dropout,
@@ -313,7 +314,7 @@ if __name__ == '__main__':
             set_model = NaiveRelationNetwork(args.dim, args.latent_size, args.hidden_size, 1, **model_kwargs)
         elif args.model == 'naive-rff':
             model_kwargs={
-                'ln':args.ln,
+                'ln':True,
                 'num_blocks':args.num_blocks,
                 'num_heads':args.num_heads,
                 'dropout':args.dropout,
