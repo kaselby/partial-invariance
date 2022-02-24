@@ -66,4 +66,4 @@ then
 fi
 
 
-python3 train.py $run_name --target $target --data $data --model $model --num_inds $num_inds --dim $is --latent_size $lts --hidden_size $hs --lr $lr --clip $clip --basedir $basedir --num_blocks $nb --set_size $ss1 $ss2 --merge $merge --warmup_steps $warmup --steps $steps --decoder_layers $dl --scale_out $scale_out --residual $residual  --checkpoint_name $SLURM_JOB_ID $argstring 
+python3 train.py $run_name --target $target --data $data --model $model --num_inds $num_inds --dim $is --latent_size $lts --hidden_size $hs --lr $lr --clip $clip --basedir $basedir --num_blocks $nb --set_size $ss1 $ss2 --merge $merge --warmup_steps $warmup --steps $steps --decoder_layers $dl --scale_out $scale_out --residual $residual --batch_size ${bs} --checkpoint_name $SLURM_JOB_ID $argstring 

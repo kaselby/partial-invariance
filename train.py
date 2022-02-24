@@ -1,5 +1,5 @@
-from models2 import MultiSetTransformer, PINE, MultiRNModel, CrossOnlyModel
-from models import MultiSetTransformer1, EquiMultiSetTransformer1
+from models2 import *
+#from models import MultiSetTransformer1, EquiMultiSetTransformer1
 from utils import *
 from generators import *
 import matplotlib.pyplot as plt
@@ -299,7 +299,28 @@ if __name__ == '__main__':
                 'weight_sharing':args.weight_sharing,
                 'decoder_layers':args.decoder_layers
             }
-            model = NaiveMultiSetModel(**model_kwargs)
+            model = NaiveSetTransformer(**model_kwargs)
+        elif args.model == 'naive-rn':
+            model_kwargs={
+                'ln':args.ln,
+                'num_blocks':args.num_blocks,
+                'num_heads':args.num_heads,
+                'dropout':args.dropout,
+                'equi':False,
+                'pool': 'max',
+                'decoder_layers': args.decoder_layers
+            }
+            set_model = NaiveRelationNetwork(args.dim, args.latent_size, args.hidden_size, 1, **model_kwargs)
+        elif args.model == 'naive-rff':
+            model_kwargs={
+                'ln':args.ln,
+                'num_blocks':args.num_blocks,
+                'num_heads':args.num_heads,
+                'dropout':args.dropout,
+                'equi':False,
+                'decoder_layers': args.decoder_layers
+            }
+            set_model = NaiveRFF(args.dim, args.latent_size, args.hidden_size, 1, **model_kwargs)
         else:
             raise NotImplementedError()
     else:
