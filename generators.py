@@ -497,9 +497,10 @@ def load_pairs(pair_file):
     pairs = [line.strip().split(" ") for line in lines]
     return pairs
 
+import random
 def split_pairs(pairs, val_frac, test_frac):
     N = len(pairs)
-    shuffled_pairs = sample(pairs, k=N)
+    shuffled_pairs = random.sample(pairs, k=N)
     r1 = int(round(val_frac * N))
     r2 = int(round(test_frac * N))
     return shuffled_pairs[:N-r1-r2], shuffled_pairs[N-r1-r2:N-r2], shuffled_pairs[N-r2:]
