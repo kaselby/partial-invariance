@@ -508,7 +508,7 @@ def pretrain(encoder, n_classes, train_dataset, val_dataset, steps, lr, batch_si
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('run_name', type=str)
-    parser.add_argument('--model', type=str, default='csab', choices=['csab', 'rn', 'pine', 'naive', 'cross-only', 'naive-rn', 'naive-rff'])
+    parser.add_argument('--model', type=str, default='csab', choices=['csab', 'rn', 'pine', 'naive', 'cross-only', 'naive-rn', 'naive-rff', 'union', 'union-enc'])
     parser.add_argument('--checkpoint_dir', type=str, default="/checkpoint/kaselby")
     parser.add_argument('--checkpoint_name', type=str, default=None)
     parser.add_argument('--num_blocks', type=int, default=2)
@@ -654,6 +654,15 @@ if __name__ == '__main__':
             'decoder_layers': args.decoder_layers
         }
         set_model = NaiveRFF(args.latent_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
+    elif args.model == 'union' or args.model == 'union-enc':
+        model_kwargs={
+            'ln':args.ln,
+            'num_blocks':args.num_blocks,
+            'num_heads':args.num_heads,
+            'dropout':args.dropout,
+            'set_encoding': args.model == 'union-enc'
+        }
+        set_model = UnionTransformer(args.latent_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
     else:
         raise NotImplementedError("Model type not recognized.")
     model = MultiSetImageModel(conv_encoder, set_model).to(device)
