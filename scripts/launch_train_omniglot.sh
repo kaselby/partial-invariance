@@ -38,7 +38,7 @@ do
     #sbatch scripts/train_omniglot.sh "${run_name}_naive-rn/${i}" $dataset $pretrain $lr "naive-rn" $weight_sharing $merge $warmup_steps $latent_size $hidden_size $num_blocks $batch_size $steps $set_size1 $set_size2 $decoder_layers $dropout $ln $anneal_ss
     #sbatch scripts/train_omniglot.sh "${run_name}_naive-rff/${i}" $dataset $pretrain $lr "naive-rff" $weight_sharing $merge $warmup_steps $latent_size $hidden_size $num_blocks $batch_size $steps $set_size1 $set_size2 $decoder_layers $dropout $ln $anneal_ss
 
-    sbatch scripts/train_omniglot.sh "${run_name}_union/${i}" $dataset $pretrain $lr "union-enc" $weight_sharing $merge $warmup_steps $latent_size $hidden_size $num_blocks $batch_size $steps $set_size1 $set_size2 $decoder_layers $dropout $ln $anneal_ss
+    sbatch scripts/train_omniglot.sh "${run_name}_union/${i}" $dataset $pretrain $lr "union" $weight_sharing $merge $warmup_steps $latent_size $hidden_size $num_blocks $batch_size $steps $set_size1 $set_size2 $decoder_layers $dropout $ln $anneal_ss
     sbatch scripts/train_omniglot.sh "${run_name}_union-enc/${i}" $dataset $pretrain $lr "union-enc" $weight_sharing $merge $warmup_steps $latent_size $hidden_size $num_blocks $batch_size $steps $set_size1 $set_size2 $decoder_layers $dropout $ln $anneal_ss
 
     #sbatch scripts/train_omniglot.sh "${run_name}_csab_none/${i}" $dataset $pretrain $lr "csab" "none"

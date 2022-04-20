@@ -519,7 +519,7 @@ class UnionTransformer(nn.Module):
         set_encoding=False, dropout=0):
         self.input_size = input_size
         self.proj = None if input_size == latent_size else nn.Linear(input_size, latent_size) 
-        self.enc = nn.Sequential(*[SAB(latent_size, latent_size, hidden_size, output_size, num_heads, ln=ln, dropout=dropout) for i in range(num_blocks)])
+        self.enc = nn.Sequential(*[SAB(latent_size, latent_size, hidden_size, num_heads, ln=ln, dropout=dropout) for i in range(num_blocks)])
         self.pool_method = pool
         if self.pool_method == "pma":
             self.pool = PMA(latent_size, hidden_size, num_heads, 1, ln=ln)
