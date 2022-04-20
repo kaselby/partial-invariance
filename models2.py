@@ -517,6 +517,7 @@ class MultiSetTransformer(nn.Module):
 class UnionTransformer(nn.Module):
     def __init__(self, input_size, latent_size, hidden_size, output_size, num_blocks, num_heads, decoder_layers=1, ln=False, pool='pma', 
         set_encoding=False, dropout=0):
+        super().__init__()
         self.input_size = input_size
         self.proj = None if input_size == latent_size else nn.Linear(input_size, latent_size) 
         self.enc = nn.Sequential(*[SAB(latent_size, latent_size, hidden_size, num_heads, ln=ln, dropout=dropout) for i in range(num_blocks)])
