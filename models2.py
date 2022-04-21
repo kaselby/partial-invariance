@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.init
 import math
 
 from utils import cross_knn_inds, linear_block
@@ -527,8 +528,10 @@ class UnionTransformer(nn.Module):
         self.dec = self._make_decoder(latent_size, hidden_size, output_size, decoder_layers)
         self.use_set_encoding = set_encoding
         if set_encoding:
-            self.X_encoding = nn.Parameter(torch.Tensor(latent_size))
-            self.Y_encoding = nn.Parameter(torch.Tensor(latent_size))
+            self.X_encoding = nn.Parameter(torch.empty(latent_size))
+            self.Y_encoding = nn.Parameter(torch.empty(latent_size))
+            torch.nn.init.normal_(self.X_encoding)
+            torch.nn.init.normal_(self.Y_encoding)
 
     def _make_decoder(self, latent_size, hidden_size, output_size, n_layers):
         if n_layers == 0:
