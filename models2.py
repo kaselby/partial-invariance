@@ -548,10 +548,15 @@ class UnionTransformer(nn.Module):
             )
 
     def forward(self, X, Y):
+        ZX, ZY = X,Y
+        if self.proj is not None:
+            ZX, ZY = self.proj(ZX), self.proj(ZY)
+
         if self.use_set_encoding:
-            X += self.X_encoding
-            Y += self.Y_encoding
-        XY = torch.cat([X,Y], dim=1)
+            ZX += self.X_encoding
+            ZY += self.Y_encoding
+
+        XY = torch.cat([ZX,ZY], dim=1)
         Z = self.enc(XY)
         if getattr(self, "pool_method", None) is None or self.pool_method == "pma":
             Z = self.pool(Z)
