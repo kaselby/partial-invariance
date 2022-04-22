@@ -32,4 +32,7 @@ do
     sbatch scripts/train_gan.sh "${run_name}_sum-merge/$i" "csab" "sum" $data $n $latent_size $hidden_size $bs $lr $steps $set_size1 $set_size2 $warmup_steps $weight_sharing $ln $num_blocks $decoder_layers $basedir
     sbatch scripts/train_gan.sh "${run_name}_naive-rn/$i" "naive-rn" $merge $data $n $latent_size $hidden_size $bs $lr $steps $set_size1 $set_size2 $warmup_steps $weight_sharing $ln $num_blocks $decoder_layers $basedir
     sbatch scripts/train_gan.sh "${run_name}_naive-rff/$i" "naive-rff" $merge $data $n $latent_size $hidden_size $bs $lr $steps $set_size1 $set_size2 $warmup_steps $weight_sharing $ln $num_blocks $decoder_layers $basedir
+
+    sbatch scripts/train_gan.sh "${run_name}_union/$i" "union" $merge $data $n $latent_size $hidden_size $bs $lr $steps $set_size1 $set_size2 $warmup_steps $weight_sharing $ln $num_blocks $decoder_layers $basedir
+    sbatch scripts/train_gan.sh "${run_name}_union-enc/$i" "union-enc" $merge $data $n $latent_size $hidden_size $bs $lr $steps $set_size1 $set_size2 $warmup_steps $weight_sharing $ln $num_blocks $decoder_layers $basedir
 done
