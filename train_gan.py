@@ -310,7 +310,7 @@ def train_gen(generator, discriminator, optimizer, train_dataset, steps, batch_s
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('run_name', type=str)
-    parser.add_argument('--model', type=str, default='csab', choices=['csab', 'naive', 'cross-only', 'pine', 'rn', 'naive-rn', 'naive-rff'])
+    parser.add_argument('--model', type=str, default='csab', choices=['csab', 'naive', 'cross-only', 'pine', 'rn', 'naive-rn', 'naive-rff', 'union', 'union-enc'])
     parser.add_argument('--checkpoint_dir', type=str, default="/checkpoint/kaselby")
     parser.add_argument('--checkpoint_name', type=str, default=None)
     parser.add_argument('--num_blocks', type=int, default=1)
