@@ -553,8 +553,8 @@ class UnionTransformer(nn.Module):
             ZX, ZY = self.proj(ZX), self.proj(ZY)
 
         if self.use_set_encoding:
-            ZX += self.X_encoding
-            ZY += self.Y_encoding
+            ZX = ZX + self.X_encoding
+            ZY = ZY + self.Y_encoding
 
         XY = torch.cat([ZX,ZY], dim=1)
         Z = self.enc(XY)
