@@ -42,9 +42,11 @@ def evaluate(model, eval_generator, steps, poisson=False, batch_size=64, data_kw
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('run_name', type=str)
-    parser.add_argument('--basedir', type=str, default='final-runs')
+    parser.add_argument('--basedir', type=str, default='final-runs2')
     parser.add_argument('--dataset', type=str, default='mnist')
     parser.add_argument('--steps', type=int, default=500)
+    parser.add_argument('--set_size', type=int, nargs=2, default=[10,30])
+    parser.add_argument('--data_dir', type=str, default='./data')
 
     return parser.parse_args()
 
