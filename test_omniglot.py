@@ -68,6 +68,7 @@ if __name__ == '__main__':
         generator_cls = OmniglotCooccurenceGenerator
         data_kwargs['n_chars'] = 50
     
+    device=torch.device("cuda")
     test_generator = generator_cls(test_dataset, device)
 
 
