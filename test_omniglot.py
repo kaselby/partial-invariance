@@ -19,7 +19,6 @@ use_cuda=torch.cuda.is_available()
 RUN_DIR="final-runs"
 
 def evaluate(model, eval_generator, steps, poisson=False, batch_size=64, data_kwargs={}):
-    results=
     l1loss = nn.L1Loss()
     l2loss = nn.MSELoss()
     n_correct = 0
