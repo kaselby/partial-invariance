@@ -85,7 +85,7 @@ if __name__ == '__main__':
             results[run_name] = {}
             for run_num in all_runs:
                 model = torch.load(os.path.join(run_path, run_num, "model.pt"))
-                model_losses_i = evaluate(model, test_generator, args.steps)
+                model_losses_i = evaluate(model, test_generator, args.steps, data_kwargs=data_kwargs)
                 for k,v in model_losses_i.items():
                     if k not in results[run_name]:
                         results[run_name][k] = []
