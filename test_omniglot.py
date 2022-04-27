@@ -90,6 +90,7 @@ if __name__ == '__main__':
                     if k not in results[run_name]:
                         results[run_name][k] = []
                     results[run_name][k].append(v)
+                print(run_name, ": ", model_losses_i)
     
 
     outfile = os.path.join("eval", args.run_name + "_results.txt")
