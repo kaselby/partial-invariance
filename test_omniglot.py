@@ -77,20 +77,21 @@ if __name__ == '__main__':
     run_paths = glob.glob(os.path.join(basedir, args.run_name+"*"))
     results={}
     for run_path in run_paths:
-        run_name = run_path.split("/")[-1]
-        all_runs = get_runs(run_path)
-        if run_name not in results:
-            results[run_name] = {}
-        if len(all_runs) > 0:
-            results[run_name] = {}
-            for run_num in all_runs:
-                model = torch.load(os.path.join(run_path, run_num, "model.pt"))
-                model_losses_i = evaluate(model, test_generator, args.steps, data_kwargs=data_kwargs)
-                for k,v in model_losses_i.items():
-                    if k not in results[run_name]:
-                        results[run_name][k] = []
-                    results[run_name][k].append(v)
-                print(run_name, ": ", model_losses_i)
+        if os.path.isdir(run_path):
+            run_name = run_path.split("/")[-1]
+            all_runs = get_runs(run_path)
+            if run_name not in results:
+                results[run_name] = {}
+            if len(all_runs) > 0:
+                results[run_name] = {}
+                for run_num in all_runs:
+                    model = torch.load(os.path.join(run_path, run_num, "model.pt"))
+                    model_losses_i = evaluate(model, test_generator, args.steps, data_kwargs=data_kwargs)
+                    for k,v in model_losses_i.items():
+                        if k not in results[run_name]:
+                            results[run_name][k] = []
+                        results[run_name][k].append(v)
+                    print(run_name, ": ", model_losses_i)
     
 
     outfile = os.path.join("eval", args.run_name + "_results.txt")
