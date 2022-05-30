@@ -315,6 +315,15 @@ if __name__ == '__main__':
                 'decoder_layers': args.decoder_layers
             }
             set_model = MultiRNModel(input_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
+        elif args.model == 'union' or args.model == 'union-enc':
+            model_kwargs={
+                'ln':args.ln,
+                'num_blocks':args.num_blocks,
+                'num_heads':args.num_heads,
+                'dropout':args.dropout,
+                'set_encoding': args.model == 'union-enc'
+            }
+            set_model = UnionTransformer(input_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
         else:
             raise NotImplementedError("Model type not recognized.")
         if captioning:
