@@ -170,7 +170,7 @@ def evaluate(model, eval_dataset, steps, batch_size=64, data_kwargs={}):
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('run_name', type=str)
-    parser.add_argument('--model', type=str, default='csab', choices=['csab', 'rn', 'pine', 'naive', 'cross-only'])
+    parser.add_argument('--model', type=str, default='csab', choices=['csab', 'rn', 'pine', 'naive', 'cross-only', 'union', 'union-enc'])
     parser.add_argument('--dataset', type=str, default='coco', choices=['coco', 'flickr30k', 'fasttext'])
     parser.add_argument('--checkpoint_dir', type=str, default="/checkpoint/kaselby")
     parser.add_argument('--checkpoint_name', type=str, default=None)
