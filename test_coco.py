@@ -21,7 +21,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('run_name', type=str)
     parser.add_argument('--eval_all', action='store_true')
-    parser.add_argument('--basedir', type=str, default='final-runs/coco')
+    parser.add_argument('--basedir', type=str, default='final-runs2')
     parser.add_argument('--set_size', type=int, nargs=2, default=[10, 30])
     parser.add_argument('--batch_size', type=int, default=12)
     parser.add_argument('--steps', type=int, default=500)
