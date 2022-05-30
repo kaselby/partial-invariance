@@ -513,6 +513,58 @@ class MultiSetTransformer(nn.Module):
         out = self.dec(torch.cat([ZX, ZY], dim=-1))
         return out.squeeze(-1)
 
+class UnionTransformer(nn.Module):
+    def __init__(self, input_size, latent_size, hidden_size, output_size, num_blocks, num_heads, decoder_layers=1, ln=False, pool='pma', 
+        set_encoding=False, dropout=0):
+        super().__init__()
+        self.input_size = input_size
+        self.proj = None if input_size == latent_size else nn.Linear(input_size, latent_size) 
+        self.enc = nn.Sequential(*[SAB(latent_size, latent_size, hidden_size, num_heads, ln=ln, dropout=dropout) for i in range(num_blocks)])
+        self.pool_method = pool
+        if self.pool_method == "pma":
+            self.pool = PMA(latent_size, hidden_size, num_heads, 1, ln=ln)
+        self.dec = self._make_decoder(latent_size, hidden_size, output_size, decoder_layers)
+        self.use_set_encoding = set_encoding
+        if set_encoding:
+            self.X_encoding = nn.Parameter(torch.empty(latent_size))
+            self.Y_encoding = nn.Parameter(torch.empty(latent_size))
+            torch.nn.init.normal_(self.X_encoding)
+            torch.nn.init.normal_(self.Y_encoding)
+
+    def _make_decoder(self, latent_size, hidden_size, output_size, n_layers):
+        if n_layers == 0:
+            return nn.Linear(latent_size, output_size)
+        else:
+            hidden_layers = []
+            for _ in range(n_layers-1): 
+                hidden_layers += [nn.Linear(hidden_size, hidden_size), nn.ReLU()]
+            return nn.Sequential(
+                nn.Linear(latent_size, hidden_size),
+                nn.ReLU(),
+                *hidden_layers,
+                nn.Linear(hidden_size, output_size)
+            )
+
+    def forward(self, X, Y):
+        ZX, ZY = X,Y
+        if self.proj is not None:
+            ZX, ZY = self.proj(ZX), self.proj(ZY)
+
+        if self.use_set_encoding:
+            ZX = ZX + self.X_encoding
+            ZY = ZY + self.Y_encoding
+
+        XY = torch.cat([ZX,ZY], dim=1)
+        Z = self.enc(XY)
+        if getattr(self, "pool_method", None) is None or self.pool_method == "pma":
+            Z = self.pool(Z)
+        elif self.pool_method == "max":
+            Z = torch.max(Z, dim=1)
+        elif self.pool_method == "mean":
+            Z = torch.mean(Z, dim=1)
+        out = self.dec(Z)
+        return out.squeeze(-1)
+
 
 class NaiveMultiSetModel(nn.Module):
     def __init__(self, input_size, latent_size, hidden_size, output_size, num_blocks, num_heads, remove_diag=False, ln=False,
