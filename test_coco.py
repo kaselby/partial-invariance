@@ -53,6 +53,7 @@ if __name__ == '__main__':
     data_kwargs={
         'set_size': args.set_size,
     }
+    basedir = os.path.join(args.basedir, args.dataset)
 
     batch_size = args.batch_size
     steps = args.steps
@@ -77,12 +78,12 @@ if __name__ == '__main__':
     
 
     if args.eval_all:
-        run_paths = glob.glob(os.path.join(base_dir, args.run_name+"*"))
+        run_paths = glob.glob(os.path.join(basedir, args.run_name+"*"))
         run_names = [run_path.split("/")[-1] for run_path in run_paths]
 
         results = {}
         for run_name in run_names:
-            model_dir = os.path.join(args.basedir, run_name)
+            model_dir = os.path.join(basedir, run_name)
             accs, avg_acc, stdev = eval_model(model_dir, test_generator, steps, batch_size, data_kwargs, device_count=n_gpus)
             results[run_name] = {'accs': accs.tolist(), 'avg_acc': avg_acc.item(), 'stdev': stdev.item()}
         
@@ -91,7 +92,7 @@ if __name__ == '__main__':
             for run_name, run_results in results.items():
                 writer.write("%s: \tAvg:%f\tStdev:%f\tAccs:%s\n" % (run_name, run_results['avg_acc'], run_results['stdev'], str(run_results['accs'])))
     else:
-        model_dir = os.path.join(args.basedir, args.run_name)
+        model_dir = os.path.join(basedir, args.run_name)
         accs, avg_acc, stdev = eval_model(model_dir, test_generator, steps, batch_size, data_kwargs, device_count=n_gpus)
         outfile = os.path.join(args.outdir, args.run_name + "_results.txt")
         with open(outfile, 'a') as writer:
