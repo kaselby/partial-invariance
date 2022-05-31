@@ -21,7 +21,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('run_name', type=str)
     parser.add_argument('--eval_all', action='store_true')
-    parser.add_argument('--basedir', type=str, default='final-runs/coco')
+    parser.add_argument('--basedir', type=str, default='final-runs2')
     parser.add_argument('--set_size', type=int, nargs=2, default=[10, 30])
     parser.add_argument('--batch_size', type=int, default=12)
     parser.add_argument('--steps', type=int, default=500)
@@ -67,12 +67,12 @@ if __name__ == '__main__':
     
 
     if args.eval_all:
-        run_paths = glob.glob(os.path.join(base_dir, args.run_name+"*"))
+        run_paths = glob.glob(os.path.join(args.basedir, args.dataset, args.run_name+"*"))
         run_names = [run_path.split("/")[-1] for run_path in run_paths]
 
         results = {}
         for run_name in run_names:
-            model_dir = os.path.join(args.basedir, run_name)
+            model_dir = os.path.join(args.basedir, args.dataset, run_name)
             accs, avg_acc, stdev = eval_model(model_dir, test_generator, args.steps, args.batch_size, data_kwargs)
             results[run_name] = {'accs': accs.tolist(), 'avg_acc': avg_acc.item(), 'stdev': stdev.item()}
         
@@ -81,7 +81,7 @@ if __name__ == '__main__':
             for run_name, run_results in results.items():
                 writer.write("%s: \tAvg:%f\tStdev:%f\tAccs:%s\n" % (run_name, run_results['avg_acc'], run_results['stdev'], str(run_results['accs'])))
     else:
-        model_dir = os.path.join(args.basedir, args.run_name)
+        model_dir = os.path.join(args.basedir, args.dataset, args.run_name)
         accs, avg_acc, stdev = eval_model(model_dir, test_generator, args.steps, args.batch_size, data_kwargs)
         outfile = os.path.join(args.outdir, "%s_%d-%d_results.txt" % (args.run_name, *args.set_size))
         with open(outfile, 'a') as writer:
