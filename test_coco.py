@@ -39,7 +39,7 @@ def eval_model(model_dir, dataset, steps, bs, data_kwargs):
         if not os.path.exists(model_path):
             break
         model = torch.load(model_path)
-        accs[i] = evaluate(model, dataset, steps, batch_size=batch_size, data_kwargs=data_kwargs)
+        accs[i] = evaluate(model, dataset, steps, batch_size=bs, data_kwargs=data_kwargs)
     avg_acc = accs.mean()
     std = accs.std()
     return accs, avg_acc, std
