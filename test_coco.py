@@ -76,14 +76,14 @@ if __name__ == '__main__':
             accs, avg_acc, stdev = eval_model(model_dir, test_generator, args.steps, args.batch_size, data_kwargs)
             results[run_name] = {'accs': accs.tolist(), 'avg_acc': avg_acc.item(), 'stdev': stdev.item()}
         
-        outfile = os.path.join(args.outdir, args.run_name + "_results.txt")
+        outfile = os.path.join(args.outdir, "%s_%d-%d_results.txt" % (args.run_name, *args.set_size)) 
         with open(outfile, 'a') as writer:
             for run_name, run_results in results.items():
                 writer.write("%s: \tAvg:%f\tStdev:%f\tAccs:%s\n" % (run_name, run_results['avg_acc'], run_results['stdev'], str(run_results['accs'])))
     else:
         model_dir = os.path.join(args.basedir, args.run_name)
         accs, avg_acc, stdev = eval_model(model_dir, test_generator, args.steps, args.batch_size, data_kwargs)
-        outfile = os.path.join(args.outdir, args.run_name + "_results.txt")
+        outfile = os.path.join(args.outdir, "%s_%d-%d_results.txt" % (args.run_name, *args.set_size))
         with open(outfile, 'a') as writer:
             writer.write("%s: \tAvg:%f\tStdev:%f\tAccs:%s" % (args.run_name, avg_acc.item(), std.item(), str(accs.tolist())))
 
