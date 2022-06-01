@@ -68,7 +68,7 @@ if __name__ == '__main__':
 
     if args.eval_all:
         run_paths = glob.glob(os.path.join(args.basedir, args.dataset, args.run_name+"*"))
-        run_names = [run_path.split("/")[-1] for run_path in run_paths if os.is_dir(run_path)]
+        run_names = [run_path.split("/")[-1] for run_path in run_paths if os.path.isdir(run_path)]
 
         results = {}
         for run_name in run_names:
