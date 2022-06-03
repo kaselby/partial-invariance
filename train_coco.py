@@ -14,7 +14,7 @@ import tqdm
 import json
 import fasttext
 
-from models2 import MultiSetTransformer, PINE, MultiSetModel, NaiveMultiSetModel, BertEncoderWrapper, ImageEncoderWrapper, EmbeddingEncoderWrapper, CrossOnlyModel, MultiRNModel, UnionTransformer, NaiveRelationNetwork, NaiveRFF cst_from_cross, cst_from_naive
+from models2 import MultiSetTransformer, PINE, MultiSetModel, NaiveMultiSetModel, BertEncoderWrapper, ImageEncoderWrapper, EmbeddingEncoderWrapper, CrossOnlyModel, MultiRNModel, UnionTransformer, NaiveRelationNetwork, NaiveRFF, cst_from_cross, cst_from_naive
 from generators import CaptionGenerator, bert_tokenize_batch, fasttext_tokenize_batch, EmbeddingAlignmentGenerator, load_pairs, split_pairs
 from train_omniglot import ConvEncoder
 
