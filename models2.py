@@ -567,8 +567,8 @@ class UnionTransformer(nn.Module):
 
 
 class NaiveMultiSetModel(nn.Module):
-    def __init__(self, input_size, latent_size, hidden_size, output_size, num_blocks, num_heads, remove_diag=False, ln=False,
-            equi=False, weight_sharing='none', dropout=0.1, decoder_layers=1):
+    def __init__(self, input_size, latent_size, hidden_size, output_size, num_blocks, num_heads,
+            equi=False, weight_sharing='none', decoder_layers=1, ln=False, **encoder_kwargs):
         super().__init__()
         self.equi = equi
         if equi:
@@ -576,21 +576,24 @@ class NaiveMultiSetModel(nn.Module):
         self.input_size = input_size
         self.proj = None if input_size == latent_size else nn.Linear(input_size, latent_size)
         if weight_sharing == 'none':
-            self.encoder1 = nn.Sequential(*[SAB(latent_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, equi=equi, dropout=dropout) for _ in range(num_blocks)])
-            self.encoder2 = nn.Sequential(*[SAB(latent_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, equi=equi, dropout=dropout) for _ in range(num_blocks)])
+            self.encoder1 = nn.Sequential(*[self._init_block(latent_size, latent_size, hidden_size, num_heads, equi=equi, ln=ln, **encoder_kwargs) for _ in range(num_blocks)])
+            self.encoder2 = nn.Sequential(*[self._init_block(latent_size, latent_size, hidden_size, num_heads, equi=equi, ln=ln, **encoder_kwargs) for _ in range(num_blocks)])
             self.pool1 = PMA(latent_size, hidden_size, num_heads, 1, ln=ln)
             self.pool2 = PMA(latent_size, hidden_size, num_heads, 1, ln=ln)
             #self.encoder1 = SetTransformer(input_size, latent_size, hidden_size, latent_size, num_heads, num_blocks, remove_diag, ln, equi)
             #self.encoder2 = SetTransformer(input_size, latent_size, hidden_size, latent_size, num_heads, num_blocks, remove_diag, ln, equi)
         else:
             #encoder = SetTransformer(input_size, latent_size, hidden_size, latent_size, num_heads, num_blocks, remove_diag, ln, equi)
-            encoder = nn.Sequential(*[SAB(latent_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, equi=equi, dropout=dropout) for _ in range(num_blocks)])
+            encoder = nn.Sequential(*[self._init_block(latent_size, latent_size, hidden_size, num_heads, equi=equi, ln=ln, **encoder_kwargs) for _ in range(num_blocks)])
             pool = PMA(latent_size, hidden_size, num_heads, 1, ln=ln)
             self.encoder1 = encoder
             self.encoder2 = encoder
             self.pool1 = pool
             self.pool2 = pool
         self.decoder = self._make_decoder(latent_size, hidden_size, output_size, decoder_layers)
+
+    def _init_block(self, input_size, latent_size, hidden_size, num_heads, equi=False, **encoder_kwargs):
+        pass
 
     def _make_decoder(self, latent_size, hidden_size, output_size, n_layers):
         if n_layers == 0:
@@ -623,6 +626,46 @@ class NaiveMultiSetModel(nn.Module):
         ZY = self.pool2(ZY)
         out = self.decoder(torch.cat([ZX, ZY], dim=-1))
         return out.squeeze(-1)
+
+class NaiveSetTransformer(NaiveMultiSetModel):
+    def _init_block(self, input_size, latent_size, hidden_size, num_heads, ln, remove_diag, equi, dropout):
+        return SAB(input_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, equi=equi, dropout=dropout)
+class NaiveRelationNetwork(NaiveMultiSetModel):
+    def _init_block(self, input_size, latent_size, hidden_size, num_heads, ln, pool, equi, dropout):
+        return SingleRNBlock(latent_size, hidden_size, pool=pool, ln=ln, equi=equi, dropout=dropout)
+class NaiveRFF(NaiveMultiSetModel):
+    def _init_block(self, input_size, latent_size, hidden_size, num_heads, ln, equi, dropout):
+        return RFFBlock(latent_size, hidden_size, ln=ln, dropout=dropout)
+
+class DeepSet(nn.Module):
+    def __init__(self, input_size, latent_size, hidden_size, output_size, num_layers=3):
+        super(DeepSet, self).__init__()
+        self.output_size = output_size
+        self.enc = linear_block(input_size, hidden_size, latent_size, num_layers)
+        self.dec = linear_block(latent_size, hidden_size, output_size, num_layers)
+
+    def forward(self, X):
+        X = self.enc(X).mean(-2)
+        X = self.dec(X)
+        return X
+
+class RFFBlock(nn.Module):
+    def __init__(self, latent_size, hidden_size, num_layers=2, ln=False, dropout=0):
+        super().__init__()
+        self.enc = linear_block(latent_size, hidden_size, latent_size, num_layers)
+        if dropout > 0:
+            self.dropout = nn.Dropout(dropout)
+        if ln:
+            self.ln = nn.LayerNorm(latent_size)
+
+    def forward(self, X, mask=None):
+        Z = self.enc(X)
+        Z = Z if getattr(self, 'dropout', None) is None else self.dropout(Z)
+        Z = Z if getattr(self, 'ln1', None) is None else self.ln(Z)
+        return Z
+    
+    def forward(self, X):
+        return self.enc(X)
 
 
 class CrossOnlyModel(nn.Module):
