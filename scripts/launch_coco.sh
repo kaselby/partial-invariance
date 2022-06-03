@@ -25,12 +25,17 @@ grad_steps=1
 
 for (( i = 0 ; i < $n_runs ; i++ ))
 do
-    sbatch scripts/train_coco.sh "${run_name}_csab/${i}" $batch_size $latent_size $hidden_size $lr $num_blocks $steps "csab" $set_size1 $set_size2 $merge $dataset $warmup_steps $decoder_layers $ln $anneal_ss $lambda0 $residual $init_from $grad_steps
-    sbatch scripts/train_coco.sh "${run_name}_naive/${i}" $batch_size $latent_size $hidden_size $lr $num_blocks $steps "naive" $set_size1 $set_size2 $merge $dataset $warmup_steps $decoder_layers $ln $anneal_ss $lambda0 $residual $init_from $grad_steps
+    
     sbatch scripts/train_coco.sh "${run_name}_pine/${i}" $batch_size $latent_size $hidden_size $lr $num_blocks $steps "pine" $set_size1 $set_size2 $merge $dataset $warmup_steps $decoder_layers $ln $anneal_ss $lambda0 $residual $init_from $grad_steps
+    sbatch scripts/train_coco.sh "${run_name}_naive-rn/${i}" $batch_size $latent_size $hidden_size $lr $num_blocks $steps "naive-rn" $set_size1 $set_size2 $merge $dataset $warmup_steps $decoder_layers $ln $anneal_ss $lambda0 $residual $init_from $grad_steps
+    sbatch scripts/train_coco.sh "${run_name}_naive-rff/${i}" $batch_size $latent_size $hidden_size $lr $num_blocks $steps "naive-rff" $set_size1 $set_size2 $merge $dataset $warmup_steps $decoder_layers $ln $anneal_ss $lambda0 $residual $init_from $grad_steps
+    #sbatch scripts/train_coco.sh "${run_name}_naive/${i}" $batch_size $latent_size $hidden_size $lr $num_blocks $steps "naive" $set_size1 $set_size2 $merge $dataset $warmup_steps $decoder_layers $ln $anneal_ss $lambda0 $residual $init_from $grad_steps
+    
+    #sbatch scripts/train_coco.sh "${run_name}_union/${i}" $batch_size $latent_size $hidden_size $lr $num_blocks $steps "union" $set_size1 $set_size2 $merge $dataset $warmup_steps $decoder_layers $ln $anneal_ss $lambda0 $residual $init_from $grad_steps
+    #sbatch scripts/train_coco.sh "${run_name}_union-enc/${i}" $batch_size $latent_size $hidden_size $lr $num_blocks $steps "union-enc" $set_size1 $set_size2 $merge $dataset $warmup_steps $decoder_layers $ln $anneal_ss $lambda0 $residual $init_from $grad_steps
+
+    #sbatch scripts/train_coco.sh "${run_name}_csab/${i}" $batch_size $latent_size $hidden_size $lr $num_blocks $steps "csab" $set_size1 $set_size2 $merge $dataset $warmup_steps $decoder_layers $ln $anneal_ss $lambda0 $residual $init_from $grad_steps
     sbatch scripts/train_coco.sh "${run_name}_rn/${i}" $batch_size $latent_size $hidden_size $lr $num_blocks $steps "rn" $set_size1 $set_size2 $merge $dataset $warmup_steps $decoder_layers $ln $anneal_ss $lambda0 $residual $init_from $grad_steps
     sbatch scripts/train_coco.sh "${run_name}_cross-only/${i}" $batch_size $latent_size $hidden_size $lr $num_blocks $steps "cross-only" $set_size1 $set_size2 $merge $dataset $warmup_steps $decoder_layers $ln $anneal_ss $lambda0 $residual $init_from $grad_steps
-    sbatch scripts/train_coco.sh "${run_name}_union/${i}" $batch_size $latent_size $hidden_size $lr $num_blocks $steps "union" $set_size1 $set_size2 $merge $dataset $warmup_steps $decoder_layers $ln $anneal_ss $lambda0 $residual $init_from $grad_steps
-    sbatch scripts/train_coco.sh "${run_name}_union-enc/${i}" $batch_size $latent_size $hidden_size $lr $num_blocks $steps "union-enc" $set_size1 $set_size2 $merge $dataset $warmup_steps $decoder_layers $ln $anneal_ss $lambda0 $residual $init_from $grad_steps
-    #sbatch scripts/train_coco.sh "${run_name}_sum-merge/${i}" $batch_size $latent_size $hidden_size $lr $num_blocks $steps "csab" $set_size1 $set_size2 "sum" $dataset $warmup_steps $decoder_layers
+    sbatch scripts/train_coco.sh "${run_name}_sum-merge/${i}" $batch_size $latent_size $hidden_size $lr $num_blocks $steps "csab" $set_size1 $set_size2 "sum" $dataset $warmup_steps $decoder_layers $ln $anneal_ss $lambda0 $residual $init_from $grad_steps
 done
