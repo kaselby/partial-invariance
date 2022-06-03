@@ -881,6 +881,14 @@ class RNBlock(nn.Module):
         Z = Z if getattr(self, 'ln1', None) is None else self.ln1(Z)
         return Z
 
+class SingleRNBlock(nn.Module):
+    def __init__(self, latent_size, hidden_size, ln=False, pool='sum', dropout=0.1, equi=False):
+        super().__init__()
+        self.rn = RNBlock(latent_size, hidden_size, ln=False, pool='sum', dropout=0.1, equi=False)
+    
+    def forward(self, X):
+        return self.rn(X, X)
+
 class MultiRNBlock(nn.Module):
     def __init__(self, latent_size, hidden_size, remove_diag=False, pool='max', ln=False, weight_sharing='none', **kwargs):
         super().__init__()
