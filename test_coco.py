@@ -22,6 +22,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('run_name', type=str)
     parser.add_argument('--eval_all', action='store_true')
+    parser.add_argument('--overwrite', action='store_true')
     parser.add_argument('--basedir', type=str, default='final-runs2')
     parser.add_argument('--set_size', type=int, nargs=2, default=[10, 30])
     parser.add_argument('--batch_size', type=int, default=12)
@@ -79,16 +80,29 @@ if __name__ == '__main__':
     
 
     if args.eval_all:
+        outfile = os.path.join(args.outdir, args.run_name + "_results.txt")
+
         run_paths = glob.glob(os.path.join(basedir, args.run_name+"*"))
         run_names = [run_path.split("/")[-1] for run_path in run_paths]
 
         results = {}
         for run_name in run_names:
+            if not args.overwrite:
+                skip=False
+                with open(outfile, 'r') as infile:
+                    for line in infile.readlines():
+                        if run_name in line:
+                            print("Skipping", run_name, "...")
+                            skip =True
+                if skip:
+                    continue
+
             model_dir = os.path.join(basedir, run_name)
             accs, avg_acc, stdev = eval_model(model_dir, test_generator, steps, batch_size, data_kwargs, device_count=n_gpus)
             results[run_name] = {'accs': accs.tolist(), 'avg_acc': avg_acc.item(), 'stdev': stdev.item()}
         
-        outfile = os.path.join(args.outdir, args.run_name + "_results.txt")
+        if args.overwrite and os.path.exists(outfile):
+            os.remove(outfile)
         with open(outfile, 'a') as writer:
             for run_name, run_results in results.items():
                 writer.write("%s: \tAvg:%f\tStdev:%f\tAccs:%s\n" % (run_name, run_results['avg_acc'], run_results['stdev'], str(run_results['accs'])))
