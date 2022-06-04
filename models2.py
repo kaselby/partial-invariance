@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import math
 
-from utils import cross_knn_inds
+from utils import cross_knn_inds, linear_block
 
 use_cuda=torch.cuda.is_available()
 

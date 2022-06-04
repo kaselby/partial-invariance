@@ -12,6 +12,19 @@ from geomloss import SamplesLoss
 use_cuda=torch.cuda.is_available()
 
 
+def linear_block(input_size, hidden_size, output_size, num_layers, activation_fct=nn.ReLU):
+    if num_layers == 0:
+        layers = [nn.Linear(input_size, hidden_size), activation_fct(), nn.Linear(hidden_size, output_size)]
+    elif num_layers > 0:
+        layers = [nn.Linear(input_size, hidden_size), activation_fct()]
+        for i in range(num_layers - 1):
+            layers.append(nn.Linear(hidden_size, hidden_size))
+            layers.append(nn.ReLU())
+        layers.append(nn.Linear(hidden_size, output_size))
+    else:
+        raise AssertionError("num_layers must be >= 0")
+    return nn.Sequential(*layers)
+
 def windowed_losses(losses, window_size, stride):
     tensor_losses = torch.tensor(losses)
     
