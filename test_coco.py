@@ -83,7 +83,7 @@ if __name__ == '__main__':
         outfile = os.path.join(args.outdir, args.run_name + "_results.txt")
 
         run_paths = glob.glob(os.path.join(basedir, args.run_name+"*"))
-        run_names = [run_path.split("/")[-1] for run_path in run_paths]
+        run_names = [run_path.split("/")[-1] for run_path in run_paths if os.path.isdir(run_path)]
 
         results = {}
         for run_name in run_names:
