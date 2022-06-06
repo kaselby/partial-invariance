@@ -78,10 +78,8 @@ if __name__ == '__main__':
         train_dataset, val_dataset, test_dataset = load_flickr_data(os.path.join(dataset_dir, "images"), os.path.join(dataset_dir, "annotations.token"), os.path.join(dataset_dir, "splits.json"))
     test_generator = CaptionGenerator(test_dataset, tokenize_fct, tokenize_args, device=device)
     
-
+    outfile = os.path.join(args.outdir, "%s_%d-%d_results.txt" % (args.run_name, *args.set_size))
     if args.eval_all:
-        outfile = os.path.join(args.outdir, args.run_name + "_results.txt")
-
         run_paths = glob.glob(os.path.join(basedir, args.run_name+"*"))
         run_names = [run_path.split("/")[-1] for run_path in run_paths if os.path.isdir(run_path)]
 
@@ -109,7 +107,6 @@ if __name__ == '__main__':
     else:
         model_dir = os.path.join(basedir, args.run_name)
         accs, avg_acc, stdev = eval_model(model_dir, test_generator, steps, batch_size, data_kwargs, device_count=n_gpus)
-        outfile = os.path.join(args.outdir, args.run_name + "_results.txt")
         with open(outfile, 'a') as writer:
             writer.write("%s: \tAvg:%f\tStdev:%f\tAccs:%s" % (args.run_name, avg_acc.item(), std.item(), str(accs.tolist())))
 
