@@ -324,11 +324,11 @@ if __name__ == '__main__':
             model = NaiveRFF(args.dim, args.latent_size, args.hidden_size, 1, **model_kwargs).to(device)
         elif args.model == 'union' or args.model == 'union-enc':
             model_kwargs={
-                'ln':args.ln,
+                'ln':True,
                 'num_blocks':args.num_blocks,
                 'num_heads':args.num_heads,
                 'dropout':args.dropout,
-                'set_encoding': args.model == 'union-enc'
+                'set_encoding': False
             }
             set_model = UnionTransformer(input_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
         else:
