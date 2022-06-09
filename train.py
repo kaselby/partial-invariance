@@ -330,7 +330,7 @@ if __name__ == '__main__':
                 'dropout':args.dropout,
                 'set_encoding': False
             }
-            set_model = UnionTransformer(args.dim, args.latent_size, args.hidden_size, 1, **model_kwargs)
+            model = UnionTransformer(args.dim, args.latent_size, args.hidden_size, 1, **model_kwargs)
         else:
             raise NotImplementedError()
     else:
