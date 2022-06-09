@@ -17,7 +17,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('run_name', type=str)
     parser.add_argument('--target', type=str, default='w1')
-    parser.add_argument('--model', type=str, default='csab', choices=['csab', 'rn', 'pine', 'naive', 'cross-only', 'naive-rn', 'naive-rff'])
+    parser.add_argument('--model', type=str, default='csab', choices=['csab', 'rn', 'pine', 'naive', 'cross-only', 'naive-rn', 'naive-rff', 'union'])
     parser.add_argument('--data', type=str, default='gmm')
     parser.add_argument('--normalize', type=str, choices=('none', 'scale-linear', 'scale-inv', 'whiten'))
     #parser.add_argument('--norm_in', action='store_true')
@@ -322,6 +322,15 @@ if __name__ == '__main__':
                 'decoder_layers': args.decoder_layers
             }
             model = NaiveRFF(args.dim, args.latent_size, args.hidden_size, 1, **model_kwargs).to(device)
+        elif args.model == 'union' or args.model == 'union-enc':
+            model_kwargs={
+                'ln':args.ln,
+                'num_blocks':args.num_blocks,
+                'num_heads':args.num_heads,
+                'dropout':args.dropout,
+                'set_encoding': args.model == 'union-enc'
+            }
+            set_model = UnionTransformer(input_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
         else:
             raise NotImplementedError()
     else:
