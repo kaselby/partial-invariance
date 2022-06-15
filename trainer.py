@@ -1,7 +1,26 @@
 import torch
 import torch.nn as nn
 
+SS_SCHEDULE_15=[{'set_size':(1,5), 'steps':20000}, {'set_size':(3,10), 'steps':5000}, {'set_size':(8,15), 'steps':5000}]
+SS_SCHEDULE_30=[{'set_size':(1,5), 'steps':20000}, {'set_size':(3,10), 'steps':5000}, {'set_size':(8,15), 'steps':5000}, {'set_size':(10,30), 'steps':5000}]
+SS_SCHEDULE_50=[{'set_size':(1,5), 'steps':20000}, {'set_size':(3,10), 'steps':5000}, {'set_size':(8,15), 'steps':5000}, {'set_size':(10,30), 'steps':5000}, {'set_size':(25,50), 'steps':10000}]
+SS_SCHEDULE_75=[{'set_size':(1,5), 'steps':20000}, {'set_size':(3,10), 'steps':5000}, {'set_size':(8,15), 'steps':5000}, {'set_size':(10,30), 'steps':5000}, {'set_size':(25,50), 'steps':5000}, {'set_size':(50,75), 'steps':5000}]
+SS_SCHEDULES={15:SS_SCHEDULE_15, 30:SS_SCHEDULE_30, 75:SS_SCHEDULE_75}
 
+class SetSizeScheduler():
+    def __init__(self, schedule, step_mult=1):
+        self.schedule=schedule
+        self.N = sum([entry['steps'] for entry in schedule])
+        self.step_mult=step_mult
+
+    def get_set_size(self, iter_id):
+        if iter_id >= 0:    #return last set size for iter_id -1
+            step=0
+            for entry in self.schedule:
+                step += entry['steps']
+                if self.step_mult * iter_id < step:
+                    return entry['set_size']
+        return self.schedule[-1]['set_size']    #fallback for now
 
 class Trainer():
     def __init__(self, model, optimizer, train_dataset, val_dataset, test_dataset, train_args, eval_args, device
@@ -19,7 +38,7 @@ class Trainer():
         self.criterion = criterion
         self.scheduler = scheduler
         self.checkpoint_dir = checkpoint_dir
-        self.ss_schedule = ss_schedule
+        self.ss_schedule = SetSizeScheduler(SS_SCHEDULES[ss_schedule]) if ss_schedule > 0 else None
 
     def save_checkpoint(self, step, metrics):
         save_dict = {

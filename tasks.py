@@ -165,6 +165,22 @@ class CountingTask(Task):
 
 
 #
+#   Distinguishability Tasks
+#
+
+class SyntheticDistinguishabilityTask(Task):
+
+    def build_model(self):
+        pass
+
+    def build_dataset(self):
+        pass
+    
+    def build_trainer(self):
+        pass
+
+
+#
 #   Pretraining Task
 #
 
