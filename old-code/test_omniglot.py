@@ -94,6 +94,7 @@ if __name__ == '__main__':
                     print(run_name, ": ", model_losses_i)
     
 
+
     outfile = os.path.join("eval", args.run_name + "_results.txt")
     with open(outfile, 'w') as writer:
         for run_path in run_paths:
