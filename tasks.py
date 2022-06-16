@@ -2,7 +2,7 @@
 from builders import SET_MODEL_BUILDERS, CONV_MODEL_BUILDERS
 from trainer import Trainer, CountingTrainer, CaptionTrainer, MetaDatasetTrainer, StatisticalDistanceTrainer, Pretrainer
 from datasets.counting import OmniglotCooccurenceGenerator, ImageCooccurenceGenerator, DatasetByClass, load_cifar, load_mnist, load_omniglot
-from datasets.alignment import EmbeddingAlignmentGenerator, CaptionGenerator, load_coco_data, load_flickr_data, bert_tokenize_batch, fasttext_tokenize_batch
+from datasets.alignment import EmbeddingAlignmentGenerator, CaptionGenerator, load_coco_data, load_flickr_data, bert_tokenize_batch, fasttext_tokenize_batch, load_pairs, split_pairs
 from datasets.distinguishability import DistinguishabilityGenerator
 from datasets.meta_dataset import MetaDatasetGenerator, Split
 from datasets.distributions import CorrelatedGaussianGenerator, GaussianGenerator, NFGenerator
