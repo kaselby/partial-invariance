@@ -10,7 +10,7 @@ from models.task import ImageEncoderWrapper, BertEncoderWrapper, EmbeddingEncode
 from utils import kl_mc, mi_corr_gaussian, kl_knn, kraskov_mi1, whiten_split, normalize_sets
 
 import fasttext
-from transformers import BertTokenizer
+from transformers import BertTokenizer, BertModel
 
 import os
 
