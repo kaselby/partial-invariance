@@ -94,7 +94,7 @@ class Trainer():
                 self.train_args['data_kwargs']['set_size'] = set_size
                 self.eval_args['data_kwargs']['set_size'] = set_size
 
-            loss = self.train_step(i, steps, self.train_dataset)
+            loss = self.train_step(i, train_steps, self.train_dataset)
             
             _log('train/loss', loss, i)
 
@@ -233,7 +233,7 @@ class MetaDatasetTrainer(Trainer):
                     self.train_args['data_kwargs']['set_size'] = set_size
                     self.eval_args['data_kwargs']['set_size'] = set_size
 
-                loss = self.train_step(step, steps, train_episode)
+                loss = self.train_step(step, train_steps, train_episode)
                 
                 _log('train/loss', loss, step)
 
@@ -243,7 +243,7 @@ class MetaDatasetTrainer(Trainer):
                     if step % save_every == 0:
                         self.save_checkpoint()
                     
-                    if step >= steps:
+                    if step >= train_steps:
                         break
             else:
                 val_episode = self.val_dataset.get_episode(self.episode_classes, self.episode_datasets)
