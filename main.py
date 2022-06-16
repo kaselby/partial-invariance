@@ -103,7 +103,8 @@ if __name__ == '__main__':
         torch.save({'id':args.run_id, 'args':args}, args_file)
         #write_log(args.logfile, args.run_name, args.run_id)
 
-    checkpoint_file = os.path.join(args.checkpoint_dir, 'checkpoint.pt')
+    checkpoint_dir = os.path.join(self.args.checkpoint_dir, self.args.checkpoint_name)
+    checkpoint_file = os.path.join(checkpoint_dir, 'checkpoint.pt')
     resume = os.path.exists(checkpoint_file)
 
     device = torch.device("cuda")
@@ -141,7 +142,7 @@ if __name__ == '__main__':
 
     logger = SummaryWriter(log_dir)
 
-    trainer = task.build_trainer(model, opt, None, train_dataset, val_dataset, test_dataset, device, logger)
+    trainer = task.build_trainer(model, opt, None, train_dataset, val_dataset, test_dataset, device, logger, checkpoint_dir=checkpoint_dir)
     all_metrics = trainer.train(args.train_steps, args.val_steps, args.test_steps)
     
     model_out = model._modules['module'] if torch.cuda.device_count() > 1 else model

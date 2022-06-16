@@ -47,7 +47,7 @@ class Task():
         trainer_kwargs = {
             'eval_every': self.args.eval_every,
             'save_every': self.args.save_every,
-            'checkpoint_dir': self.args.checkpoint_dir,
+            'checkpoint_dir': os.path.join(self.args.checkpoint_dir, self.args.checkpoint_name),
             'ss_schedule': self.args.ss_schedule
         }
         return trainer_kwargs
