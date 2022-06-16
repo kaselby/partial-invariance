@@ -93,7 +93,7 @@ def write_log(logfile, run_name, run_id):
 if __name__ == '__main__':
     args = parse_args()
 
-    run_dir = os.path.join(args.basedir, args.run_name)
+    run_dir = os.path.join(args.basedir, args.dataset, args.run_name)
     if not os.path.exists(run_dir):
         os.makedirs(run_dir)
     log_dir = os.path.join(run_dir, "logs")
