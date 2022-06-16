@@ -177,7 +177,7 @@ class CountingTask(Task):
         return train_generator, val_generator, test_generator
 
     def build_training_args(self):
-        train_args, eval_args = super().build_trainer_args()
+        train_args, eval_args = super().build_training_args()
         if self.args.dataset == 'omniglot':
             train_args['data_kwargs']['n_chars'] = 50
             eval_args['data_kwargs']['n_chars'] = 50
