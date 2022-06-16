@@ -19,6 +19,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     # File paths
     parser.add_argument('run_name', type=str)
+    parser.add_argument('--run_id', type=int)
     parser.add_argument('--basedir', type=str, default="runs")
     parser.add_argument('--data_dir', type=str, default='./data')
     parser.add_argument('--checkpoint_dir', type=str, default="/checkpoint/kaselby")
@@ -86,9 +87,6 @@ def parse_args():
     
     return parser.parse_args()
 
-def write_log(logfile, run_name, run_id):
-    with open(logfile, 'a') as writer:
-        writer.write(str(date.today())+"\t"+run_name+"\t"+str(run_id)+"\n")
 
 if __name__ == '__main__':
     args = parse_args()
@@ -103,7 +101,7 @@ if __name__ == '__main__':
     args_file = os.path.join(run_dir, "args.pt")
     if not os.path.exists(args_file):
         torch.save({'id':args.run_id, 'args':args}, args_file)
-        write_log(args.logfile, args.run_name, args.run_id)
+        #write_log(args.logfile, args.run_name, args.run_id)
 
     checkpoint_file = os.path.join(args.checkpoint_dir, 'checkpoint.pt')
     resume = os.path.exists(checkpoint_file)
