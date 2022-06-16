@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 from torch.utils.tensorboard import SummaryWriter
 
-import apex
+#import apex
 
 import argparse
 import os
@@ -137,7 +137,8 @@ if __name__ == '__main__':
     metrics = task.build_metrics(device)
 
     if args.use_apex:
-        opt = apex.optimizers.FusedAdam(model.parameters(), lr=args.lr)
+        pass
+        #opt = apex.optimizers.FusedAdam(model.parameters(), lr=args.lr)
     else:
         opt = torch.optim.Adam(model.parameters(), lr=args.lr)
     scaler = torch.cuda.amp.GradScaler(enabled=args.use_amp)
