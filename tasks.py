@@ -187,9 +187,8 @@ class CountingTask(Task):
         trainer_kwargs = {
             'eval_every': self.args.eval_every,
             'save_every': self.args.save_every,
-            'checkpoint_dir': self.args.checkpoint_dir,
             'ss_schedule': self.args.ss_schedule,
-            'poisson': self.poisson
+            'poisson': self.args.poisson
         }
         return trainer_kwargs
 
@@ -252,7 +251,6 @@ class MetaDatasetTask(Task):
     def build_trainer_kwargs(self):
         trainer_kwargs = {
             'save_every': self.args.save_every,
-            'checkpoint_dir': self.args.checkpoint_dir,
             'ss_schedule': self.args.ss_schedule,
             'episode_length': self.episode_length,
             'episode_classes': self.episode_classes,
@@ -315,7 +313,6 @@ class KLTask(StatisticalDistanceTask):
         trainer_kwargs = {
             'eval_every': self.args.eval_every,
             'save_every': self.args.save_every,
-            'checkpoint_dir': self.args.checkpoint_dir,
             'label_fct': kl_mc,
             'exact_loss': True,
             'criterion': nn.L1Loss(),
@@ -338,7 +335,6 @@ class MITask(StatisticalDistanceTask):
         trainer_kwargs = {
             'eval_every': self.args.eval_every,
             'save_every': self.args.save_every,
-            'checkpoint_dir': self.args.checkpoint_dir,
             'label_fct': mi_corr_gaussian,
             'exact_loss': True,
             'criterion': nn.MSELoss(),
