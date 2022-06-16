@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.init
 import math
 
-from utils import cross_knn_inds, linear_block
+from utils import linear_block
 
 
 
