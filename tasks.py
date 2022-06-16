@@ -110,13 +110,13 @@ class CaptionTask(Task):
             tokenize_args = (ft,)
 
         if self.args.dataset == "coco":
-            img_path = os.path.join(self.args.dataset_dir, "images")
-            annotation_path = os.path.join(self.args.dataset_dir, "annotations")
+            img_path = os.path.join(self.args.dataset_dir, "coco", "images")
+            annotation_path = os.path.join(self.args.dataset_dir, "coco", "annotations")
             train_dataset, val_dataset, test_dataset = load_coco_data(img_path, annotation_path )
         else:
-            img_path = os.path.join(self.args.dataset_dir, "images")
-            annotation_path = os.path.join(self.args.dataset_dir, "annotations.token")
-            splits_path = os.path.join(self.args.dataset_dir, "splits.json")
+            img_path = os.path.join(self.args.dataset_dir, "flickr30k", "images")
+            annotation_path = os.path.join(self.args.dataset_dir, "flickr30k", "annotations.token")
+            splits_path = os.path.join(self.args.dataset_dir, "flickr30k", "splits.json")
             train_dataset, val_dataset, test_dataset = load_flickr_data(img_path, annotation_path, splits_path)
         train_generator = CaptionGenerator(train_dataset, tokenize_fct, tokenize_args, device=device)
         val_generator = CaptionGenerator(val_dataset, tokenize_fct, tokenize_args, device=device)
