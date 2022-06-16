@@ -213,7 +213,7 @@ class CountingTask(Task):
 
 class SyntheticDistinguishabilityTask(Task):
 
-    def build_model(self):
+    def build_model(self, pretrained_model=None):
         self.args.input_size = self.args.N
         return super().build_model()
 
@@ -224,7 +224,7 @@ class SyntheticDistinguishabilityTask(Task):
 
 class MetaDatasetTask(Task):
     trainer_cls = MetaDatasetTrainer
-    def build_model(self):
+    def build_model(self, pretrained_model=None):
         self.args.input_size = self.args.latent_size
         set_model = super().build_model()
 
