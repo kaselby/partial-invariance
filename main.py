@@ -131,7 +131,6 @@ if __name__ == '__main__':
         args.batch_size *= n_gpus
 
     train_dataset, val_dataset, test_dataset = task.build_dataset()
-    metrics = task.build_metrics(device)
 
     if args.use_apex:
         pass
