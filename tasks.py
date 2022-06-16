@@ -54,7 +54,7 @@ class Task():
     
     def build_trainer(self, model, optimizer, scheduler, train_dataset, val_dataset, test_dataset, device, logger):
         train_args, eval_args = self.build_training_args()
-        trainer_kwargs = self.build_trainer_kwargs
+        trainer_kwargs = self.build_trainer_kwargs()
         trainer = self.trainer_cls(model, optimizer, train_dataset, val_dataset, test_dataset, 
             train_args, eval_args, device, logger=logger, scheduler=scheduler, **trainer_kwargs)
         return trainer

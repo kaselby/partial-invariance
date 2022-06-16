@@ -131,7 +131,6 @@ if __name__ == '__main__':
         args.batch_size *= n_gpus
 
     train_dataset, val_dataset, test_dataset = task.build_dataset()
-    training_args, eval_args = task.build_trainer_args()
     metrics = task.build_metrics(device)
 
     if args.use_apex:
@@ -143,7 +142,7 @@ if __name__ == '__main__':
 
     logger = SummaryWriter(log_dir)
 
-    trainer = task.build_trainer(model, opt, train_dataset, val_dataset, test_dataset, device)
+    trainer = task.build_trainer(model, opt, None, train_dataset, val_dataset, test_dataset, device)
     all_metrics = trainer.train(args.steps, args.val_steps, args.save_every, args.eval_every)
     
     model_out = model._modules['module'] if torch.cuda.device_count() > 1 else model
