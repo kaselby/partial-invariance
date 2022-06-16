@@ -144,7 +144,7 @@ class CountingTrainer(Trainer):
     def __init__(self, model, optimizer, train_dataset, val_dataset, test_dataset, train_args, eval_args, device, logger=None,
             eval_every=500, save_every=2000, poisson=False, scheduler=None, checkpoint_dir=None, ss_schedule=None):
         super(self, model, optimizer, train_dataset, val_dataset, test_dataset, train_args, eval_args, device, logger=logger,
-            eval_every=eval_every save_every=save_every, criterion=poisson_loss if poisson else nn.MSELoss(), scheduler=scheduler, 
+            eval_every=eval_every, save_every=save_every, criterion=poisson_loss if poisson else nn.MSELoss(), scheduler=scheduler, 
             checkpoint_dir=checkpoint_dir, ss_schedule=ss_schedule)
         self.poisson=poisson
     
