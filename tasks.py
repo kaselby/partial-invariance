@@ -13,6 +13,8 @@ import fasttext
 from transformers import BertTokenizer
 
 
+
+
 class Task():
     pretrain_task=None
     trainer_cls=Trainer
@@ -54,6 +56,25 @@ class Task():
         return trainer
 
 
+#
+#   Pretraining Task
+#
+
+class ImageClassificationTask(Task):
+    n_classes={
+        'mnist': 10,
+        'cifar': 100,
+        'omniglot': -1  #fill this in later
+    }
+    
+    def build_model(self):
+        encoder = CONV_MODEL_BUILDERS[self.args.dataset](self.args)
+        model = nn.Sequential(encoder, nn.Linear(self.args.latent_size, self.n_classes[self.args.dataset]))
+        return model
+    
+    def build_trainer(self, model, optimizer, train_dataset, val_dataset, test_dataset, device):
+        trainer = Pretrainer(model, optimizer, train_dataset, val_dataset, test_dataset, device, self.args.batch_size, eval_every=-1)
+        return trainer
 
         
 
@@ -321,25 +342,7 @@ class MITask(StatisticalDistanceTask):
         }
         return trainer_kwargs
 
-#
-#   Pretraining Task
-#
 
-class ImageClassificationTask(Task):
-    n_classes={
-        'mnist': 10,
-        'cifar': 100,
-        'omniglot': -1  #fill this in later
-    }
-    
-    def build_model(self):
-        encoder = CONV_MODEL_BUILDERS[self.args.dataset](self.args)
-        model = nn.Sequential(encoder, nn.Linear(self.args.latent_size, self.n_classes[self.args.dataset]))
-        return model
-    
-    def build_trainer(self, model, optimizer, train_dataset, val_dataset, test_dataset, device):
-        trainer = Pretrainer(model, optimizer, train_dataset, val_dataset, test_dataset, device, self.args.batch_size, eval_every=-1)
-        return trainer
 
 
 
