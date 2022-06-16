@@ -142,7 +142,7 @@ if __name__ == '__main__':
     logger = SummaryWriter(log_dir)
 
     trainer = task.build_trainer(model, opt, None, train_dataset, val_dataset, test_dataset, device, logger)
-    all_metrics = trainer.train(args.steps, args.val_steps, args.save_every, args.eval_every)
+    all_metrics = trainer.train(args.train_steps, args.val_steps, args.save_every, args.eval_every)
     
     model_out = model._modules['module'] if torch.cuda.device_count() > 1 else model
     torch.save(model_out, os.path.join(run_dir, "model.pt"))
