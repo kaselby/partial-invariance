@@ -87,9 +87,9 @@ class ImageClassificationTask(Task):
 
 class EmbeddingTask(Task):
     def build_dataset(self):
-        src_emb = fasttext.load_model(os.path.join(self.args.dataset_dir, "cc.en.300.bin"))
-        tgt_emb = fasttext.load_model(os.path.join(self.args.dataset_dir, "cc.fr.300.bin"))
-        pairs = load_pairs(os.path.join(self.args.dataset_dir, "valid_en-fr.txt"))
+        src_emb = fasttext.load_model(os.path.join(self.args.dataset_dir, "fasttext", "cc.en.300.bin"))
+        tgt_emb = fasttext.load_model(os.path.join(self.args.dataset_dir, "fasttext", "cc.fr.300.bin"))
+        pairs = load_pairs(os.path.join(self.args.dataset_dir, "fasttext", "valid_en-fr.txt"))
         train_pairs, val_pairs, test_pairs = split_pairs(pairs, 0.1, 0.1)
         train_generator = EmbeddingAlignmentGenerator(src_emb, tgt_emb, train_pairs)
         val_generator = EmbeddingAlignmentGenerator(src_emb, tgt_emb, val_pairs)
