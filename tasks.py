@@ -104,13 +104,13 @@ class CaptionTask(Task):
             tokenize_fct = bert_tokenize_batch
             tokenize_args = (tokenizer,)
         elif self.args.text_model == 'ft':
-            ft = fasttext.load_model(args.embed_path)
+            ft = fasttext.load_model(self.args.embed_path)
             tokenize_fct = fasttext_tokenize_batch
             tokenize_args = (ft,)
 
-        if args.dataset == "coco":
+        if self.args.dataset == "coco":
             img_path = os.path.join(self.args.dataset_dir, "images")
-            annotation_path=os.path.join(self.args.dataset_dir, "annotations")
+            annotation_path = os.path.join(self.args.dataset_dir, "annotations")
             train_dataset, val_dataset, test_dataset = load_coco_data(img_path, annotation_path )
         else:
             img_path = os.path.join(self.args.dataset_dir, "images")
@@ -152,15 +152,15 @@ class CountingTask(Task):
     def build_dataset(self):
         if self.args.dataset == "mnist":
             trainval_dataset, test_dataset = load_mnist(args.data_dir)
-            n_val = int(len(trainval_dataset) * args.val_split)
+            n_val = int(len(trainval_dataset) * self.args.val_split)
             train_dataset, val_dataset = torch.utils.data.random_split(trainval_dataset, [len(trainval_dataset)-n_val, n_val])
             generator_cls = ImageCooccurenceGenerator
         elif self.args.dataset == "omniglot":
             train_dataset, val_dataset, test_dataset = load_omniglot(args.data_dir)
             generator_cls = OmniglotCooccurenceGenerator
-        elif args.dataset == "cifar100":
+        elif self.args.dataset == "cifar100":
             trainval_dataset, test_dataset = load_cifar(args.data_dir)
-            n_val = int(len(trainval_dataset) * args.val_split)
+            n_val = int(len(trainval_dataset) * self.args.val_split)
             train_dataset, val_dataset = torch.utils.data.random_split(trainval_dataset, [len(trainval_dataset)-n_val, n_val])
             generator_cls = CIFARCooccurenceGenerator
             train_dataset = DatasetByClass.splits(train_dataset, (100,))
@@ -223,11 +223,11 @@ class MetaDatasetTask(Task):
         self.args.input_size = self.args.latent_size
         set_model = super().build_model()
 
-        if args.img_encoder == "cnn":
+        if self.args.img_encoder == "cnn":
             encoder = CONV_MODEL_BUILDERS[self.args.dataset](self.args)
         else:
             encoder = torchvision.models.resnet101(pretrained=False)
-            encoder.fc = nn.Linear(2048, args.latent_size)
+            encoder.fc = nn.Linear(2048, self.args.latent_size)
         discriminator = MultiSetImageModel(encoder, set_model)
 
         return model
@@ -241,8 +241,8 @@ class MetaDatasetTask(Task):
 
     def build_training_args(self):
         train_args, eval_args = super().build_trainer_args()
-        train_args['data_kwargs']['p_dl'] = args.p_dl
-        eval_args['data_kwargs']['p_dl'] = args.p_dl
+        train_args['data_kwargs']['p_dl'] = self.args.p_dl
+        eval_args['data_kwargs']['p_dl'] = self.args.p_dl
         return train_args, eval_args
 
     def build_trainer_kwargs(self):
