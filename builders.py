@@ -15,7 +15,7 @@ def _build_mst(args):
         'dropout':args.dropout,
         'equi':False,
         'decoder_layers': args.decoder_layers,
-        'merge': 'sum' if args.model == 'sum-merge' else concat,
+        'merge': 'sum' if args.model == 'sum-merge' else 'concat',
     }
     set_model = MultiSetTransformer(args.input_size, args.latent_size, args.hidden_size, 1, **model_kwargs)
     return set_model
