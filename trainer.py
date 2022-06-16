@@ -82,7 +82,9 @@ class Trainer():
             if not os.path.exists(self.checkpoint_dir):
                 os.makedirs(self.checkpoint_dir)
             else:
-                initial_step, metrics = self.load_checkpoint()
+                checkpoint_path = os.path.join(self.checkpoint_dir, "checkpoint.pt")
+                if os.path.exists(checkpoint_path):
+                    initial_step, metrics = self.load_checkpoint()
 
         avg_loss = 0
         loss_fct = nn.BCEWithLogitsLoss()
