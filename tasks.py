@@ -1,11 +1,11 @@
 
 from builders import SET_MODEL_BUILDERS, CONV_MODEL_BUILDERS
 from trainer import Trainer, CountingTrainer, MetaDatasetTrainer, StatisticalDistanceTrainer, Pretrainer
-from datasets.counting import OmniglotCooccurenceGenerator, ImageCooccurenceGenerator, DatasetByClass, load_cifar, load_mnist, load_omniglot
-from datasets.alignment import EmbeddingAlignmentGenerator, CaptionGenerator, load_coco_data, load_flickr_data
-from datasets.distinguishability import DistinguishabilityGenerator
-from datasets.meta_dataset import MetaDatasetGenerator, Split
-from datasets.distributions import CorrelatedGaussianGenerator, GaussianGenerator, NFGenerator
+from generators.counting import OmniglotCooccurenceGenerator, ImageCooccurenceGenerator, DatasetByClass, load_cifar, load_mnist, load_omniglot
+from generators.alignment import EmbeddingAlignmentGenerator, CaptionGenerator, load_coco_data, load_flickr_data
+from generators.distinguishability import DistinguishabilityGenerator
+from generators.meta_dataset import MetaDatasetGenerator, Split
+from generators.distributions import CorrelatedGaussianGenerator, GaussianGenerator, NFGenerator
 from models.task import ImageEncoderWrapper, BertEncoderWrapper, EmbeddingEncoderWrapper, MultiSetImageModel
 from utils import kl_mc, mi_corr_gaussian, kl_knn, kraskov_mi1, whiten_split, normalize_sets
 
