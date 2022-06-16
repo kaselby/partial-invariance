@@ -140,6 +140,31 @@ class Trainer():
         return {'acc': n_correct / (args['batch_size'] * steps)}
 
 
+class CaptionTrainer(Trainer):
+    def train_step(self, i, steps, dataset):
+        def to_device(batch, device):
+            if isinstance(batch, dict):
+                batch['inputs'] =  {k:v.to(self.device) for k,v in batch['inputs'].items()}
+            else:
+                batch = batch.to(self.device)
+            return batch
+
+        args = self.train_args
+        (X,Y), target = dataset(args['batch_size'], **args['data_kwargs'])
+
+        out = self.model(to_device(X, self.device), to_device(Y, self.device))
+        loss = self.criterion(out.squeeze(-1), target.to(self.device))
+        loss.backward()
+
+        if (i+1) % args['grad_steps'] == 0 or i == (steps - 1):
+            self.optimizer.step()
+            if self.scheduler is not None:
+                self.scheduler.step()
+            self.optimizer.zero_grad()
+        
+        return loss.item()
+
+
 class CountingTrainer(Trainer):
     def __init__(self, model, optimizer, train_dataset, val_dataset, test_dataset, train_args, eval_args, device, logger=None,
             eval_every=500, save_every=2000, poisson=False, scheduler=None, checkpoint_dir=None, ss_schedule=None):

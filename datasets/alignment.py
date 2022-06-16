@@ -35,7 +35,7 @@ def load_flickr_data(imgdir, annfile, split_file):
     return train_dataset, val_dataset, test_dataset
 
 class CaptionGenerator():
-    def __init__(self, dataset, tokenize_fct, tokenize_args, p=0.5, device=torch.device('cpu')):
+    def __init__(self, dataset, tokenize_fct, tokenize_args, p=0.5):
         self.N = len(dataset)
         self.dataset = dataset
         #self.img_encoder = img_encoder
@@ -43,7 +43,6 @@ class CaptionGenerator():
         self.tokenize_fct = tokenize_fct
         self.tokenize_args = tokenize_args
         self.p = p
-        self.device = device
     
     def _split_dataset(self, dataset):
         imgs, text = [], []
@@ -53,17 +52,17 @@ class CaptionGenerator():
         return imgs, text
     
     def _build_text_batch(self, captions, use_first=True):
-        return self.tokenize_fct(captions, *self.tokenize_args, device=self.device, use_first=use_first)
+        return self.tokenize_fct(captions, *self.tokenize_args, use_first=use_first)
 
     def _build_img_batch(self, imgs):
         bs = len(imgs)
         ss = len(imgs[0])
-        batch = torch.stack([torch.stack(batch_j, 0) for batch_j in imgs], 0).to(self.device)
+        batch = torch.stack([torch.stack(batch_j, 0) for batch_j in imgs], 0)
         return batch
         
 
     def _generate(self, batch_size, set_size=(25,50)):
-        aligned = (torch.rand(batch_size) < self.p).to(self.device)
+        aligned = (torch.rand(batch_size) < self.p)
         n_samples = torch.randint(*set_size, (1,)).item()
 
         indices = torch.randperm(self.N)
@@ -84,7 +83,7 @@ class CaptionGenerator():
         return (X, Y), aligned.float()
     
     def _generate_overlap(self, batch_size, set_size=(25,50), overlap_mult=3):
-        aligned = (torch.rand(batch_size) < self.p).to(self.device)
+        aligned = (torch.rand(batch_size) < self.p)
         n_samples = torch.randint(*set_size, (1,)).item()
 
         indices = torch.randperm(self.N)
@@ -112,7 +111,7 @@ class CaptionGenerator():
             return self._generate(*args, **kwargs)
 
 
-def bert_tokenize_batch(captions, tokenizer, device=torch.device("cpu"), use_first=True):
+def bert_tokenize_batch(captions, tokenizer, use_first=True):
     bs = len(captions)
     ss = len(captions[0])
     ns = 1 if use_first else len(captions[0][0]) 
@@ -125,11 +124,9 @@ def bert_tokenize_batch(captions, tokenizer, device=torch.device("cpu"), use_fir
                 flattened_seqs += set_element
     
     tokenized_seqs = tokenizer(flattened_seqs, padding=True, truncation=True, return_tensors='pt')
-    tokenized_seqs = {k:v.to(device) for k,v in tokenized_seqs.items()}
-
     return {'set_size':ss, 'n_seqs': ns, 'inputs': tokenized_seqs}
 
-def fasttext_tokenize_batch(captions, ft, device=torch.device("cpu"), use_first=True):
+def fasttext_tokenize_batch(captions, ft, use_first=True):
     def preproc(s):
         s = s.translate(str.maketrans('', '', string.punctuation)).replace("\n", "")
         return s.lower().strip()
@@ -146,7 +143,7 @@ def fasttext_tokenize_batch(captions, ft, device=torch.device("cpu"), use_first=
                 import pdb;pdb.set_trace()
         batch.append(torch.stack(seqs, 0))
     batch = torch.stack(batch, 0)
-    return batch.to(device)
+    return batch
 
 
 def load_pairs(pair_file):

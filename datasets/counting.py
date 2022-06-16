@@ -195,9 +195,8 @@ def load_cifar(root_folder="./data"):
     return train_dataset, test_dataset
 
 class ImageCooccurenceGenerator():
-    def __init__(self, dataset, device=torch.device('cuda')):
+    def __init__(self, dataset):
         self.dataset = dataset
-        self.device=device
         self.image_size = dataset[0][0].size()[1:]
 
     def _sample_batch(self, batch_size, x_samples, y_samples):
@@ -219,7 +218,7 @@ class ImageCooccurenceGenerator():
             X.append(torch.stack(Xdata, 0))
             Y.append(torch.stack(Ydata, 0))
             targets.append(target)
-        return (torch.stack(X, 0).to(self.device), torch.stack(Y, 0).to(self.device)), torch.tensor(targets, dtype=torch.float).to(self.device)
+        return (torch.stack(X, 0), torch.stack(Y, 0)), torch.tensor(targets, dtype=torch.float)
 
     def __call__(self, *args, **kwargs):
         return self._generate(*args, **kwargs)

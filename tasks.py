@@ -89,9 +89,9 @@ class EmbeddingTask(Task):
         tgt_emb = fasttext.load_model(os.path.join(self.args.dataset_dir, "cc.fr.300.bin"))
         pairs = load_pairs(os.path.join(self.args.dataset_dir, "valid_en-fr.txt"))
         train_pairs, val_pairs, test_pairs = split_pairs(pairs, 0.1, 0.1)
-        train_generator = EmbeddingAlignmentGenerator(src_emb, tgt_emb, train_pairs, device=device)
-        val_generator = EmbeddingAlignmentGenerator(src_emb, tgt_emb, val_pairs, device=device)
-        test_generator = EmbeddingAlignmentGenerator(src_emb, tgt_emb, test_pairs, device=device)
+        train_generator = EmbeddingAlignmentGenerator(src_emb, tgt_emb, train_pairs)
+        val_generator = EmbeddingAlignmentGenerator(src_emb, tgt_emb, val_pairs)
+        test_generator = EmbeddingAlignmentGenerator(src_emb, tgt_emb, test_pairs)
         return train_generator, val_generator, test_generator
     
     def build_model(self, pretrained_model=None):
@@ -99,6 +99,7 @@ class EmbeddingTask(Task):
         return super().build_model()
 
 class CaptionTask(Task):
+    trainer_cls = CaptionTrainer
     def build_dataset(self):
         if self.args.text_model == 'bert':
             tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
@@ -118,9 +119,9 @@ class CaptionTask(Task):
             annotation_path = os.path.join(self.args.dataset_dir, "flickr30k", "annotations.token")
             splits_path = os.path.join(self.args.dataset_dir, "flickr30k", "splits.json")
             train_dataset, val_dataset, test_dataset = load_flickr_data(img_path, annotation_path, splits_path)
-        train_generator = CaptionGenerator(train_dataset, tokenize_fct, tokenize_args, device=device)
-        val_generator = CaptionGenerator(val_dataset, tokenize_fct, tokenize_args, device=device)
-        test_generator = CaptionGenerator(test_dataset, tokenize_fct, tokenize_args, device=device)
+        train_generator = CaptionGenerator(train_dataset, tokenize_fct, tokenize_args)
+        val_generator = CaptionGenerator(val_dataset, tokenize_fct, tokenize_args)
+        test_generator = CaptionGenerator(test_dataset, tokenize_fct, tokenize_args)
         return train_generator, val_generator, test_generator
     
     def build_model(self, pretrained_model=None):
