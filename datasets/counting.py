@@ -1,8 +1,11 @@
+import torchvision
 import torch
+from torch.utils.data import IterableDataset, DataLoader, Dataset, Subset, ConcatDataset
+from torchvision.datasets import Omniglot
 from PIL import Image
 
 #from torchvision
-def list_dir(root: str, prefix: bool = False) -> List[str]:
+def list_dir(root: str, prefix: bool = False):
     """List all directories at a given root
     Args:
         root (str): Path to directory whose folders need to be listed
@@ -15,7 +18,7 @@ def list_dir(root: str, prefix: bool = False) -> List[str]:
         directories = [os.path.join(root, d) for d in directories]
     return directories
 
-def list_files(root: str, suffix: str, prefix: bool = False) -> List[str]:
+def list_files(root: str, suffix: str, prefix: bool = False):
     """List all files ending with a suffix at a given root
     Args:
         root (str): Path to directory whose folders need to be listed
@@ -100,7 +103,7 @@ class ModifiedOmniglotDataset(Dataset):
         image_name, character_class = self._flat_character_images[index]
         return self._make_output(image_name, character_class)
 
-    def __getitem__(self, index: int) -> Tuple[Any, Any]:
+    def __getitem__(self, index: int):
         """
         Args:
             index (int): Index
@@ -154,7 +157,6 @@ def load_omniglot(root_folder="./data"):
     train_dataset, = ModifiedOmniglotDataset.splits(root_folder, -1, transform=transforms, img_dir="images_background")
     val_dataset, test_dataset = ModifiedOmniglotDataset.splits(root_folder, 5, -1, transform=transforms, img_dir="images_evaluation")
     
-
     return train_dataset, val_dataset, test_dataset
 
 
