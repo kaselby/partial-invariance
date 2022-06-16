@@ -12,16 +12,6 @@ from utils import kl_mc, mi_corr_gaussian, kl_knn, kraskov_mi1, whiten_split, no
 import fasttext
 from transformers import BertTokenizer
 
-TASKS = {
-    'counting': CountingTask,
-    'align/caption': CaptionTask,
-    'align/embed': EmbeddingTask,
-    'dist/synthetic': SyntheticDistinguishabilityTask,
-    'dist/meta-dataset': MetaDatasetTask,
-    'stat/KL': KLTask,
-    'stat/MI': MITask
-}
-
 
 class Task():
     pretrain_task=None
@@ -352,4 +342,15 @@ class ImageClassificationTask(Task):
         return trainer
 
 
-    
+
+
+
+TASKS = {
+    'counting': CountingTask,
+    'align/caption': CaptionTask,
+    'align/embed': EmbeddingTask,
+    'dist/synthetic': SyntheticDistinguishabilityTask,
+    'dist/meta-dataset': MetaDatasetTask,
+    'stat/KL': KLTask,
+    'stat/MI': MITask
+}
