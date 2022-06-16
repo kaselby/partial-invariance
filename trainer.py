@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 
+import tqdm
 import os
 
 SS_SCHEDULE_15=[{'set_size':(1,5), 'steps':20000}, {'set_size':(3,10), 'steps':5000}, {'set_size':(8,15), 'steps':5000}]
