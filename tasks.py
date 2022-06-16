@@ -47,16 +47,15 @@ class Task():
         trainer_kwargs = {
             'eval_every': self.args.eval_every,
             'save_every': self.args.save_every,
-            'checkpoint_dir': os.path.join(self.args.checkpoint_dir, self.args.checkpoint_name),
             'ss_schedule': self.args.ss_schedule
         }
         return trainer_kwargs
     
-    def build_trainer(self, model, optimizer, scheduler, train_dataset, val_dataset, test_dataset, device, logger):
+    def build_trainer(self, model, optimizer, scheduler, train_dataset, val_dataset, test_dataset, device, logger, checkpoint_dir=None):
         train_args, eval_args = self.build_training_args()
         trainer_kwargs = self.build_trainer_kwargs()
         trainer = self.trainer_cls(model, optimizer, train_dataset, val_dataset, test_dataset, 
-            train_args, eval_args, device, logger=logger, scheduler=scheduler, **trainer_kwargs)
+            train_args, eval_args, device, logger=logger, scheduler=scheduler, checkpoint_dir=checkpoint_dir, **trainer_kwargs)
         return trainer
 
 
