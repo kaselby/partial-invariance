@@ -11,6 +11,7 @@ from utils import kl_mc, mi_corr_gaussian, kl_knn, kraskov_mi1, whiten_split, no
 
 import fasttext
 from transformers import BertTokenizer, BertModel
+import torchvision
 
 import os
 
