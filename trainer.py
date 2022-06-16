@@ -1,6 +1,8 @@
 import torch
 import torch.nn as nn
 
+import os
+
 SS_SCHEDULE_15=[{'set_size':(1,5), 'steps':20000}, {'set_size':(3,10), 'steps':5000}, {'set_size':(8,15), 'steps':5000}]
 SS_SCHEDULE_30=[{'set_size':(1,5), 'steps':20000}, {'set_size':(3,10), 'steps':5000}, {'set_size':(8,15), 'steps':5000}, {'set_size':(10,30), 'steps':5000}]
 SS_SCHEDULE_50=[{'set_size':(1,5), 'steps':20000}, {'set_size':(3,10), 'steps':5000}, {'set_size':(8,15), 'steps':5000}, {'set_size':(10,30), 'steps':5000}, {'set_size':(25,50), 'steps':10000}]
