@@ -146,8 +146,8 @@ class CSAB(nn.Module):
         self._init_blocks(input_size, latent_size, hidden_size, num_heads, remove_diag, nn_attn, weight_sharing, ln=ln, **kwargs)
         self.merge = merge
         if self.merge == 'concat':
-            self.fc_X = nn.Linear(latent_size, latent_size)
-            self.fc_Y = nn.Linear(latent_size, latent_size)
+            self.fc_X = nn.Linear(2*latent_size, latent_size)
+            self.fc_Y = nn.Linear(2*latent_size, latent_size)
 
         self.remove_diag = remove_diag
         if ln:
