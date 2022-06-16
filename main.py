@@ -103,7 +103,7 @@ if __name__ == '__main__':
         torch.save({'id':args.run_id, 'args':args}, args_file)
         #write_log(args.logfile, args.run_name, args.run_id)
 
-    checkpoint_dir = os.path.join(self.args.checkpoint_dir, self.args.checkpoint_name)
+    checkpoint_dir = os.path.join(args.checkpoint_dir, args.checkpoint_name)
     checkpoint_file = os.path.join(checkpoint_dir, 'checkpoint.pt')
     resume = os.path.exists(checkpoint_file)
 
