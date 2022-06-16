@@ -4,6 +4,8 @@ from torch.utils.data import IterableDataset, DataLoader, Dataset, Subset, Conca
 from torchvision.datasets import Omniglot
 from PIL import Image
 
+import os
+
 #from torchvision
 def list_dir(root: str, prefix: bool = False):
     """List all directories at a given root

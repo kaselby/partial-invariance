@@ -4,7 +4,7 @@ import torchvision.transforms as T
 import torch
 from torch.utils.data import IterableDataset, Dataset, Subset
 
-
+import os
 
 def load_coco_data(imgdir, anndir):
     transforms = T.Compose([T.Resize(256), T.CenterCrop(224), T.ToTensor(), T.Normalize(mean=[0.485, 0.456, 0.406],
@@ -211,7 +211,6 @@ class EmbeddingAlignmentGenerator():
             X.append(X_i)
             if aligned[i].item():
                 Y.append(Y_aligned_i)
-                #Y.append(["y" for _ in captions])
             else:
                 unaligned_indices = torch.multinomial(torch.ones(n_samples * overlap_mult), n_samples)
                 _, Y_unaligned_i = self._generate_sets(indices[mindex+unaligned_indices])
