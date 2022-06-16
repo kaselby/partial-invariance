@@ -17,7 +17,7 @@ import os
 
 
 class Task():
-    pretrain_task=None
+    pretraining_task=None
     trainer_cls=Trainer
     def __init__(self, args):
         self.args = args
@@ -149,7 +149,7 @@ class CaptionTask(Task):
 #
 
 class CountingTask(Task):
-    pretrain_task = ImageClassificationTask
+    pretraining_task = ImageClassificationTask
     trainer_cls = CountingTrainer
     def build_dataset(self):
         if self.args.dataset == "mnist":

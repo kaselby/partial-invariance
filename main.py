@@ -111,7 +111,7 @@ if __name__ == '__main__':
     task = TASKS[args.task](args)
     train_dataset, val_dataset, test_dataset = task.build_dataset()
 
-    if task.pretraining_task is not None and not resume:
+    if task.pretraining_task is not None and not resume and args.pretrain_steps > 0:
         pretraining_task = task.pretraining_task(args)
         pretraining_model = pretrain_task.build_model().to(device)
         pretraining_opt = torch.optim.Adam(pretrain_model.parameters(), lr=args.pretrain_lr)
