@@ -78,8 +78,8 @@ class Trainer():
         initial_step=0
 
         if self.checkpoint_dir is not None:
-            if not os.path.exists(checkpoint_dir):
-                os.makedirs(checkpoint_dir)
+            if not os.path.exists(self.checkpoint_dir):
+                os.makedirs(self.checkpoint_dir)
             else:
                 initial_step, metrics = self.load_checkpoint()
 
