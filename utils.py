@@ -40,3 +40,117 @@ def linear_block(input_size, hidden_size, output_size, num_layers, activation_fc
     else:
         raise AssertionError("num_layers must be >= 0")
     return nn.Sequential(*layers)
+
+
+def whiten_split(X,Y):
+    n = X.size(1)
+    D = torch.cat([X,Y],dim=1)
+    Dp = whiten(D)
+    return Dp[:, :n], Dp[:, n:]
+
+def normalize_sets(*X):
+    avg_norm = torch.cat(X, dim=1).norm(dim=-1,keepdim=True).mean(dim=1,keepdim=True)
+    return [x / avg_norm for x in X], avg_norm
+
+
+# distance functions
+
+def knn_dist(X, k, Y=None, bs=32):
+    if Y is None:
+        Y = X
+        k += 1
+    X = X if type(X) == torch.Tensor else torch.Tensor(X)
+    Y = Y if type(Y) == torch.Tensor else torch.Tensor(Y)
+    outer_bs = Y.size(0)
+    N = Y.size(1)
+    n_batches = int(math.ceil(N/bs))
+    dists = torch.zeros(outer_bs,N)
+    if torch.cuda.is_available():
+        X = X.to('cuda')
+        Y = Y.to('cuda')
+        dists=dists.to('cuda')
+    for i in range(n_batches):
+        j_min = i*bs
+        j_max = min(N, (i+1)*bs)
+        all_dists_i = (Y[:,j_min:j_max].unsqueeze(2) - X.unsqueeze(1)).norm(dim=-1)
+        topk_i = all_dists_i.topk(k, dim=-1, largest=False)[0][:,:,k-1]
+        dists[:,j_min:j_max] = topk_i
+    return dists
+
+def kl_knn(X, Y, k=1, xi=1e-5):
+    n = X.size(1)
+    m = Y.size(1)
+    d = X.size(-1)
+
+    nu = knn_dist(X=Y, Y=X, k=k) + xi
+    eps = knn_dist(X=X, k=k) + xi
+
+    return d/n * torch.log(nu/eps).sum(dim=1) + math.log(m/(n-1))
+
+def kl_mc(p, q, X=None, Y=None, N=500):
+    if X is None:
+        X = p.sample((N,)).transpose(0,1)
+    return (p.log_prob(X.transpose(0,1)) - q.log_prob(X.transpose(0,1))).mean(dim=0)  
+
+
+def mi_corr_gaussian(corr, d=None, X=None):
+    assert (d is None) != (X is None)
+    if X is not None:
+        d = X.size(-1)
+    return -d/2 * torch.log(1-torch.pow(corr, 2))
+
+
+def get_dists(X, Y=None, bs=32):
+    if Y is None:
+        Y = X
+    X = X if type(X) == torch.Tensor else torch.Tensor(X)
+    Y = Y if type(Y) == torch.Tensor else torch.Tensor(Y)
+    outer_bs = Y.size(0)
+    N = X.size(1)
+    M = Y.size(1)
+    n_batches = int(math.ceil(N/bs))
+    dists = torch.zeros(outer_bs, N, M)
+    if torch.cuda.is_available():
+        X = X.to('cuda')
+        Y = Y.to('cuda')
+        dists=dists.to('cuda')
+    for i in range(n_batches):
+        j_min = i*bs
+        j_max = min(N, (i+1)*bs)
+        all_dists_i = (X[:,j_min:j_max].unsqueeze(2) - Y.unsqueeze(1)).norm(dim=-1)
+        dists[:,j_min:j_max] = all_dists_i
+    return dists
+
+def kraskov_mi1(X, Y, k=1):
+    assert X.size(1) == Y.size(1)
+    N = X.size(1)
+    d = X.size(-1)
+    mask = (torch.eye(N)).to(X.device)
+    mask[mask==1] = float('inf')
+    Xdists = get_dists(X, X) + mask
+    Ydists = get_dists(Y, Y) + mask
+    Zdists = torch.maximum(Xdists, Ydists)
+    eps,_ = Zdists.topk(k, dim=-1, largest=False)
+    n_x = (Xdists < eps).float().sum(dim=-1)
+    n_y = (Ydists < eps).float().sum(dim=-1)
+    out = torch.digamma(torch.tensor([k], device=X.device)) + torch.digamma(torch.tensor([N], device=X.device)) - (torch.digamma(n_x+1) + torch.digamma(n_y+1)).mean(dim=1)
+    return out
+
+def kraskov_mi2(X, Y, k=1):
+    assert X.size(1) == Y.size(1)
+    N = X.size(1)
+    d = X.size(-1)
+    mask = (torch.eye(N)).to(X.device)
+    mask[mask==1] = float('inf')
+    Xdists,_ = torch.sort(get_dists(X, X) + mask, dim=-1)
+    Ydists,_ = torch.sort(get_dists(Y, Y) + mask, dim=-1)
+    eps_x = Xdists[:,:,k]
+    eps_y = Ydists[:,:,k]
+    eps = torch.maximum(eps_x, eps_y)
+    n_x = (Xdists < eps_x.unsqueeze(-1)).float().sum(dim=-1)
+    n_y = (Ydists < eps_y.unsqueeze(-1)).float().sum(dim=-1)
+
+    out = torch.digamma(k) + torch.digamma(N) - (torch.digamma(n_x) + torch.digamma(n_y).mean(dim=1)) - 1/k
+    return out
+
+

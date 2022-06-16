@@ -23,7 +23,7 @@ class SetSizeScheduler():
         return self.schedule[-1]['set_size']    #fallback for now
 
 class Trainer():
-    def __init__(self, model, optimizer, train_dataset, val_dataset, test_dataset, train_args, eval_args, device
+    def __init__(self, model, optimizer, train_dataset, val_dataset, test_dataset, train_args, eval_args, device, logger=None,
             eval_every=500, save_every=2000, criterion=nn.BCEWithLogitsLoss(), scheduler=None, checkpoint_dir=None, ss_schedule=None):
         self.model = model
         self.optimizer = optimizer
@@ -33,6 +33,7 @@ class Trainer():
         self.train_args = train_args
         self.eval_args = eval_args
         self.device = device
+        self.logger = logger
         self.eval_every = eval_every
         self.save_every = save_every
         self.criterion = criterion
@@ -61,10 +62,17 @@ class Trainer():
         return step, metrics
     
     def train(self, train_steps, val_steps, test_steps):
-        metrics={
+        all_metrics={
             'train/loss': [],
-            'val/acc': []
         }
+
+        def _log(name, value, step=-1):
+            if name not in all_metrics:
+                all_metrics[name] = []
+            all_metrics[name].append(value)
+            if self.logger is not None and step >= 0:
+                self.logger.add_scalar(name, value, step)
+
         initial_step=0
 
         if self.checkpoint_dir is not None:
@@ -83,25 +91,26 @@ class Trainer():
 
             loss = self.train_step(i, steps, self.train_dataset)
             
-            avg_loss += loss
-            metrics['train/loss'].append(loss)
+            _log('train/loss', loss, i)
 
             if i > initial_step:
                 if i % self.eval_every == 0:
-                    acc = self.evaluate(eval_steps, self.val_dataset)
-                    metrics['val/acc'].append(acc)
-                    avg_loss /= eval_every
-                    print("Step: %d\tLoss: %f\tAccuracy: %f" % (i, avg_loss, acc))
-                    avg_loss = 0
+                    val_metrics = self.evaluate(val_steps, self.val_dataset)
+                    for k, v in val_metrics.items():
+                        key = "val/"+k
+                        _log(key, v, i)
 
                 if i % self.save_every == 0:
                     self.save_checkpoint()
 
         if self.test_dataset is not None:
-            test_acc = evaluate(test_steps, self.test_dataset)
-            metrics['test/acc'] = test_acc
+            test_metrics = evaluate(test_steps, self.test_dataset)
+            for k, v in test_metrics.items():
+                key = "test/"+k
+                _log(key, v, -1)
 
-        return metrics
+
+        return all_metrics
     
     def train_step(self, i, steps, dataset):
         args = self.train_args
@@ -128,13 +137,13 @@ class Trainer():
                 out = self.model(X.to(self.device),Y.to(self.device)).squeeze(-1)
                 n_correct += torch.eq((out > 0), target.to(self.device)).sum().item()
         
-        return n_correct / (args['batch_size'] * steps)
+        return {'acc': n_correct / (args['batch_size'] * steps)}
 
 
 class CountingTrainer(Trainer):
-    def __init__(self, model, optimizer, train_dataset, val_dataset, test_dataset, train_args, eval_args, device,
+    def __init__(self, model, optimizer, train_dataset, val_dataset, test_dataset, train_args, eval_args, device, logger=None,
             eval_every=500, save_every=2000, poisson=False, scheduler=None, checkpoint_dir=None, ss_schedule=None):
-        super(self, model, optimizer, train_dataset, val_dataset, test_dataset, train_args, eval_args, device,
+        super(self, model, optimizer, train_dataset, val_dataset, test_dataset, train_args, eval_args, device, logger=logger,
             eval_every=eval_every save_every=save_every, criterion=poisson_loss if poisson else nn.MSELoss(), scheduler=scheduler, 
             checkpoint_dir=checkpoint_dir, ss_schedule=ss_schedule)
         self.poisson=poisson
@@ -149,13 +158,15 @@ class CountingTrainer(Trainer):
                     out = torch.exp(out)
                 target = target.to(self.device).int()
                 n_correct += torch.logical_or(torch.eq(out.ceil(), target), torch.eq(out.ceil()-1, target)).sum().item()
-        return n_correct / (batch_size * steps)
+        return {'acc':n_correct / (batch_size * steps)}
 
 
 class MetaDatasetTrainer(Trainer):
-    def __init__(self, model, optimizer, train_dataset, val_dataset, test_dataset, train_args, eval_args, device, save_every=2000, episode_classes=100, episode_datasets=5, episode_length=250, scheduler=None, checkpoint_dir=None, ss_schedule=None):
+    def __init__(self, model, optimizer, train_dataset, val_dataset, test_dataset, train_args, eval_args, device, logger=None,
+            save_every=2000, episode_classes=100, episode_datasets=5, episode_length=250, scheduler=None, checkpoint_dir=None, 
+            ss_schedule=None):
         super(self, model, optimizer, train_dataset, val_dataset, test_dataset, train_args, eval_args, device,
-            save_every=save_every, criterion=nn.BCEWithLogitsLoss(), scheduler=scheduler, 
+            logger=logger, save_every=save_every, criterion=nn.BCEWithLogitsLoss(), scheduler=scheduler, 
             checkpoint_dir=checkpoint_dir, ss_schedule=ss_schedule)
         self.episode_classes = episode_classes
         self.episode_datasets = episode_datasets
@@ -164,8 +175,15 @@ class MetaDatasetTrainer(Trainer):
     def train(self, train_steps, val_steps, test_steps):
         metrics={
             'train/loss': [],
-            'val/acc': []
         }
+
+        def _log(name, value, step=-1):
+            if name not in all_metrics:
+                all_metrics[name] = []
+            all_metrics[name].append(value)
+            if self.logger is not None and step >= 0:
+                self.logger.add_scalar(name, value, step)
+
         initial_step=0
 
         if self.checkpoint_dir is not None:
@@ -178,17 +196,16 @@ class MetaDatasetTrainer(Trainer):
         n_episodes = math.ceil((train_steps - initial_step) / self.episode_length)
         step = initial_step
         for _ in tqdm.tqdm(range(n_episodes)):
-            episode = self.train_dataset.get_episode(self.episode_classes, self.episode_datasets)
+            train_episode = self.train_dataset.get_episode(self.episode_classes, self.episode_datasets)
             for i in range(episode_length):
                 if self.ss_schedule is not None:
                     set_size = self.ss_schedule.get_set_size(step)
                     self.train_args['data_kwargs']['set_size'] = set_size
                     self.eval_args['data_kwargs']['set_size'] = set_size
 
-                loss = self.train_step(step, steps, episode)
+                loss = self.train_step(step, steps, train_episode)
                 
-                avg_loss += loss
-                metrics['train/loss'].append(loss)
+                _log('train/loss', loss, step)
 
                 step += 1
 
@@ -199,19 +216,20 @@ class MetaDatasetTrainer(Trainer):
                     if step >= steps:
                         break
             else:
-                episode = self.val_dataset.get_episode(self.episode_classes, self.episode_datasets)
-                acc = self.evaluate(val_steps, episode)
-                metrics['val/acc'].append(acc)
-                avg_loss /= eval_every
-                print("Step: %d\tLoss: %f\tAccuracy: %f" % (step, avg_loss, acc))
-                avg_loss = 0
+                val_episode = self.val_dataset.get_episode(self.episode_classes, self.episode_datasets)
+                val_metrics = self.evaluate(val_steps, val_episode)
+                for k, v in val_metrics.items():
+                    key = "val/"+k
+                    _log(key, v, step)
                 continue
             break
              
         if self.test_dataset is not None:
             episode = self.test_dataset.get_episode(self.episode_classes, self.episode_datasets)
-            test_acc = self.evaluate(test_steps, self.test_dataset)
-            metrics['test/acc'] = test_acc
+            test_metrics = self.evaluate(val_steps, val_episode)
+            for k, v in test_metrics.items():
+                key = "test/"+k
+                _log(key, v, -1)
 
         return metrics
 
@@ -225,6 +243,84 @@ class MetaDatasetTrainer(Trainer):
                 n_correct += torch.eq((out > 0), target.to(self.device)).sum().item()
         
         return n_correct / (args['batch_size'] * steps)
+
+
+class StatisticalDistanceTrainer(Trainer):
+    def __init__(self, model, optimizer, train_dataset, val_dataset, test_dataset, train_args, eval_args, device, criterion, 
+            label_fct, exact_loss, baselines, logger=None, save_every=2000, eval_every=500, scheduler=None, 
+            checkpoint_dir=None, ss_schedule=None):
+        super(self, model, optimizer, train_dataset, val_dataset, test_dataset, train_args, eval_args, device,
+            save_every=save_every, criterion=criterion, scheduler=scheduler, 
+            checkpoint_dir=checkpoint_dir, ss_schedule=ss_schedule)
+        self.label_fct = label_fct
+        self.exact_loss = exact_loss
+        self.baselines = baselines
+    
+    def train_step(self, i, steps, dataset):
+        args = self.train_args
+        if self.exact_loss:
+            X, theta = dataset(args['batch_size'], **args['sample_kwargs'])
+            labels = label_fct(*theta, X=X[0], **args['label_kwargs']).squeeze(-1)
+        else:
+            X = dataset(args['batch_size'], **args['sample_kwargs'])
+            if args['normalize'] == 'scale-linear':
+                X, avg_norm = normalize_sets(*X)
+            labels = label_fct(*X, **args['label_kwargs'])
+        if args['normalize'] == 'scale-inv':
+            X, avg_norm = normalize_sets(*X)
+        elif args['normalize'] == 'whiten':
+            X = whiten_split(*X)
+        
+        out = self.model(*X).squeeze(-1)
+
+        loss = self.criterion(out, labels)
+        loss.backward()
+
+        if (i+1) % args['grad_steps'] == 0 or i == (steps - 1):
+            self.optimizer.step()
+            if self.scheduler is not None:
+                self.scheduler.step()
+            self.optimizer.zero_grad()
+        
+        return loss.item()
+
+    def evaluate(self, steps, dataset):
+        args = self.eval_args
+        model_losses=[]
+        baseline_losses={baseline:[] for baseline in self.baselines.keys()}
+        with torch.no_grad():
+            for i in tqdm.tqdm(range(steps)):
+                if self.exact_loss:
+                    X, theta = dataset(args['batch_size'], **args['sample_kwargs'])
+                    labels = label_fct(*theta, X=X[0], **args['label_kwargs']).squeeze(-1)
+                else:
+                    X = dataset(args['batch_size'], **args['sample_kwargs'])
+                    labels = label_fct(*X, **args['label_kwargs'])
+                
+                for baseline_name, baseline_fct in self.baselines.items():
+                    baseline_out = baseline_fct(*X).squeeze(-1)
+                    baseline_loss = self.criterion(out, labels)
+                    baseline_losses[baseline_name].append(baseline_loss.item())
+
+                if not self.exact_loss and args['normalize'] == 'scale-linear':
+                    X, avg_norm = normalize_sets(*X)
+                    labels = label_fct(*X, **args['label_kwargs'])
+
+                if args['normalize'] == 'scale-inv':
+                    X, avg_norm = normalize_sets(*X)
+                elif args['normalize'] == 'whiten':
+                    X = whiten_split(*X)
+                
+                out = self.model(*X).squeeze(-1)
+                loss = self.criterion(out, labels)
+                model_losses.append(loss.item())
+
+        metrics = {'loss': sum(model_losses)/len(model_losses)}
+        for baseline_name, baseline_losses in baseline_losses.items():
+            key = baseline_name + '/loss'
+            metrics[key] = sum(baseline_losses)/len(baseline_losses)
+        return metrics
+
 
 
 #

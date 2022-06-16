@@ -12,68 +12,78 @@ import shutil
 from datetime import date
 
 from tasks import TASKS
+from builders import SET_MODEL_BUILDERS
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
+    # File paths
     parser.add_argument('run_name', type=str)
-    parser.add_argument('--run_id', type=int, default=-1)
-    parser.add_argument('--logfile', type=str, default="exp_logs.pt")
-    parser.add_argument('--n', type=int, default=2)
-    parser.add_argument('--lr_d', type=float, default=1e-4)
-    parser.add_argument('--lr_g', type=float, default=1e-4)
-    parser.add_argument('--latent_size', type=int, default=16)
-    parser.add_argument('--hidden_size', type=int, default=32)
-    parser.add_argument('--num_heads', type=int, default=4)
-    parser.add_argument('--disc_blocks', type=int, default=4)
-    parser.add_argument('--gen_blocks', type=int, default=4)
-    parser.add_argument('--steps', type=int, default=100000)
-    parser.add_argument('--val_steps', type=int, default=250)
-    parser.add_argument('--save_every', type=int, default=10000)
-    parser.add_argument('--eval_every', type=int, default=2000)
-    parser.add_argument('--batch_size', type=int, default=64)
-    parser.add_argument('--reference_size', type=int, nargs=2, default=[500,750])
-    parser.add_argument('--candidate_size', type=int, nargs=2, default=[200,300])
-    parser.add_argument('--output_layers', type=int, default=1)
-    parser.add_argument('--weight_sharing', type=str, choices=['none', 'sym', 'cross'], default='none')
-    parser.add_argument('--dropout', type=float, default=0)
-    parser.add_argument('--checkpoint_dir', type=str, default=None)
     parser.add_argument('--basedir', type=str, default="runs")
-    parser.add_argument('--l_smooth', type=float, default=0.1)
-    parser.add_argument('--p_flip', type=float, default=0.05)
-    parser.add_argument('--warmup_steps', type=int, default=150000)
-    parser.add_argument('--anneal_steps', type=int, default=500000)
-    parser.add_argument('--noise_dim', type=int, default=1)
-    parser.add_argument('--normalize', action="store_true")
-    parser.add_argument('--blur', default=0.05)
-    parser.add_argument('--task', type=str, choices=('gmm', 'mnist', 'omniglot', 'base-mnist'), default='gmm')
     parser.add_argument('--data_dir', type=str, default='./data')
-    parser.add_argument('--nu', type=float, default=3)
-    parser.add_argument('--mu0', type=float, default=0)
-    parser.add_argument('--s0', type=float, default=0.2)
-    parser.add_argument('--mu_scale', type=float, default=8)
-    parser.add_argument('--pretrained', default=None)
-    parser.add_argument('--no_encoder', action='store_true')
-    parser.add_argument('--conv_mode', type=str, choices=('none', 'seq', 'trans'), default='none')
-    parser.add_argument('--model_type', type=str, default='base')
-    parser.add_argument('--criterion', type=str, choices=('bce', 'wgan', 'hinge'), default='bce')
-    parser.add_argument('--lambda_gp', type=float, default=10.0)
-    parser.add_argument('--n_critic', type=int, default=1)
-    parser.add_argument('--gen_sample_size', type=int, nargs=2, default=(4, 4))
-    parser.add_argument('--spectral_norm', action="store_true")
-    parser.add_argument('--specnorm_param', action="store_true")
-    parser.add_argument('--gradient_penalty', action="store_true")
-    parser.add_argument('--r1', action="store_true")
-    parser.add_argument('--cycle_loss', action="store_true")
-    parser.add_argument('--bn', action="store_true")
-    parser.add_argument('--add_img_noise', action="store_true")
-    parser.add_argument('--save_gen_samples', action="store_true")
-    parser.add_argument('--lambda_cyc', type=float, default=1.0)
-    parser.add_argument('--eps', type=float, default=1e-8)
-    parser.add_argument('--imgsize', type=int, default=-1)
-    parser.add_argument('--gaussian_noise', type=float, default=0)
+    parser.add_argument('--checkpoint_dir', type=str, default="/checkpoint/kaselby")
+    parser.add_argument('--checkpoint_name', type=str, default=None)
+
+    # Run config
+    parser.add_argument('--model', type=str, default='mst', choices=SET_MODEL_BUILDERS.keys())
+    parser.add_argument('--dataset', type=str)
+    parser.add_argument('--task', type=str)
+
+    # Training args
+    parser.add_argument('--batch_size', type=int, default=32)
+    parser.add_argument('--lr', type=float, default=1e-3)
+    parser.add_argument('--warmup_steps', type=int, default=1000)
+    parser.add_argument('--grad_steps', type=int, default=1)
+    parser.add_argument('--set_size', type=int, nargs=2, default=[6,10])
+    parser.add_argument('--ss_schedule', type=int, choices=[-1, 15, 30, 50, 75], default=-1)
+    parser.add_argument('--eval_every', type=int, default=500)
+    parser.add_argument('--save_every', type=int, default=2000)
+    parser.add_argument('--train_steps', type=int, default=5000)
+    parser.add_argument('--val_steps', type=int, default=200)
+    parser.add_argument('--test_steps', type=int, default=500)
     parser.add_argument('--use_amp', action="store_true")
     parser.add_argument('--use_apex', action="store_true")
+    
+    # Model args
+    parser.add_argument('--num_blocks', type=int, default=2)
+    parser.add_argument('--num_heads', type=int, default=4)
+    parser.add_argument('--latent_size', type=int, default=256)
+    parser.add_argument('--hidden_size', type=int, default=512)
+    parser.add_argument('--dropout', type=float, default=0)
+    parser.add_argument('--decoder_layers', type=int, default=1)
+    parser.add_argument('--ln', action='store_true')
+    parser.add_argument('--weight_sharing', type=str, choices=['none', 'cross', 'sym'], default='none')
+
+    # Pretraining args
+    parser.add_argument('--pretrain_steps', type=int, default=0)
+    parser.add_argument('--pretrain_lr', type=float, default=3e-4)
+
+    # Counting args
+    parser.add_argument('--poisson', action='store_true')
+    parser.add_argument('--val_split', type=float, default=0.1)
+
+    # Alignment args
+    parser.add_argument('--text_model', type=str, choices=['bert', 'ft'], default='bert')
+    parser.add_argument('--img_model', type=str, choices=['resnet', 'cnn'], default='resnet')   #also for md
+    parser.add_argument('--embed_path', type=str, default="cc.en.300.bin")
+    parser.add_argument('--embed_dim', type=int, default=300)
+    parser.add_argument('--overlap_mult', type=int, default=-1)
+
+    # Distinguishability args
+    parser.add_argument('--episode_classes', type=int, default=100)
+    parser.add_argument('--episode_datasets', type=int, default=5)
+    parser.add_argument('--episode_length', type=int, default=500)
+    parser.add_argument('--p_dl', type=float, default=0.3)
+    parser.add_argument('--n', type=int, default=8)     # also for stat
+    parser.add_argument('--md_path', type=str, default="/ssd003/projects/meta-dataset")
+
+    # Statistical distance args
+    parser.add_argument('--normalize', type=str, choices=('none', 'scale-linear', 'scale-inv', 'whiten'))
+    parser.add_argument('--scaling', type=float, default=0.5)
+    parser.add_argument('--blur', type=float, default=0.05)
+    parser.add_argument('--equi', action='store_true')
+    parser.add_argument('--vardim', action='store_true')
+    
     return parser.parse_args()
 
 def write_log(logfile, run_name, run_id):

@@ -1,9 +1,31 @@
 
 from builders import SET_MODEL_BUILDERS, CONV_MODEL_BUILDERS
-from trainer import Trainer, CountingTrainer, MetaDatasetTrainer
-from generators import MetaDatasetGenerator, OmniglotCooccurenceGenerator, MN
+from trainer import Trainer, CountingTrainer, MetaDatasetTrainer, StatisticalDistanceTrainer, Pretrainer
+from datasets.counting import OmniglotCooccurenceGenerator, ImageCooccurenceGenerator, DatasetByClass, load_cifar, load_mnist, load_omniglot
+from datasets.alignment import EmbeddingAlignmentGenerator, CaptionGenerator, load_coco_data, load_flickr_data
+from datasets.distinguishability import DistinguishabilityGenerator
+from datasets.meta_dataset import MetaDatasetGenerator, Split
+from datasets.distributions import CorrelatedGaussianGenerator, GaussianGenerator, NFGenerator
+from models.task import ImageEncoderWrapper, BertEncoderWrapper, EmbeddingEncoderWrapper, MultiSetImageModel
+from utils import kl_mc, mi_corr_gaussian, kl_knn, kraskov_mi1, whiten_split, normalize_sets
+
+import fasttext
+from transformers import BertTokenizer
+
+TASKS = {
+    'counting': CountingTask,
+    'align/caption': CaptionTask,
+    'align/embed': EmbeddingTask,
+    'dist/synthetic': SyntheticDistinguishabilityTask,
+    'dist/meta-dataset': MetaDatasetTask,
+    'stat/KL': KLTask,
+    'stat/MI': MITask
+}
+
 
 class Task():
+    pretrain_task=None
+    trainer_cls=Trainer
     def __init__(self, args):
         self.args = args
 
@@ -24,17 +46,21 @@ class Task():
             'data_kwargs': {'set_size': self.args.set_size}
         }
         return train_args, eval_args
-    
-    def build_trainer(self, model, optimizer, scheduler, train_dataset, val_dataset, test_dataset, device):
-        train_args, eval_args = self.build_training_args()
+
+    def build_trainer_kwargs(self):
         trainer_kwargs = {
             'eval_every': self.args.eval_every,
             'save_every': self.args.save_every,
             'checkpoint_dir': self.args.checkpoint_dir,
             'ss_schedule': self.args.ss_schedule
         }
-        trainer = Trainer(model, optimizer, train_dataset, val_dataset, test_dataset, 
-            train_args, eval_args, device, scheduler=scheduler, **trainer_kwargs)
+        return trainer_kwargs
+    
+    def build_trainer(self, model, optimizer, scheduler, train_dataset, val_dataset, test_dataset, device, logger):
+        train_args, eval_args = self.build_training_args()
+        trainer_kwargs = self.build_trainer_kwargs
+        trainer = self.trainer_cls(model, optimizer, train_dataset, val_dataset, test_dataset, 
+            train_args, eval_args, device, logger=logger, scheduler=scheduler, **trainer_kwargs)
         return trainer
 
 
@@ -44,7 +70,6 @@ class Task():
 #
 #   Alignment Tasks
 #
-
 
 class EmbeddingTask(Task):
     def build_dataset(self):
@@ -100,8 +125,8 @@ class CaptionTask(Task):
             resnet.fc = nn.Identity()
             img_encoder = ImageEncoderWrapper(resnet, 2048)
         else:
-            enc = ConvEncoder.make_coco_model(256)
-            img_encoder = ImageEncoderWrapper(enc, 256)
+            enc = CONV_MODEL_BUILDERS[self.args.dataset](self.args)
+            img_encoder = ImageEncoderWrapper(enc, self.args.latent_size)
         
         return MultiSetModel(set_model, img_encoder, text_encoder)
 
@@ -111,6 +136,8 @@ class CaptionTask(Task):
 #
 
 class CountingTask(Task):
+    pretrain_task = ImageClassificationTask
+    trainer_cls = CountingTrainer
     def build_dataset(self):
         if self.args.dataset == "mnist":
             trainval_dataset, test_dataset = load_mnist(args.data_dir)
@@ -120,17 +147,19 @@ class CountingTask(Task):
         elif self.args.dataset == "omniglot":
             train_dataset, val_dataset, test_dataset = load_omniglot(args.data_dir)
             generator_cls = OmniglotCooccurenceGenerator
-            pretrain_val = train_dataset
-            data_kwargs['n_chars'] = 50
         elif args.dataset == "cifar100":
             trainval_dataset, test_dataset = load_cifar(args.data_dir)
             n_val = int(len(trainval_dataset) * args.val_split)
             train_dataset, val_dataset = torch.utils.data.random_split(trainval_dataset, [len(trainval_dataset)-n_val, n_val])
-            conv_encoder = make_resnet_model(args.latent_size)
-            #conv_encoder = ConvEncoder.make_cifar_model(args.latent_size)
-            n_classes=100
             generator_cls = CIFARCooccurenceGenerator
-            pretrain_val = val_dataset
+            train_dataset = DatasetByClass.splits(train_dataset, (100,))
+            val_dataset = DatasetByClass.splits(val_dataset, (100,))
+            test_dataset = DatasetByClass.splits(test_dataset, (100,))
+
+        train_generator = generator_cls(train_dataset)
+        val_generator = generator_cls(val_dataset)
+        test_generator = generator_cls(test_dataset)
+        return train_generator, val_generator, test_generator
 
     def build_training_args(self):
         train_args, eval_args = super().build_trainer_args()
@@ -138,9 +167,8 @@ class CountingTask(Task):
             train_args['data_kwargs']['n_chars'] = 50
             eval_args['data_kwargs']['n_chars'] = 50
         return train_args, eval_args
-
-    def build_trainer(self, model, optimizer, scheduler, train_dataset, val_dataset, test_dataset, device):
-        train_args, eval_args = self.build_training_args()
+    
+    def build_trainer_kwargs(self):
         trainer_kwargs = {
             'eval_every': self.args.eval_every,
             'save_every': self.args.save_every,
@@ -148,11 +176,10 @@ class CountingTask(Task):
             'ss_schedule': self.args.ss_schedule,
             'poisson': self.poisson
         }
-        trainer = CountingTrainer(model, optimizer, train_dataset, val_dataset, test_dataset, 
-            train_args, eval_args, device, scheduler=scheduler, **trainer_kwargs)
-        return trainer
+        return trainer_kwargs
 
     def build_model(self, pretrained_model=None):
+        self.args.input_size = self.args.latent_size
         set_model = super().build_model()
 
         if pretrained_model == None:
@@ -171,14 +198,138 @@ class CountingTask(Task):
 class SyntheticDistinguishabilityTask(Task):
 
     def build_model(self):
-        pass
+        self.args.input_size = self.args.N
+        return super().build_model()
 
     def build_dataset(self):
-        pass
+        train_generator = DistinguishabilityGenerator()
+        return train_generator, train_generator, train_generator
     
-    def build_trainer(self):
-        pass
 
+class MetaDatasetTask(Task):
+    trainer_cls = MetaDatasetTrainer
+    def build_model(self):
+        self.args.input_size = self.args.latent_size
+        set_model = super().build_model()
+
+        if args.img_encoder == "cnn":
+            encoder = CONV_MODEL_BUILDERS[self.args.dataset](self.args)
+        else:
+            encoder = torchvision.models.resnet101(pretrained=False)
+            encoder.fc = nn.Linear(2048, args.latent_size)
+        discriminator = MultiSetImageModel(encoder, set_model)
+
+        return model
+
+    def build_dataset(self):
+        image_size = 84 if self.args.img_encoder == "cnn" else 224
+        train_generator = MetaDatasetGenerator(root_dir=self.args.dataset_path, image_size=image_size, split=Split.TRAIN)
+        val_generator = MetaDatasetGenerator(root_dir=self.args.dataset_path, image_size=image_size, split=Split.VALID)
+        test_generator = MetaDatasetGenerator(root_dir=self.args.dataset_path, image_size=image_size, split=Split.TEST)
+        return train_generator, val_generator, test_generator
+
+    def build_training_args(self):
+        train_args, eval_args = super().build_trainer_args()
+        train_args['data_kwargs']['p_dl'] = args.p_dl
+        eval_args['data_kwargs']['p_dl'] = args.p_dl
+        return train_args, eval_args
+
+    def build_trainer_kwargs(self):
+        trainer_kwargs = {
+            'save_every': self.args.save_every,
+            'checkpoint_dir': self.args.checkpoint_dir,
+            'ss_schedule': self.args.ss_schedule,
+            'episode_length': self.episode_length,
+            'episode_classes': self.episode_classes,
+            'episode_datasets': self.episode_datasets,
+        }
+        return trainer_kwargs
+
+
+#
+#   Statistical Distance Tasks
+#
+
+class StatisticalDistanceTask(Task):
+    trainer_cls = StatisticalDistanceTrainer
+
+    def build_training_args(self):
+        sample_kwargs = {
+            'set_size': self.args.set_size, 
+        }
+        if self.args.dataset == 'gmm':
+            sample_kwargs['nu']=5
+            sample_kwargs['mu0']=0
+            sample_kwargs['s0']=0.3
+        if self.args.equi and self.args.vardim:
+            dim_range = math.ceil(args.n/8)
+            sample_kwargs['dims'] = (max(2,self.args.n-dim_range),self.args.n+dim_range)
+        else:
+            sample_kwargs['n'] = self.args.n
+        train_args = {
+            'batch_size': self.args.batch_size,
+            'grad_steps': self.args.grad_steps,
+            'sample_kwargs': sample_kwargs,
+            'label_kwargs': {}
+        }
+        train_args = {
+            'batch_size': self.args.batch_size,
+            'sample_kwargs': sample_kwargs,
+            'label_kwargs': {}
+        }
+        return train_args, eval_args
+
+
+class KLTask(StatisticalDistanceTask):
+    def build_dataset(self):
+        if self.args.dataset == 'gmm':
+            generator = GaussianGenerator(num_outputs=2, scaleinv=self.args.scaleinv, variable_dim=self.args.equi, return_params=True, mixture=True)
+        elif self.args.dataet == 'nf':
+            generator = NFGenerator(32, 2, num_outputs=2, use_maf=False, variable_dim=self.args.equi, return_params=True)
+        else:
+            raise NotImplementedError("gmm or nf")
+        return generator, generator, generator
+
+    def build_training_args(self):
+        train_args, eval_args = super().build_training_args()
+        train_args['normalize'] = 'whiten'
+        eval_args['normalize'] = 'whiten'
+        return train_args, eval_args
+    
+    def build_trainer_kwargs(self):
+        trainer_kwargs = {
+            'eval_every': self.args.eval_every,
+            'save_every': self.args.save_every,
+            'checkpoint_dir': self.args.checkpoint_dir,
+            'label_fct': kl_mc,
+            'exact_loss': True,
+            'criterion': nn.L1Loss(),
+            'baselines': {'knn': kl_knn}
+        }
+        return trainer_kwargs
+        
+class MITask(StatisticalDistanceTask):
+    def build_dataset(self):
+        generator = CorrelatedGaussianGenerator(return_params=True, variable_dim=self.args.equi)
+        return generator
+
+    def build_training_args(self):
+        train_args, eval_args = super().build_training_args()
+        train_args['normalize'] = 'none'
+        eval_args['normalize'] = 'none'
+        return train_args, eval_args
+    
+    def build_trainer_kwargs(self):
+        trainer_kwargs = {
+            'eval_every': self.args.eval_every,
+            'save_every': self.args.save_every,
+            'checkpoint_dir': self.args.checkpoint_dir,
+            'label_fct': mi_corr_gaussian,
+            'exact_loss': True,
+            'criterion': nn.MSELoss(),
+            'baselines': {'kraskov':kraskov_mi1}
+        }
+        return trainer_kwargs
 
 #
 #   Pretraining Task
@@ -202,4 +353,3 @@ class ImageClassificationTask(Task):
 
 
     
-
