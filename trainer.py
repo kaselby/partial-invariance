@@ -341,7 +341,7 @@ class Pretrainer():
         
     def train(self, steps):
         metrics={
-            'train/loss': []
+            'train/loss': [],
             'val/acc': []
         }
         step = 0
