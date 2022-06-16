@@ -52,7 +52,7 @@ class Trainer():
         checkpoint_path = os.path.join(self.checkpoint_dir, "checkpoint.pt")
         torch.save(save_dict, checkpoint_path)
 
-    def load_checkpoint(self)
+    def load_checkpoint(self):
         checkpoint_path = os.path.join(checkpoint_dir, "checkpoint.pt")
         load_dict = torch.load(checkpoint_path)
         self.model.load_state_dict(load_dict['model'])
