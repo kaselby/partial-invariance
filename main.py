@@ -21,7 +21,7 @@ def parse_args():
     parser.add_argument('run_name', type=str)
     parser.add_argument('--run_id', type=int)
     parser.add_argument('--basedir', type=str, default="runs")
-    parser.add_argument('--data_dir', type=str, default='./data')
+    parser.add_argument('--dataset_dir', type=str, default='./data')
     parser.add_argument('--checkpoint_dir', type=str, default="/checkpoint/kaselby")
     parser.add_argument('--checkpoint_name', type=str, default=None)
 

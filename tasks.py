@@ -152,15 +152,15 @@ class CountingTask(Task):
     trainer_cls = CountingTrainer
     def build_dataset(self):
         if self.args.dataset == "mnist":
-            trainval_dataset, test_dataset = load_mnist(args.data_dir)
+            trainval_dataset, test_dataset = load_mnist(self.args.dataset_dir)
             n_val = int(len(trainval_dataset) * self.args.val_split)
             train_dataset, val_dataset = torch.utils.data.random_split(trainval_dataset, [len(trainval_dataset)-n_val, n_val])
             generator_cls = ImageCooccurenceGenerator
         elif self.args.dataset == "omniglot":
-            train_dataset, val_dataset, test_dataset = load_omniglot(args.data_dir)
+            train_dataset, val_dataset, test_dataset = load_omniglot(self.args.dataset_dir)
             generator_cls = OmniglotCooccurenceGenerator
         elif self.args.dataset == "cifar100":
-            trainval_dataset, test_dataset = load_cifar(args.data_dir)
+            trainval_dataset, test_dataset = load_cifar(self.args.dataset_dir)
             n_val = int(len(trainval_dataset) * self.args.val_split)
             train_dataset, val_dataset = torch.utils.data.random_split(trainval_dataset, [len(trainval_dataset)-n_val, n_val])
             generator_cls = CIFARCooccurenceGenerator
@@ -274,7 +274,7 @@ class StatisticalDistanceTask(Task):
             sample_kwargs['mu0']=0
             sample_kwargs['s0']=0.3
         if self.args.equi and self.args.vardim:
-            dim_range = math.ceil(args.n/8)
+            dim_range = math.ceil(self.args.n/8)
             sample_kwargs['dims'] = (max(2,self.args.n-dim_range),self.args.n+dim_range)
         else:
             sample_kwargs['n'] = self.args.n
