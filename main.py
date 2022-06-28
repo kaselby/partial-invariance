@@ -52,7 +52,6 @@ def parse_args():
     parser.add_argument('--hidden_size', type=int, default=512)
     parser.add_argument('--dropout', type=float, default=0)
     parser.add_argument('--decoder_layers', type=int, default=1)
-    parser.add_argument('--ln', action='store_true')
     parser.add_argument('--weight_sharing', type=str, choices=['none', 'cross', 'sym'], default='none')
 
     # Pretraining args

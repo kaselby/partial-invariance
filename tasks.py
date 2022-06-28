@@ -112,15 +112,18 @@ class CaptionTask(Task):
             tokenize_fct = fasttext_tokenize_batch
             tokenize_args = (ft,)
 
-        if self.args.dataset == "coco":
+        if self.args.dataset.lower() == "coco":
             img_path = os.path.join(self.args.dataset_dir, "coco", "images")
             annotation_path = os.path.join(self.args.dataset_dir, "coco", "annotations")
             train_dataset, val_dataset, test_dataset = load_coco_data(img_path, annotation_path )
-        else:
+        elif self.args.dataset.lower() == "flickr30k":
             img_path = os.path.join(self.args.dataset_dir, "flickr30k", "images")
             annotation_path = os.path.join(self.args.dataset_dir, "flickr30k", "annotations.token")
             splits_path = os.path.join(self.args.dataset_dir, "flickr30k", "splits.json")
             train_dataset, val_dataset, test_dataset = load_flickr_data(img_path, annotation_path, splits_path)
+        else:
+            raise NotImplementedError("Supported datasets are CoCo and Flickr30k.")
+
         train_generator = CaptionGenerator(train_dataset, tokenize_fct, tokenize_args)
         val_generator = CaptionGenerator(val_dataset, tokenize_fct, tokenize_args)
         test_generator = CaptionGenerator(test_dataset, tokenize_fct, tokenize_args)
@@ -154,15 +157,15 @@ class CountingTask(Task):
     pretraining_task = ImageClassificationTask
     trainer_cls = CountingTrainer
     def build_dataset(self):
-        if self.args.dataset == "mnist":
+        if self.args.dataset.lower() == "mnist":
             trainval_dataset, test_dataset = load_mnist(self.args.dataset_dir)
             n_val = int(len(trainval_dataset) * self.args.val_split)
             train_dataset, val_dataset = torch.utils.data.random_split(trainval_dataset, [len(trainval_dataset)-n_val, n_val])
             generator_cls = ImageCooccurenceGenerator
-        elif self.args.dataset == "omniglot":
+        elif self.args.dataset.lower() == "omniglot":
             train_dataset, val_dataset, test_dataset = load_omniglot(self.args.dataset_dir)
             generator_cls = OmniglotCooccurenceGenerator
-        elif self.args.dataset == "cifar100":
+        elif self.args.dataset.lower() == "cifar100":
             trainval_dataset, test_dataset = load_cifar(self.args.dataset_dir)
             n_val = int(len(trainval_dataset) * self.args.val_split)
             train_dataset, val_dataset = torch.utils.data.random_split(trainval_dataset, [len(trainval_dataset)-n_val, n_val])
@@ -170,6 +173,8 @@ class CountingTask(Task):
             train_dataset = DatasetByClass.splits(train_dataset, (100,))
             val_dataset = DatasetByClass.splits(val_dataset, (100,))
             test_dataset = DatasetByClass.splits(test_dataset, (100,))
+        else:
+            raise NotImplementedError("Supported datasets are MNIST, Omniglot and CIFAR100".)
 
         train_generator = generator_cls(train_dataset)
         val_generator = generator_cls(val_dataset)

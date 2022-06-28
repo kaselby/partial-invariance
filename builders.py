@@ -8,7 +8,7 @@ from models.conv import *
 
 def _build_mst(args):
     model_kwargs={
-        'ln':args.ln,
+        'ln':True,
         'remove_diag':False,
         'num_blocks':args.num_blocks,
         'num_heads':args.num_heads,
@@ -22,7 +22,7 @@ def _build_mst(args):
 
 def _build_msrn(args):
     model_kwargs={
-        'ln':args.ln,
+        'ln':True,
         'remove_diag':False,
         'num_blocks':args.num_blocks,
         'dropout':args.dropout,
@@ -36,7 +36,7 @@ def _build_msrn(args):
 
 def _build_crossonly(args):
     model_kwargs={
-        'ln':args.ln,
+        'ln':True,
         'num_blocks':args.num_blocks,
         'num_heads':args.num_heads,
         'dropout':args.dropout,
@@ -48,7 +48,7 @@ def _build_crossonly(args):
 
 def _build_ssrff(args):
     model_kwargs={
-        'ln':args.ln,
+        'ln':True,
         'num_blocks':args.num_blocks,
         'dropout':args.dropout,
         'equi':False,
@@ -59,7 +59,7 @@ def _build_ssrff(args):
 
 def _build_ssrn(args):
     model_kwargs={
-        'ln':args.ln,
+        'ln':True,
         'num_blocks':args.num_blocks,
         'dropout':args.dropout,
         'equi': False,
@@ -75,7 +75,7 @@ def _build_PINE(args):
 
 def _build_sst(args):
     model_kwargs={
-        'ln':args.ln,
+        'ln':True,
         'remove_diag':False,
         'num_blocks':args.num_blocks,
         'num_heads':args.num_heads,
@@ -88,7 +88,7 @@ def _build_sst(args):
 
 def _build_union(args):
     model_kwargs={
-        'ln':args.ln,
+        'ln':True,
         'num_blocks':args.num_blocks,
         'num_heads':args.num_heads,
         'dropout':args.dropout,
