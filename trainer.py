@@ -27,7 +27,7 @@ class SetSizeScheduler():
 
 class Trainer():
     def __init__(self, model, optimizer, train_dataset, val_dataset, test_dataset, train_args, eval_args, device, logger=None,
-            eval_every=500, save_every=2000, criterion=nn.BCEWithLogitsLoss(), scheduler=None, checkpoint_dir=None, ss_schedule=None):
+            eval_every=500, save_every=2000, criterion=nn.BCEWithLogitsLoss(), scheduler=None, checkpoint_dir=None, ss_schedule=-1):
         self.model = model
         self.optimizer = optimizer
         self.train_dataset = train_dataset
