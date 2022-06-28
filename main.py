@@ -19,7 +19,6 @@ def parse_args():
     parser = argparse.ArgumentParser()
     # File paths
     parser.add_argument('run_name', type=str)
-    parser.add_argument('--run_id', type=int)
     parser.add_argument('--basedir', type=str, default="runs")
     parser.add_argument('--dataset_dir', type=str, default='./data')
     parser.add_argument('--checkpoint_dir', type=str, default="/checkpoint/kaselby")
@@ -99,8 +98,7 @@ if __name__ == '__main__':
 
     args_file = os.path.join(run_dir, "args.pt")
     if not os.path.exists(args_file):
-        torch.save({'id':args.run_id, 'args':args}, args_file)
-        #write_log(args.logfile, args.run_name, args.run_id)
+        torch.save({'args':args}, args_file)
 
     checkpoint_dir = os.path.join(args.checkpoint_dir, args.checkpoint_name)
     checkpoint_file = os.path.join(checkpoint_dir, 'checkpoint.pt')
@@ -129,6 +127,9 @@ if __name__ == '__main__':
         print("Using", n_gpus, "GPUs.")
         model = nn.DataParallel(model)
         args.batch_size *= n_gpus
+        args.train_steps /= n_gpus
+        args.val_steps /= n_gpus
+        args.test_steps /= n_gpus
 
     train_dataset, val_dataset, test_dataset = task.build_dataset()
 
