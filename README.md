@@ -1,4 +1,4 @@
-# partial-invariance
+# Partial Invariance
 
 This is the repository for our paper Learning Functions on Multiple Sets using Multi-Set Transformers. This repository provides implementations of our multi-set models, as well as a trainining pipeline to train on any of the tasks in our paper(KL Divergence, Mutual information, Counting, Alignment and Distinguishabilty).
 
