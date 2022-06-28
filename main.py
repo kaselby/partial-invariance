@@ -132,9 +132,9 @@ if __name__ == '__main__':
         print("Using", n_gpus, "GPUs.")
         model = nn.DataParallel(model)
         args.batch_size *= n_gpus
-        args.train_steps /= n_gpus
-        args.val_steps /= n_gpus
-        args.test_steps /= n_gpus
+        args.train_steps = args.train_steps // n_gpus 
+        args.val_steps = args.val_steps // n_gpus 
+        args.test_steps = args.test_steps // n_gpus 
 
     opt = torch.optim.Adam(model.parameters(), lr=args.lr)
     scaler = torch.cuda.amp.GradScaler(enabled=args.use_amp)
