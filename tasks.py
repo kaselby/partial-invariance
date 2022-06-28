@@ -217,7 +217,7 @@ class CountingTask(Task):
 class SyntheticDistinguishabilityTask(Task):
 
     def build_model(self, pretrained_model=None):
-        self.args.input_size = self.args.N
+        self.args.input_size = self.args.n
         return super().build_model()
 
     def build_dataset(self):
@@ -270,6 +270,10 @@ class MetaDatasetTask(Task):
 
 class StatisticalDistanceTask(Task):
     trainer_cls = StatisticalDistanceTrainer
+
+    def build_model(self):
+        self.args.input_size = self.args.n
+        return super().build_model()
 
     def build_training_args(self):
         sample_kwargs = {
