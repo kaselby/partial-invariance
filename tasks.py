@@ -174,7 +174,7 @@ class CountingTask(Task):
             val_dataset = DatasetByClass.splits(val_dataset, (100,))
             test_dataset = DatasetByClass.splits(test_dataset, (100,))
         else:
-            raise NotImplementedError("Supported datasets are MNIST, Omniglot and CIFAR100".)
+            raise NotImplementedError("Supported datasets are MNIST, Omniglot and CIFAR100.")
 
         train_generator = generator_cls(train_dataset)
         val_generator = generator_cls(val_dataset)

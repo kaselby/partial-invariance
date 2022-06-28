@@ -19,7 +19,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     # File paths
     parser.add_argument('run_name', type=str)
-    parser.add_argument('--basedir', type=str, default="runs")
+    parser.add_argument('--basedir', type=str, default="./runs")
     parser.add_argument('--dataset_dir', type=str, default='./data')
     parser.add_argument('--checkpoint_dir', type=str, default=None)
 
