@@ -5,7 +5,7 @@ This is the repository for our paper Learning Functions on Multiple Sets using M
 To train the model, run the main.py script with the appropriate arguments. For example:
 ```
 python3 main.py example_run \
-  --model mst --task stat/MI --n 8 \
+  --model multi-set-transformer --task stat/MI --n 8 \
   --num_blocks 4 --num_heads 4 --latent_size 128 --hidden_size 256 \
   --batch_size 64 --lr 0.0001 --set_size 100 300 \
   --train_steps 100000 --save_every 1000 \
