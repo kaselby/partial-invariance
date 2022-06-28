@@ -99,7 +99,7 @@ class Trainer():
             _log('train/loss', loss, i)
 
             if i > initial_step:
-                if i % self.eval_every == 0:
+                if self.eval_every > 0 and val_steps > 0 and self.val_dataset is not None and i % self.eval_every == 0:
                     val_metrics = self.evaluate(val_steps, self.val_dataset)
                     for k, v in val_metrics.items():
                         key = "val/"+k

@@ -21,8 +21,7 @@ def parse_args():
     parser.add_argument('run_name', type=str)
     parser.add_argument('--basedir', type=str, default="runs")
     parser.add_argument('--dataset_dir', type=str, default='./data')
-    parser.add_argument('--checkpoint_dir', type=str, default="/checkpoint/kaselby")
-    parser.add_argument('--checkpoint_name', type=str, default=None)
+    parser.add_argument('--checkpoint_dir', type=str, default=None)
 
     # Run config
     parser.add_argument('--model', type=str, default='mst', choices=SET_MODEL_BUILDERS.keys())
@@ -42,7 +41,7 @@ def parse_args():
     parser.add_argument('--val_steps', type=int, default=200)
     parser.add_argument('--test_steps', type=int, default=500)
     parser.add_argument('--use_amp', action="store_true")
-    parser.add_argument('--use_apex', action="store_true")
+    #parser.add_argument('--use_apex', action="store_true")
     
     # Model args
     parser.add_argument('--num_blocks', type=int, default=2)
@@ -100,9 +99,11 @@ if __name__ == '__main__':
     if not os.path.exists(args_file):
         torch.save({'args':args}, args_file)
 
-    checkpoint_dir = os.path.join(args.checkpoint_dir, args.checkpoint_name)
-    checkpoint_file = os.path.join(checkpoint_dir, 'checkpoint.pt')
-    resume = os.path.exists(checkpoint_file)
+    if args.checkpoint_dir is not None:
+        checkpoint_file = os.path.join(args.checkpoint_dir, 'checkpoint.pt')
+        resume = os.path.exists(checkpoint_file)
+    else:
+        resume = False
 
     device = torch.device("cuda")
 
@@ -133,23 +134,18 @@ if __name__ == '__main__':
 
     train_dataset, val_dataset, test_dataset = task.build_dataset()
 
-    if args.use_apex:
-        pass
-        #opt = apex.optimizers.FusedAdam(model.parameters(), lr=args.lr)
-    else:
-        opt = torch.optim.Adam(model.parameters(), lr=args.lr)
+    iopt = torch.optim.Adam(model.parameters(), lr=args.lr)
     scaler = torch.cuda.amp.GradScaler(enabled=args.use_amp)
 
     logger = SummaryWriter(log_dir)
 
-    trainer = task.build_trainer(model, opt, None, train_dataset, val_dataset, test_dataset, device, logger, checkpoint_dir=checkpoint_dir)
+    trainer = task.build_trainer(model, opt, None, train_dataset, val_dataset, test_dataset, device, logger, checkpoint_dir=args.checkpoint_dir)
     all_metrics = trainer.train(args.train_steps, args.val_steps, args.test_steps)
     
     model_out = model._modules['module'] if torch.cuda.device_count() > 1 else model
     torch.save(model_out, os.path.join(run_dir, "model.pt"))
     torch.save({'metrics':all_metrics, 'args':args}, os.path.join(run_dir, "out.pt"))
     
-    shutil.move(os.path.join(args.checkpoint_dir, "checkpoint.pt"), os.path.join(run_dir, "last_checkpoint.pt"))
 
 
 
