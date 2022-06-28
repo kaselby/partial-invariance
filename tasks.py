@@ -295,7 +295,7 @@ class StatisticalDistanceTask(Task):
             'sample_kwargs': sample_kwargs,
             'label_kwargs': {}
         }
-        train_args = {
+        eval_args = {
             'batch_size': self.args.batch_size,
             'sample_kwargs': sample_kwargs,
             'label_kwargs': {}
