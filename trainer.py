@@ -105,8 +105,8 @@ class Trainer():
                         key = "val/"+k
                         _log(key, v, i)
 
-                if i % self.save_every == 0:
-                    self.save_checkpoint()
+                if self.checkpoint_dir is not None and i % self.save_every == 0:
+                    self.save_checkpoint(step, all_metrics)
 
         if self.test_dataset is not None:
             test_metrics = evaluate(test_steps, self.test_dataset)
