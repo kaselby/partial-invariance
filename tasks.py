@@ -271,7 +271,7 @@ class MetaDatasetTask(Task):
 class StatisticalDistanceTask(Task):
     trainer_cls = StatisticalDistanceTrainer
 
-    def build_model(self):
+    def build_model(self, pretrained_model=None):
         self.args.input_size = self.args.n
         return super().build_model()
 
