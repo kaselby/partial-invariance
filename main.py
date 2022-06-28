@@ -24,8 +24,8 @@ def parse_args():
     parser.add_argument('--checkpoint_dir', type=str, default=None)
 
     # Run config
-    parser.add_argument('--model', type=str, default='mst', choices=SET_MODEL_BUILDERS.keys())
-    parser.add_argument('--dataset', type=str)
+    parser.add_argument('--model', type=str, default='multi-set-transformer', choices=SET_MODEL_BUILDERS.keys())
+    parser.add_argument('--dataset', type=str, default=None)
     parser.add_argument('--task', type=str)
 
     # Training args
@@ -88,7 +88,11 @@ def parse_args():
 if __name__ == '__main__':
     args = parse_args()
 
-    run_dir = os.path.join(args.basedir, args.dataset, args.run_name)
+    if args.dataset is not None:
+        run_dir = os.path.join(args.basedir, args.task, args.dataset, args.run_name) 
+    else:
+        run_dir = os.path.join(args.basedir, args.task, args.run_name) 
+
     if not os.path.exists(run_dir):
         os.makedirs(run_dir)
     log_dir = os.path.join(run_dir, "logs")
@@ -132,9 +136,7 @@ if __name__ == '__main__':
         args.val_steps /= n_gpus
         args.test_steps /= n_gpus
 
-    train_dataset, val_dataset, test_dataset = task.build_dataset()
-
-    iopt = torch.optim.Adam(model.parameters(), lr=args.lr)
+    opt = torch.optim.Adam(model.parameters(), lr=args.lr)
     scaler = torch.cuda.amp.GradScaler(enabled=args.use_amp)
 
     logger = SummaryWriter(log_dir)
