@@ -290,12 +290,12 @@ class StatisticalDistanceTrainer(Trainer):
         args = self.train_args
         if self.exact_loss:
             X, theta = dataset(args['batch_size'], **args['sample_kwargs'])
-            labels = label_fct(*theta, X=X[0], **args['label_kwargs']).squeeze(-1)
+            labels = self.label_fct(*theta, X=X[0], **args['label_kwargs']).squeeze(-1)
         else:
             X = dataset(args['batch_size'], **args['sample_kwargs'])
             if args['normalize'] == 'scale-linear':
                 X, avg_norm = normalize_sets(*X)
-            labels = label_fct(*X, **args['label_kwargs'])
+            labels = self.label_fct(*X, **args['label_kwargs'])
         if args['normalize'] == 'scale-inv':
             X, avg_norm = normalize_sets(*X)
         elif args['normalize'] == 'whiten':
@@ -322,10 +322,10 @@ class StatisticalDistanceTrainer(Trainer):
             for i in tqdm.tqdm(range(steps)):
                 if self.exact_loss:
                     X, theta = dataset(args['batch_size'], **args['sample_kwargs'])
-                    labels = label_fct(*theta, X=X[0], **args['label_kwargs']).squeeze(-1)
+                    labels = self.label_fct(*theta, X=X[0], **args['label_kwargs']).squeeze(-1)
                 else:
                     X = dataset(args['batch_size'], **args['sample_kwargs'])
-                    labels = label_fct(*X, **args['label_kwargs'])
+                    labels = self.label_fct(*X, **args['label_kwargs'])
                 
                 for baseline_name, baseline_fct in self.baselines.items():
                     baseline_out = baseline_fct(*X).squeeze(-1)
@@ -334,7 +334,7 @@ class StatisticalDistanceTrainer(Trainer):
 
                 if not self.exact_loss and args['normalize'] == 'scale-linear':
                     X, avg_norm = normalize_sets(*X)
-                    labels = label_fct(*X, **args['label_kwargs'])
+                    labels = self.label_fct(*X, **args['label_kwargs'])
 
                 if args['normalize'] == 'scale-inv':
                     X, avg_norm = normalize_sets(*X)
