@@ -7,6 +7,7 @@ from datasets.distinguishability import DistinguishabilityGenerator
 from datasets.meta_dataset import MetaDatasetGenerator, Split
 from datasets.distributions import CorrelatedGaussianGenerator, GaussianGenerator, NFGenerator
 from models.task import ImageEncoderWrapper, BertEncoderWrapper, EmbeddingEncoderWrapper, MultiSetImageModel, MultiSetModel
+from models.set import MultiSetTransformer
 from utils import kl_mc, mi_corr_gaussian, kl_knn, kraskov_mi1, whiten_split, normalize_sets
 
 import fasttext
