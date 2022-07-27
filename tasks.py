@@ -395,7 +395,7 @@ class DVTask(StatisticalDistanceTask):
             'pool': 'none'
         }
         set_model = MultiSetTransformer(self.args.n, self.args.latent_size, self.args.hidden_size, 1, **model_kwargs)
-
+        return set_model
 
 
 
