@@ -501,6 +501,51 @@ class MultiSetTransformer(nn.Module):
         out = self.dec(torch.cat([ZX, ZY], dim=-1))
         return out.squeeze(-1)
 
+class MultiSetTransformerEncoder(nn.Module):
+    def __init__(self, input_size, latent_size, hidden_size, output_size, num_heads=4, num_blocks=2, remove_diag=False, ln=False, equi=False, 
+            weight_sharing='none', dropout=0.1, decoder_layers=0, merge='concat'):
+        super(MultiSetTransformerEncoder, self).__init__()
+        if equi:
+            input_size = 1
+        self.input_size = input_size
+        self.proj = None if input_size == latent_size else nn.Linear(input_size, latent_size) 
+        self.enc = EncoderStack(*[CSAB(latent_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, 
+                equi=equi, weight_sharing=weight_sharing, dropout=dropout, merge='concat') for i in range(num_blocks)])
+        self.dec = self._make_decoder(latent_size, hidden_size, output_size, decoder_layers)
+        self.remove_diag = remove_diag
+        self.equi=equi
+
+    def _make_decoder(self, latent_size, hidden_size, output_size, n_layers):
+        if n_layers == 0:
+            return nn.Linear(2*latent_size, output_size)
+        else:
+            hidden_layers = []
+            for _ in range(n_layers-1): 
+                hidden_layers += [nn.Linear(hidden_size, hidden_size), nn.ReLU()]
+            return nn.Sequential(
+                nn.Linear(2*latent_size, hidden_size),
+                nn.ReLU(),
+                *hidden_layers,
+                nn.Linear(hidden_size, output_size)
+            )
+
+    def forward(self, X, Y, masks=None):
+        ZX, ZY = X, Y
+        if self.equi:
+            ZX, ZY = ZX.unsqueeze(-1), ZY.unsqueeze(-1)
+        if self.proj is not None:
+            ZX, ZY = self.proj(ZX), self.proj(ZY)
+            
+        ZX, ZY = self.enc((ZX, ZY), masks=masks)
+            
+        if self.equi:
+            ZX = ZX.max(dim=2)[0]
+            ZY = ZY.max(dim=2)[0]
+
+        x_out = self.dec(ZX).squeeze(-1)
+        y_out = self.dec(ZY).squeeze(-1)
+        
+        return x_out, y_out
 
 class UnionTransformer(nn.Module):
     def __init__(self, input_size, latent_size, hidden_size, output_size, num_blocks, num_heads, decoder_layers=1, ln=False, pool='pma', 

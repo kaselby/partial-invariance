@@ -7,7 +7,7 @@ from datasets.distinguishability import DistinguishabilityGenerator
 from datasets.meta_dataset import MetaDatasetGenerator, Split
 from datasets.distributions import CorrelatedGaussianGenerator, GaussianGenerator, NFGenerator
 from models.task import ImageEncoderWrapper, BertEncoderWrapper, EmbeddingEncoderWrapper, MultiSetImageModel, MultiSetModel
-from models.set import MultiSetTransformer
+from models.set import MultiSetTransformerEncoder
 from utils import kl_mc, mi_corr_gaussian, kl_knn, kraskov_mi1, whiten_split, normalize_sets
 
 import fasttext
@@ -394,7 +394,7 @@ class DVTask(StatisticalDistanceTask):
             'weight_sharing': 'sym',     #IMPORTANT
             'pool': 'none'
         }
-        set_model = MultiSetTransformer(self.args.n, self.args.latent_size, self.args.hidden_size, 1, **model_kwargs)
+        set_model = MultiSetTransformerEncoder(self.args.n, self.args.latent_size, self.args.hidden_size, 1, **model_kwargs)
         return set_model
 
 
