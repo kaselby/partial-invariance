@@ -380,7 +380,7 @@ class DVTask(StatisticalDistanceTask):
         }
         return trainer_kwargs
     
-    def build_model(self):
+    def build_model(self, pretrained_model=None):
         model_kwargs={
             'ln':True,
             'remove_diag':False,
