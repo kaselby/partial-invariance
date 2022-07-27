@@ -384,16 +384,16 @@ class DVTask(StatisticalDistanceTask):
         model_kwargs={
             'ln':True,
             'remove_diag':False,
-            'num_blocks':args.num_blocks,
-            'num_heads':args.num_heads,
-            'dropout':args.dropout,
-            'equi':args.equi,
-            'decoder_layers': args.decoder_layers,
+            'num_blocks':self.args.num_blocks,
+            'num_heads':self.args.num_heads,
+            'dropout':self.args.dropout,
+            'equi':self.args.equi,
+            'decoder_layers': self.args.decoder_layers,
             'merge': 'concat',
             'weight_sharing': 'sym',     #IMPORTANT
             'pool_method': 'none'
         }
-        set_model = MultiSetTransformer(args.n, args.latent_size, args.hidden_size, 1, **model_kwargs)
+        set_model = MultiSetTransformer(self.args.n, self.args.latent_size, self.args.hidden_size, 1, **model_kwargs)
 
 
 
