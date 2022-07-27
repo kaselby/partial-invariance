@@ -44,6 +44,13 @@ def linear_block(input_size, hidden_size, output_size, num_layers, activation_fc
     return nn.Sequential(*layers)
 
 
+def whiten(X):
+    mu = X.mean(dim=1, keepdim=True)
+    Sigma2 = (X-mu).transpose(1,2).matmul((X-mu)) / (X.size(1)-1)
+    evals, evecs = torch.linalg.eig(Sigma2)
+    lambd = (evecs.matmul(torch.diag_embed(evals.pow(-1./2))).matmul(evecs.transpose(1,2))).real
+    return (X-mu).matmul(lambd.transpose(1,2))
+
 def whiten_split(X,Y):
     n = X.size(1)
     D = torch.cat([X,Y],dim=1)
