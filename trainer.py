@@ -364,7 +364,7 @@ class DonskerVaradhanTrainer(Trainer):
         self.label_fct = label_fct
 
     @staticmethod
-    def _KL_estimate(self, X, Y):
+    def _KL_estimate(X, Y):
         return X.sum(dim=1) - Y.logsumexp(dim=1)
     
     def train_step(self, i, steps, dataset):
