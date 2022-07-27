@@ -374,7 +374,7 @@ class DonskerVaradhanTrainer(Trainer):
             X,Y = whiten_split(X,Y)
 
         X_out, Y_out = self.model(X.to(self.device),Y.to(self.device))
-        loss = -1* (self._KL_estimate(X_out, Y_out))
+        loss = -1* self._KL_estimate(X_out, Y_out).mean()
         loss.backward()
 
         if (i+1) % args['grad_steps'] == 0 or i == (steps - 1):
