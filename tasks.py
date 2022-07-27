@@ -1,6 +1,6 @@
 
 from builders import SET_MODEL_BUILDERS, CONV_MODEL_BUILDERS
-from trainer import Trainer, CountingTrainer, CaptionTrainer, MetaDatasetTrainer, StatisticalDistanceTrainer, Pretrainer
+from trainer import Trainer, CountingTrainer, CaptionTrainer, MetaDatasetTrainer, StatisticalDistanceTrainer, Pretrainer, DonskerVaradhanTrainer
 from datasets.counting import OmniglotCooccurenceGenerator, ImageCooccurenceGenerator, DatasetByClass, load_cifar, load_mnist, load_omniglot
 from datasets.alignment import EmbeddingAlignmentGenerator, CaptionGenerator, load_coco_data, load_flickr_data, bert_tokenize_batch, fasttext_tokenize_batch, load_pairs, split_pairs
 from datasets.distinguishability import DistinguishabilityGenerator
@@ -307,7 +307,7 @@ class KLTask(StatisticalDistanceTask):
     def build_dataset(self):
         if self.args.dataset == 'gmm':
             generator = GaussianGenerator(num_outputs=2, scaleinv=self.args.scaleinv, variable_dim=self.args.equi, return_params=True, mixture=True)
-        elif self.args.dataet == 'nf':
+        elif self.args.dataset == 'nf':
             generator = NFGenerator(32, 2, num_outputs=2, use_maf=False, variable_dim=self.args.equi, return_params=True)
         else:
             raise NotImplementedError("gmm or nf")
@@ -353,7 +353,47 @@ class MITask(StatisticalDistanceTask):
         return trainer_kwargs
 
 
+class DVTask(StatisticalDistanceTask):
+    trainer_cls=DonskerVaradhanTrainer
 
+    def build_dataset(self):
+        if self.args.dataset == 'gmm':
+            generator = GaussianGenerator(num_outputs=2, scaleinv=self.args.scaleinv, variable_dim=self.args.equi, return_params=True, mixture=True)
+        elif self.args.dataset == 'nf':
+            generator = NFGenerator(32, 2, num_outputs=2, use_maf=False, variable_dim=self.args.equi, return_params=True)
+        else:
+            raise NotImplementedError("gmm or nf")
+        return generator, None, None
+
+    def build_training_args(self):
+        train_args, eval_args = super().build_training_args()
+        train_args['normalize'] = 'whiten'
+        eval_args['normalize'] = 'whiten'
+        return train_args, eval_args
+    
+    def build_trainer_kwargs(self):
+        trainer_kwargs = {
+            'eval_every': self.args.eval_every,
+            'save_every': self.args.save_every,
+            'label_fct': kl_mc,
+            'criterion': nn.L1Loss()
+        }
+        return trainer_kwargs
+    
+    def build_model(self):
+        model_kwargs={
+            'ln':True,
+            'remove_diag':False,
+            'num_blocks':args.num_blocks,
+            'num_heads':args.num_heads,
+            'dropout':args.dropout,
+            'equi':args.equi,
+            'decoder_layers': args.decoder_layers,
+            'merge': 'concat'
+            'weight_sharing': 'sym'     #IMPORTANT
+            'pool_method': 'none'
+        }
+        set_model = MultiSetTransformer(args.n, args.latent_size, args.hidden_size, 1, **model_kwargs)
 
 
 
@@ -365,5 +405,6 @@ TASKS = {
     'dist/synthetic': SyntheticDistinguishabilityTask,
     'dist/meta-dataset': MetaDatasetTask,
     'stat/KL': KLTask,
-    'stat/MI': MITask
+    'stat/MI': MITask,
+    'stat/DV': DVTask
 }

@@ -13,7 +13,7 @@ def _build_mst(args):
         'num_blocks':args.num_blocks,
         'num_heads':args.num_heads,
         'dropout':args.dropout,
-        'equi':False,
+        'equi':args.equi,
         'decoder_layers': args.decoder_layers,
         'merge': 'sum' if args.model == 'sum-merge' else 'concat',
     }

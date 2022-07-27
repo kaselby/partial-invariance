@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 import tqdm
 import os
@@ -351,6 +352,55 @@ class StatisticalDistanceTrainer(Trainer):
             metrics[key] = sum(baseline_losses)/len(baseline_losses)
         return metrics
 
+
+
+class DonskerVaradhanTrainer(Trainer):
+    def __init__(self, model, optimizer, train_dataset, val_dataset, test_dataset, train_args, eval_args, device, criterion, label_fct, 
+            logger=None, save_every=2000, eval_every=500, scheduler=None, checkpoint_dir=None, ss_schedule=-1):
+        super().__init__(model, optimizer, train_dataset, val_dataset, test_dataset, train_args, eval_args, device,
+            save_every=save_every, criterion=criterion, scheduler=scheduler, checkpoint_dir=checkpoint_dir, ss_schedule=ss_schedule)
+        self.label_fct = label_fct
+
+    @staticmethod
+    def _KL_estimate(self, X, Y):
+        return X.sum(dim=1) - Y.logsumexp(dim=1)
+    
+    def train_step(self, i, steps, dataset):
+        args = self.train_args
+        (X,Y), _ = dataset(args['batch_size'], **args['sample_kwargs'])
+        if args['normalize'] == 'whiten':
+            X,Y = whiten_split(X,Y)
+
+        X_out, Y_out = self.model(X.to(self.device),Y.to(self.device))
+        loss = -1* (self._KL_estimate(X_out, Y_out))
+        loss.backward()
+
+        if (i+1) % args['grad_steps'] == 0 or i == (steps - 1):
+            self.optimizer.step()
+            if self.scheduler is not None:
+                self.scheduler.step()
+            self.optimizer.zero_grad()
+        
+        return loss.item()
+
+    def evaluate(self, steps, dataset):
+        args = self.eval_args
+        avg_loss = 0
+        with torch.no_grad():
+            for i in range(steps):
+                (X,Y), theta = self.train_dataset(args['batch_size'], **args['sample_kwargs'])
+                KL_true = self.label_fct(*theta, X=X, **args['label_kwargs']).squeeze(-1)
+
+                if args['normalize'] == 'whiten':
+                    X,Y = whiten_split(X,Y)
+
+                X_out, Y_out = self.model(X.to(self.device),Y.to(self.device))
+                KL_out = self._KL_estimate(X_out, Y_out)
+
+                avg_loss += self.criterion(KL_out, KL_true)
+            avg_loss /= steps
+        
+        return avg_loss 
 
 
 #
