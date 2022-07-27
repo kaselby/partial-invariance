@@ -306,7 +306,7 @@ class StatisticalDistanceTask(Task):
 class KLTask(StatisticalDistanceTask):
     def build_dataset(self):
         if self.args.dataset == 'gmm':
-            generator = GaussianGenerator(num_outputs=2, scaleinv=self.args.scaleinv, variable_dim=self.args.equi, return_params=True, mixture=True)
+            generator = GaussianGenerator(num_outputs=2, variable_dim=self.args.equi, return_params=True, mixture=True)
         elif self.args.dataset == 'nf':
             generator = NFGenerator(32, 2, num_outputs=2, use_maf=False, variable_dim=self.args.equi, return_params=True)
         else:
