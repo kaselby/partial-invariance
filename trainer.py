@@ -283,7 +283,7 @@ class StatisticalDistanceTrainer(Trainer):
             label_fct, exact_loss, baselines, logger=None, save_every=2000, eval_every=500, scheduler=None, 
             checkpoint_dir=None, ss_schedule=-1):
         super().__init__(model, optimizer, train_dataset, val_dataset, test_dataset, train_args, eval_args, device,
-            save_every=save_every, criterion=criterion, scheduler=scheduler, 
+            save_every=save_every, criterion=criterion, scheduler=scheduler, logger=logger,
             checkpoint_dir=checkpoint_dir, ss_schedule=ss_schedule)
         self.label_fct = label_fct
         self.exact_loss = exact_loss
@@ -359,7 +359,7 @@ class StatisticalDistanceTrainer(Trainer):
 class DonskerVaradhanTrainer(Trainer):
     def __init__(self, model, optimizer, train_dataset, val_dataset, test_dataset, train_args, eval_args, device, criterion, label_fct, 
             logger=None, save_every=2000, eval_every=500, scheduler=None, checkpoint_dir=None, ss_schedule=-1):
-        super().__init__(model, optimizer, train_dataset, val_dataset, test_dataset, train_args, eval_args, device,
+        super().__init__(model, optimizer, train_dataset, val_dataset, test_dataset, train_args, eval_args, device, logger=logger,
             save_every=save_every, criterion=criterion, scheduler=scheduler, checkpoint_dir=checkpoint_dir, ss_schedule=ss_schedule)
         self.label_fct = label_fct
 
