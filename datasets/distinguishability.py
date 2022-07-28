@@ -4,7 +4,6 @@ from torch.distributions import MultivariateNormal, LKJCholesky, Categorical, Mi
 class DistinguishabilityGenerator():
     def __init__(self, device=torch.device('cpu')):
         self.device=device
-    
 
     def _generate_gmm(self, batch_size, n, p=0.5, set_size=(100,150), component_range=(1,5), nu=5, mu0=0, s0=0.3):
         def _generate_mixture(batch_size, n, component_range, nu, mu0, s0):

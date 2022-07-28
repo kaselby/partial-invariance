@@ -109,7 +109,7 @@ class Trainer():
                         _log(key, v, i)
 
                 if self.checkpoint_dir is not None and i % self.save_every == 0:
-                    self.save_checkpoint(step, all_metrics)
+                    self.save_checkpoint(i, all_metrics)
 
         if self.test_dataset is not None:
             test_metrics = evaluate(test_steps, self.test_dataset)
@@ -365,7 +365,7 @@ class DonskerVaradhanTrainer(Trainer):
 
     @staticmethod
     def _KL_estimate(X, Y):
-        return X.sum(dim=1) - Y.logsumexp(dim=1)
+        return X.sum(dim=1)/X.size(1) - Y.logsumexp(dim=1)/Y.size(1)
     
     def train_step(self, i, steps, dataset):
         args = self.train_args

@@ -503,8 +503,6 @@ def pretrain(encoder, n_classes, train_dataset, val_dataset, steps, lr, batch_si
         
     return encoder
 
-
-
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('run_name', type=str)

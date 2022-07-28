@@ -86,7 +86,6 @@ class GaussianGenerator():
         else:
             return samples.float().contiguous()
         
-
     
     def __call__(self, batch_size, dims=(2,6), **kwargs):
         if self.variable_dim:
