@@ -244,7 +244,7 @@ class MetaDatasetTrainer(Trainer):
 
                 if step > initial_step:
                     if step % save_every == 0:
-                        self.save_checkpoint()
+                        self.save_checkpoint(step, metrics)
                     
                     if step >= train_steps:
                         break
