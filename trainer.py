@@ -355,6 +355,7 @@ class StatisticalDistanceTrainer(Trainer):
         return metrics
 
 
+import math
 
 class DonskerVaradhanTrainer(Trainer):
     def __init__(self, model, optimizer, train_dataset, val_dataset, test_dataset, train_args, eval_args, device, criterion, label_fct, 
