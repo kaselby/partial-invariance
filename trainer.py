@@ -365,7 +365,7 @@ class DonskerVaradhanTrainer(Trainer):
 
     @staticmethod
     def _KL_estimate(X, Y):
-        return X.sum(dim=1)/X.size(1) - Y.logsumexp(dim=1)/Y.size(1)
+        return X.sum(dim=1)/X.size(1) - Y.logsumexp(dim=1) + math.log(Y.size(1))
     
     def train_step(self, i, steps, dataset):
         args = self.train_args
@@ -402,7 +402,7 @@ class DonskerVaradhanTrainer(Trainer):
                 avg_loss += self.criterion(KL_out, KL_true)
             avg_loss /= steps
         
-        return avg_loss 
+        return {"criterion":avg_loss}
 
 
 #

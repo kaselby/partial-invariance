@@ -364,7 +364,7 @@ class DVTask(StatisticalDistanceTask):
             generator = NFGenerator(32, 2, num_outputs=2, use_maf=False, variable_dim=self.args.equi, return_params=True)
         else:
             raise NotImplementedError("gmm or nf")
-        return generator, None, None
+        return generator, generator, None
 
     def build_training_args(self):
         train_args, eval_args = super().build_training_args()

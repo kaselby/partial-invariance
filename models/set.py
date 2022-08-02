@@ -143,38 +143,47 @@ class CSABSimple(nn.Module):
 class CSAB(nn.Module):
     def __init__(self, input_size, latent_size, hidden_size, num_heads, remove_diag=False, nn_attn=False, residual='base', weight_sharing='none', merge='concat', ln=False, lambda0=0.5, **kwargs):
         super(CSAB, self).__init__()
-        self._init_blocks(input_size, latent_size, hidden_size, num_heads, remove_diag, nn_attn, weight_sharing, ln=ln, **kwargs)
+        self._init_blocks(input_size, latent_size, hidden_size, num_heads, remove_diag, nn_attn, weight_sharing, ln=ln, merge=merge, **kwargs)
         self.merge = merge
-        if self.merge == 'concat':
-            self.fc_X = nn.Linear(2*latent_size, latent_size)
-            self.fc_Y = nn.Linear(2*latent_size, latent_size)
-
         self.remove_diag = remove_diag
-        if ln:
-            self.ln_x = nn.LayerNorm(latent_size)
-            self.ln_y = nn.LayerNorm(latent_size)
 
-    def _init_blocks(self, input_size, latent_size, hidden_size, num_heads, remove_diag=False, nn_attn=False, weight_sharing='none', **kwargs):
-        if weight_sharing == 'none':
-            self.MAB_XX = MAB(input_size, latent_size, hidden_size, num_heads, nn_attn=nn_attn, **kwargs)
-            self.MAB_YY = MAB(input_size, latent_size, hidden_size, num_heads, nn_attn=nn_attn, **kwargs)
-            self.MAB_XY = MAB(input_size, latent_size, hidden_size, num_heads, nn_attn=nn_attn, **kwargs)
-            self.MAB_YX = MAB(input_size, latent_size, hidden_size, num_heads, nn_attn=nn_attn, **kwargs)
-        elif weight_sharing == 'cross':
-            self.MAB_XX = MAB(input_size, latent_size, hidden_size, num_heads, nn_attn=nn_attn, **kwargs)
-            self.MAB_YY = MAB(input_size, latent_size, hidden_size, num_heads, nn_attn=nn_attn, **kwargs)
-            MAB_cross = MAB(input_size, latent_size, hidden_size, num_heads, nn_attn=nn_attn, **kwargs)
-            self.MAB_XY = MAB_cross
-            self.MAB_YX = MAB_cross
-        elif weight_sharing == 'sym':
-            MAB_cross = MAB(input_size, latent_size, hidden_size, num_heads, nn_attn=nn_attn, **kwargs)
-            MAB_self = MAB(input_size, latent_size, hidden_size, num_heads, nn_attn=nn_attn, **kwargs)
+    def _init_blocks(self, input_size, latent_size, hidden_size, num_heads, remove_diag=False, nn_attn=False, weight_sharing='none', ln=False, merge='concat', **kwargs):
+        if weight_sharing == 'sym':
+            MAB_cross = MAB(input_size, latent_size, hidden_size, num_heads, nn_attn=nn_attn, ln=ln, **kwargs)
+            MAB_self = MAB(input_size, latent_size, hidden_size, num_heads, nn_attn=nn_attn, ln=ln, **kwargs)
             self.MAB_XX = MAB_self
             self.MAB_YY = MAB_self
             self.MAB_XY = MAB_cross
             self.MAB_YX = MAB_cross
+            if merge == 'concat':
+                fc = nn.Linear(2*latent_size, latent_size)
+                self.fc_X = fc
+                self.fc_Y = fc
+            if ln:
+                lns = nn.LayerNorm(latent_size)
+                self.ln_x = lns
+                self.ln_y = lns
         else:
-            raise NotImplementedError("weight sharing must be none, cross or sym")
+            if merge == 'concat':
+                self.fc_X = nn.Linear(2*latent_size, latent_size)
+                self.fc_Y = nn.Linear(2*latent_size, latent_size)
+            if ln:
+                self.ln_x = nn.LayerNorm(latent_size)
+                self.ln_y = nn.LayerNorm(latent_size)
+
+            if weight_sharing == 'none':
+                self.MAB_XX = MAB(input_size, latent_size, hidden_size, num_heads, nn_attn=nn_attn, **kwargs)
+                self.MAB_YY = MAB(input_size, latent_size, hidden_size, num_heads, nn_attn=nn_attn, **kwargs)
+                self.MAB_XY = MAB(input_size, latent_size, hidden_size, num_heads, nn_attn=nn_attn, **kwargs)
+                self.MAB_YX = MAB(input_size, latent_size, hidden_size, num_heads, nn_attn=nn_attn, **kwargs)
+            elif weight_sharing == 'cross':
+                self.MAB_XX = MAB(input_size, latent_size, hidden_size, num_heads, nn_attn=nn_attn, **kwargs)
+                self.MAB_YY = MAB(input_size, latent_size, hidden_size, num_heads, nn_attn=nn_attn, **kwargs)
+                MAB_cross = MAB(input_size, latent_size, hidden_size, num_heads, nn_attn=nn_attn, **kwargs)
+                self.MAB_XY = MAB_cross
+                self.MAB_YX = MAB_cross
+            else:
+                raise NotImplementedError("weight sharing must be none, cross or sym")
 
     def _get_masks(self, N, M, masks):
         if self.remove_diag:
