@@ -63,7 +63,8 @@ class Trainer():
         load_dict = torch.load(checkpoint_path)
         self.model.load_state_dict(load_dict['model'])
         self.optimizer.load_state_dict(load_dict['optimizer'])
-        self.scheduler.load_state_dict(load_dict['scheduler'])
+        if self.scheduler is not None:
+            self.scheduler.load_state_dict(load_dict['scheduler'])
         step, metrics = load_dict['step'], load_dict['metrics']
         return step, metrics
     
