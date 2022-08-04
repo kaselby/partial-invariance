@@ -739,5 +739,220 @@ class CrossOnlyModel(nn.Module):
 
 
 
+#
+#
+#
+
+
+class MultiSetDecoderBlock(nn.Module):
+    def __init__(self, latent_size, hidden_size, encoder_size, num_heads, ln=False, dropout=0.1, activation_fct=nn.ReLU, self_attn=True):
+        super().__init__()
+        self.self_attn = self_attn
+        self.MHA_X = MHA(latent_size, latent_size, latent_size, num_heads)
+        self.MHA_XA = MHA(latent_size, encoder_size, latent_size, num_heads)
+        self.MHA_XB = MHA(latent_size, encoder_size, latent_size, num_heads)
+        if dropout > 0:
+            self.dropout = nn.Dropout(dropout)
+        else:
+            self.dropout = None
+        self.fc_merge = nn.Linear(2*latent_size, latent_size)
+        self.fc_out = nn.Sequential(
+            nn.Linear(latent_size, hidden_size),
+            activation_fct(),
+            nn.Linear(hidden_size, latent_size)
+        )
+        if ln:
+            self.ln0 = nn.LayerNorm(latent_size)
+            self.ln1 = nn.LayerNorm(latent_size)
+            self.ln2 = nn.LayerNorm(latent_size)
+        else:
+            self.ln0 = None
+            self.ln1 = None
+            self.ln2 = None
+
+    def forward(self, X, A, B, **kwargs):
+        if self.self_attn:
+            A1 = self.MHA_X(X, X, **kwargs)
+            A1 = A1 if self.dropout is None else self.dropout(A1)
+            Z_X = X + A1
+            Z_X = Z_X if self.ln0 is None else self.ln0(Z_X)
+        else:
+            Z_X = X
+
+        Z_XA = self.MHA_XA(X, A, **kwargs)
+        Z_XB = self.MHA_XB(X, B, **kwargs)
+        if self.dropout is not None:
+            Z_XA = self.dropout(Z_XA)
+            Z_XB = self.dropout(Z_XB)
+        Z_merge = self.fc_merge(torch.cat([Z_XA, Z_XB], dim=-1))
+        Z = Z_X + Z_merge
+        Z = Z if self.ln1 is None else self.ln1(Z)
+
+        FC = self.fc(Z)
+        FC = FC if self.dropout is None else self.dropout(FC)
+        Z = Z + FC
+        Z = Z if self.ln2 is None else self.ln2(Z)
+        return Z
+
+
+
+class MultiSetTransformerEncoderDecoder(nn.Module):
+    def __init__(self, x_size, ab_size, latent_size, hidden_size, output_size, num_heads=4, enc_blocks=2, dec_blocks=2, output_layers=1, equi=False, weight_sharing='none', ln=False, dropout=0, **kwargs):
+        super().__init__()
+        if equi:
+            x_size, ab_size = 1
+        self.equi=equi
+        
+        if x_size != latent_size:
+            self.proj_x = nn.Linear(x_size, latent_size)
+        if ab_size != latent_size:
+            if weight_sharing is not "none":
+                proj = nn.Linear(ab_size, latent_size)
+                self.proj_a, self.proj_b = proj, proj
+            else:
+                self.proj_a = nn.Linear(ab_size, latent_size) if ab_size != latent_size else None
+                self.proj_b = nn.Linear(ab_size, latent_size) if ab_size != latent_size else None
+        self.encoder_blocks = nn.ModuleList(
+            [
+                CSAB(latent_size, latent_size, hidden_size, num_heads, equi=equi, weight_sharing=weight_sharing, ln=ln, dropout=dropout, **kwargs)
+                for _ in range(enc_blocks)
+            ]
+        )
+        self.decoder_blocks = nn.ModuleList(
+            [
+                MultiSetDecoderBlock(latent_size, hidden_size, num_heads, equi=equi, ln=ln, dropout=dropout, **kwargs)
+                for _ in range(dec_blocks)
+            ]
+        )
+
+        self.output_head = self._make_output_head(latent_size, hidden_size, output_size, output_layers)
+
+    def _make_output_head(self, latent_size, hidden_size, output_size, n_layers):
+        if n_layers == 0:
+            return nn.Linear(2*latent_size, output_size)
+        else:
+            hidden_layers = []
+            for _ in range(n_layers-1): 
+                hidden_layers += [nn.Linear(hidden_size, hidden_size), nn.ReLU()]
+            return nn.Sequential(
+                nn.Linear(latent_size, hidden_size),
+                nn.ReLU(),
+                *hidden_layers,
+                nn.Linear(hidden_size, output_size)
+            )
+
+    def forward(self, A, B, *sets, masks=None):
+        A = A if self.proj_a is None else self.proj_a(A)
+        B = B if self.proj_b is None else self.proj_b(B)
+
+        for i in range(len(self.encoder_blocks)):
+            A, B = self.encoder_blocks[i]((A, B), masks=masks)
+
+        outputs = []
+        for X in sets:
+            X = X if self.proj_x is None else self.proj_x(X)
+            
+            for i in range(len(self.decoder_blocks)):
+                X = self.decoder_blocks[i](X, A, B, masks=masks)
+
+            if self.equi:
+                X = X.max(dim=2)[0]
+            
+            out = self.output_head(X)
+            outputs.append(out)
+        
+        if len(outputs) == 1:
+            outputs = outputs[0]
+        
+        return outputs
+
+
+
+class SetDecoderBlock(nn.Module):
+    def __init__(self, latent_size, hidden_size, encoder_size, num_heads, ln=False, dropout=0.1, activation_fct=nn.ReLU, self_attn=True):
+        super().__init__()
+        self.self_attn = self_attn
+        self.attn1 = MHA(latent_size, latent_size, latent_size, num_heads)
+        self.attn2 = MHA(latent_size, encoder_size, latent_size, num_heads)
+        if dropout > 0:
+            self.dropout = nn.Dropout(dropout)
+        else:
+            self.dropout = None
+        self.fc = nn.Sequential(nn.Linear(latent_size, hidden_size), activation_fct(), nn.Linear(hidden_size, latent_size))
+        if ln:
+            self.ln0 = nn.LayerNorm(latent_size)
+            self.ln1 = nn.LayerNorm(latent_size)
+            self.ln2 = nn.LayerNorm(latent_size)
+        else:
+            self.ln0 = None
+            self.ln1 = None
+            self.ln2 = None
+
+    def forward(self, Q, K, return_weights=False, **kwargs):
+        if self.self_attn:
+            A1 = self.attn1(Q, Q, **kwargs)
+            A1 = A1 if self.dropout is None else self.dropout(A1)
+            X = Q + A1
+            X = X if self.ln0 is None else self.ln0(X)
+        else:
+            X = Q
+        A2 = self.attn2(X, K, **kwargs)
+        A2 = A2 if self.dropout is None else self.dropout(A2)
+        X = X + A2
+        X = X if self.ln1 is None else self.ln1(X)
+        FC = self.fc(X)
+        FC = FC if self.dropout is None else self.dropout(FC)
+        X = X + FC
+        X = X if self.ln2 is None else self.ln2(X)
+        return X
+
+class SetTransformerEncoder(nn.Module):
+    def __init__(self, input_size, latent_size, hidden_size, num_heads, num_blocks, ln=False, dropout=0.1, activation_fct=nn.ReLU):
+        super().__init__()
+        self.proj = nn.Linear(input_size, latent_size) if input_size != latent_size else None
+        for i in range(num_blocks):
+            setattr(self, "block_%d"%i, SetEncoderBlock(latent_size, hidden_size, num_heads, ln=ln, dropout=dropout, activation_fct=activation_fct))
+        self.num_blocks = num_blocks
+
+    def forward(self, inputs, mask=None):
+        inputs = inputs if self.proj is None else self.proj(inputs)
+        for i in range(self.num_blocks):
+            block = getattr(self, "block_%d"%i)
+            inputs = block(inputs, mask=mask)
+        return inputs
+
+class SetTransformerDecoder(nn.Module):
+    def __init__(self, input_size, latent_size, hidden_size, encoder_size, num_heads, num_blocks, ln=False, dropout=0.1, activation_fct=nn.ReLU):
+        super().__init__()
+        self.proj = nn.Linear(input_size, latent_size) if input_size != latent_size else None
+        self.blocks = nn.ModuleList(
+            [
+                SetDecoderBlock(latent_size, hidden_size, encoder_size, num_heads, ln=ln, dropout=dropout, activation_fct=activation_fct)
+                for _ in range(num_blocks)
+            ]
+        )
+        self.num_blocks = num_blocks
+
+    def forward(self, inputs, encoder_outputs, mask=None):
+        inputs = inputs if self.proj is None else self.proj(inputs)
+        for i in range(self.num_blocks):
+            block = self.blocks[i]
+            inputs = block(inputs, encoder_outputs, mask=mask)
+        return inputs
+
+
+
+class HierarchicalSetDecoderBlock(nn.Module):
+    def __init__(self, latent_size, hidden_size, num_heads, ln=False, dropout=0.1, activation_fct=nn.ReLU, self_attn_outer=False):
+        self.decoder_inner = SetDecoderBlock(latent_size, hidden_size, latent_size, num_heads, ln=ln, dropout=dropout, activation_fct=activation_fct)
+        self.decoder_outer = SetDecoderBlock(latent_size, hidden_size, latent_size, num_heads, ln=ln, dropout=dropout, activation_fct=activation_fct, self_attn=self_attn_outer)
+    
+
+    def forward(self, P, Q, X=None):
+        if X is None:
+            X = P
+        Z_PQ = self.decoder_inner(P,Q)
+        Z_X = self.decoder_outer(X, Z_PQ)
+        return Z_X
 
 

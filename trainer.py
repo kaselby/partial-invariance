@@ -360,10 +360,11 @@ import math
 
 class DonskerVaradhanTrainer(Trainer):
     def __init__(self, model, optimizer, train_dataset, val_dataset, test_dataset, train_args, eval_args, device, criterion, label_fct, 
-            logger=None, save_every=2000, eval_every=500, scheduler=None, checkpoint_dir=None, ss_schedule=-1):
+            logger=None, save_every=2000, eval_every=500, scheduler=None, checkpoint_dir=None, ss_schedule=-1, split_inputs=True):
         super().__init__(model, optimizer, train_dataset, val_dataset, test_dataset, train_args, eval_args, device, logger=logger,
             save_every=save_every, criterion=criterion, scheduler=scheduler, checkpoint_dir=checkpoint_dir, ss_schedule=ss_schedule)
         self.label_fct = label_fct
+        self.split_inputs = split_inputs
 
     @staticmethod
     def _KL_estimate(X, Y):
@@ -375,7 +376,15 @@ class DonskerVaradhanTrainer(Trainer):
         if args['normalize'] == 'whiten':
             X,Y = whiten_split(X,Y)
 
-        X_out, Y_out = self.model(X.to(self.device),Y.to(self.device))
+        X, Y = X.to(self.device),Y.to(self.device)
+        if self.split_inputs:
+            X0,X1 = X.chunk(2, dim=1)
+            Y0,Y1 = Y.chunk(2, dim=1)
+        else:
+            X0,X1 = X,X
+            Y0,Y1 = Y,Y
+
+        X_out, Y_out = self.model(X0, Y0, X1, Y1)
         loss = -1* self._KL_estimate(X_out, Y_out).mean()
         loss.backward()
 
@@ -394,11 +403,18 @@ class DonskerVaradhanTrainer(Trainer):
             for i in range(steps):
                 (X,Y), theta = self.train_dataset(args['batch_size'], **args['sample_kwargs'])
                 KL_true = self.label_fct(*theta, X=X, **args['label_kwargs']).squeeze(-1)
-
                 if args['normalize'] == 'whiten':
                     X,Y = whiten_split(X,Y)
+                
+                X, Y = X.to(self.device),Y.to(self.device)
+                if self.split_inputs:
+                    X0,X1 = X.chunk(2, dim=1)
+                    Y0,Y1 = Y.chunk(2, dim=1)
+                else:
+                    X0,X1 = X,X
+                    Y0,Y1 = Y,Y
 
-                X_out, Y_out = self.model(X.to(self.device),Y.to(self.device))
+                X_out, Y_out = self.model(X0, Y0, X1, Y1)
                 KL_out = self._KL_estimate(X_out, Y_out)
 
                 avg_loss += self.criterion(KL_out, KL_true)

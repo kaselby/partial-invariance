@@ -378,10 +378,11 @@ class DVTask(StatisticalDistanceTask):
             'save_every': self.args.save_every,
             'label_fct': kl_mc,
             'criterion': nn.L1Loss()
+            'split_inputs': self.args.split_inputs
         }
         return trainer_kwargs
     
-    def build_model(self, pretrained_model=None):
+    def _build_model_mst(self):
         model_kwargs={
             'ln':True,
             'remove_diag':False,
@@ -395,6 +396,24 @@ class DVTask(StatisticalDistanceTask):
         }
         set_model = MultiSetTransformerEncoder(self.args.n, self.args.latent_size, self.args.hidden_size, 1, **model_kwargs)
         return set_model
+    
+    def _build_model_encdec(self):
+        model_kwargs={
+            'ln':True,
+            'remove_diag':False,
+            'enc_blocks':self.args.num_blocks,
+            'dec_blocks':self.args.num_blocks,
+            'num_heads':self.args.num_heads,
+            'dropout':self.args.dropout,
+            'equi':self.args.equi,
+            'output_layers': self.args.decoder_layers,
+            'merge': 'concat'
+        }
+        set_model = MultiSetTransformerEncoderDecoder(self.args.n, self.args.n, self.args.latent_size, self.args.hidden_size, 1, **model_kwargs)
+        return set_model
+    
+    def build_model(self, pretrained_model=None):
+        return self._build_model_encdec()
 
 
 
