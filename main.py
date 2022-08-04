@@ -82,6 +82,7 @@ def parse_args():
     parser.add_argument('--equi', action='store_true')
     parser.add_argument('--vardim', action='store_true')
     parser.add_argument('--split_inputs', action='store_true')
+    parser.add_argument('--decoder_self_attn', action='store_true')
     
     return parser.parse_args()
 

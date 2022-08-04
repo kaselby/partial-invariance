@@ -407,7 +407,8 @@ class DVTask(StatisticalDistanceTask):
             'dropout':self.args.dropout,
             'equi':self.args.equi,
             'output_layers': self.args.decoder_layers,
-            'merge': 'concat'
+            'merge': 'concat',
+            'decoder_self_attn': self.args.decoder_self_attn
         }
         set_model = MultiSetTransformerEncoderDecoder(self.args.n, self.args.n, self.args.latent_size, self.args.hidden_size, 1, **model_kwargs)
         return set_model

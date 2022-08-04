@@ -797,7 +797,9 @@ class MultiSetDecoderBlock(nn.Module):
 
 
 class MultiSetTransformerEncoderDecoder(nn.Module):
-    def __init__(self, x_size, ab_size, latent_size, hidden_size, output_size, num_heads=4, enc_blocks=2, dec_blocks=2, output_layers=1, equi=False, weight_sharing='none', ln=False, dropout=0, **kwargs):
+    def __init__(self, x_size, ab_size, latent_size, hidden_size, output_size, 
+            num_heads=4, enc_blocks=2, dec_blocks=2, output_layers=1, equi=False, weight_sharing='none', 
+            ln=False, dropout=0, decoder_self_attn=True, **kwargs):
         super().__init__()
         if equi:
             x_size, ab_size = 1,1
@@ -820,7 +822,7 @@ class MultiSetTransformerEncoderDecoder(nn.Module):
         )
         self.decoder_blocks = nn.ModuleList(
             [
-                MultiSetDecoderBlock(latent_size, hidden_size, latent_size, num_heads, equi=equi, ln=ln, dropout=dropout)
+                MultiSetDecoderBlock(latent_size, hidden_size, latent_size, num_heads, equi=equi, ln=ln, dropout=dropout, self_attn=decoder_self_attn)
                 for _ in range(dec_blocks)
             ]
         )
