@@ -788,7 +788,7 @@ class MultiSetDecoderBlock(nn.Module):
         Z = Z_X + Z_merge
         Z = Z if self.ln1 is None else self.ln1(Z)
 
-        FC = self.fc(Z)
+        FC = self.fc_out(Z)
         FC = FC if self.dropout is None else self.dropout(FC)
         Z = Z + FC
         Z = Z if self.ln2 is None else self.ln2(Z)
