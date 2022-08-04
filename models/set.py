@@ -745,12 +745,12 @@ class CrossOnlyModel(nn.Module):
 
 
 class MultiSetDecoderBlock(nn.Module):
-    def __init__(self, latent_size, hidden_size, encoder_size, num_heads, ln=False, dropout=0.1, activation_fct=nn.ReLU, self_attn=True):
+    def __init__(self, latent_size, hidden_size, encoder_size, num_heads, ln=False, dropout=0.1, activation_fct=nn.ReLU, self_attn=True, **kwargs):
         super().__init__()
         self.self_attn = self_attn
-        self.MHA_X = MHA(latent_size, latent_size, latent_size, num_heads)
-        self.MHA_XA = MHA(latent_size, encoder_size, latent_size, num_heads)
-        self.MHA_XB = MHA(latent_size, encoder_size, latent_size, num_heads)
+        self.MHA_X = MHA(latent_size, latent_size, latent_size, num_heads, **kwargs)
+        self.MHA_XA = MHA(latent_size, encoder_size, latent_size, num_heads, **kwargs)
+        self.MHA_XB = MHA(latent_size, encoder_size, latent_size, num_heads, **kwargs)
         if dropout > 0:
             self.dropout = nn.Dropout(dropout)
         else:
