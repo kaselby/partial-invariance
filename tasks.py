@@ -377,7 +377,7 @@ class DVTask(StatisticalDistanceTask):
             'eval_every': self.args.eval_every,
             'save_every': self.args.save_every,
             'label_fct': kl_mc,
-            'criterion': nn.L1Loss()
+            'criterion': nn.L1Loss(),
             'split_inputs': self.args.split_inputs
         }
         return trainer_kwargs
