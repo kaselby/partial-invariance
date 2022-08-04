@@ -842,27 +842,29 @@ class MultiSetTransformerEncoderDecoder(nn.Module):
             )
 
     def forward(self, A, B, *sets):
+        ZA, ZB = A, B
         if self.equi:
-            A, B = A.unsqueeze(-1), B.unsqueeze(-1)
-        A = A if self.proj_a is None else self.proj_a(A)
-        B = B if self.proj_b is None else self.proj_b(B)
+            ZA, ZB = ZA.unsqueeze(-1), ZB.unsqueeze(-1)
+        ZA = ZA if self.proj_a is None else self.proj_a(ZA)
+        ZB = ZB if self.proj_b is None else self.proj_b(ZB)
 
         for i in range(len(self.encoder_blocks)):
-            A, B = self.encoder_blocks[i]((A, B))
+            ZA, ZB = self.encoder_blocks[i]((ZA, ZB))
 
         outputs = []
-        for X in sets:
+        for s in sets:
+            X = s
             if self.equi:
                 X = X.unsqueeze(-1)
             X = X if self.proj_x is None else self.proj_x(X)
 
             for i in range(len(self.decoder_blocks)):
-                X = self.decoder_blocks[i](X, A, B)
+                X = self.decoder_blocks[i](X, ZA, ZB)
 
             if self.equi:
                 X = X.max(dim=2)[0]
             
-            out = self.output_head(X)
+            out = self.output_head(X).squeeze(-1)
             outputs.append(out)
         
         if len(outputs) == 1:
