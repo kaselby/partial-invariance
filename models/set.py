@@ -820,7 +820,7 @@ class MultiSetTransformerEncoderDecoder(nn.Module):
         )
         self.decoder_blocks = nn.ModuleList(
             [
-                MultiSetDecoderBlock(latent_size, hidden_size, latent_size, num_heads, equi=equi, ln=ln, dropout=dropout, **kwargs)
+                MultiSetDecoderBlock(latent_size, hidden_size, latent_size, num_heads, equi=equi, ln=ln, dropout=dropout)
                 for _ in range(dec_blocks)
             ]
         )
