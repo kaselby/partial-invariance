@@ -841,14 +841,14 @@ class MultiSetTransformerEncoderDecoder(nn.Module):
                 nn.Linear(hidden_size, output_size)
             )
 
-    def forward(self, A, B, *sets, masks=None):
+    def forward(self, A, B, *sets):
         if self.equi:
             A, B = A.unsqueeze(-1), B.unsqueeze(-1)
         A = A if self.proj_a is None else self.proj_a(A)
         B = B if self.proj_b is None else self.proj_b(B)
 
         for i in range(len(self.encoder_blocks)):
-            A, B = self.encoder_blocks[i]((A, B), masks=masks)
+            A, B = self.encoder_blocks[i]((A, B))
 
         outputs = []
         for X in sets:
@@ -857,7 +857,7 @@ class MultiSetTransformerEncoderDecoder(nn.Module):
             X = X if self.proj_x is None else self.proj_x(X)
 
             for i in range(len(self.decoder_blocks)):
-                X = self.decoder_blocks[i](X, A, B, masks=masks)
+                X = self.decoder_blocks[i](X, A, B)
 
             if self.equi:
                 X = X.max(dim=2)[0]
