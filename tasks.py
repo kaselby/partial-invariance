@@ -401,8 +401,8 @@ class DVTask(StatisticalDistanceTask):
         model_kwargs={
             'ln':True,
             'remove_diag':False,
-            'enc_blocks':self.args.num_blocks,
-            'dec_blocks':self.args.num_blocks,
+            'enc_blocks':self.args.enc_blocks,
+            'dec_blocks':self.args.dec_blocks,
             'num_heads':self.args.num_heads,
             'dropout':self.args.dropout,
             'equi':self.args.equi,
