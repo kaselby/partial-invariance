@@ -436,6 +436,11 @@ class DonskerVaradhanMITrainer(Trainer):
     def train_step(self, i, steps, dataset):
         args = self.train_args
         (X,Y), _ = dataset(args['batch_size'], **args['sample_kwargs'])
+        if X.size(1) % 2 == 1:
+            N = X.size(1)-1
+            X = X[:, :N]
+            Y = Y[:, :N]
+
         if args['normalize'] == 'whiten':
             X,Y = whiten_split(X,Y)
 
