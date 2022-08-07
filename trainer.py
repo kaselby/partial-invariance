@@ -467,6 +467,10 @@ class DonskerVaradhanMITrainer(Trainer):
         with torch.no_grad():
             for i in range(steps):
                 (X,Y), theta = self.train_dataset(args['batch_size'], **args['sample_kwargs'])
+                if X.size(1) % 2 == 1:
+                    N = X.size(1)-1
+                    X = X[:, :N]
+                    Y = Y[:, :N]
                 KL_true = self.label_fct(*theta, X=X, **args['label_kwargs']).squeeze(-1)
                 if args['normalize'] == 'whiten':
                     X,Y = whiten_split(X,Y)
