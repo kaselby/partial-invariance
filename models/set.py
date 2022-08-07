@@ -512,27 +512,29 @@ class MultiSetTransformer(nn.Module):
 
 class MultiSetTransformerEncoder(nn.Module):
     def __init__(self, input_size, latent_size, hidden_size, output_size, num_heads=4, num_blocks=2, remove_diag=False, ln=False, equi=False, 
-            weight_sharing='none', dropout=0.1, decoder_layers=0, merge='concat'):
+            weight_sharing='none', dropout=0.1, decoder_layers=0, merge='concat', merge_output_sets=False):
         super(MultiSetTransformerEncoder, self).__init__()
         if equi:
             input_size = 1
         self.input_size = input_size
+        self.merge_output_sets = merge_output_sets
+        decoder_input_size = latent_size if not merge_output_sets else latent_size*2
         self.proj = None if input_size == latent_size else nn.Linear(input_size, latent_size) 
         self.enc = EncoderStack(*[CSAB(latent_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, 
                 equi=equi, weight_sharing=weight_sharing, dropout=dropout, merge='concat') for i in range(num_blocks)])
-        self.dec = self._make_decoder(latent_size, hidden_size, output_size, decoder_layers)
+        self.dec = self._make_decoder(decoder_input_size, hidden_size, output_size, decoder_layers)
         self.remove_diag = remove_diag
         self.equi=equi
 
-    def _make_decoder(self, latent_size, hidden_size, output_size, n_layers):
+    def _make_decoder(self, decoder_input_size, hidden_size, output_size, n_layers):
         if n_layers == 0:
-            return nn.Linear(2*latent_size, output_size)
+            return nn.Linear(decoder_input_size, output_size)
         else:
             hidden_layers = []
             for _ in range(n_layers-1): 
                 hidden_layers += [nn.Linear(hidden_size, hidden_size), nn.ReLU()]
             return nn.Sequential(
-                nn.Linear(latent_size, hidden_size),
+                nn.Linear(decoder_input_size, hidden_size),
                 nn.ReLU(),
                 *hidden_layers,
                 nn.Linear(hidden_size, output_size)
@@ -551,10 +553,12 @@ class MultiSetTransformerEncoder(nn.Module):
             ZX = ZX.max(dim=2)[0]
             ZY = ZY.max(dim=2)[0]
 
-        x_out = self.dec(ZX).squeeze(-1)
-        y_out = self.dec(ZY).squeeze(-1)
-        
-        return x_out, y_out
+        if self.merge_output_sets:
+            return self.dec(torch.cat([ZX, ZY], dim=-1)).squeeze(-1)
+        else:
+            x_out = self.dec(ZX).squeeze(-1)
+            y_out = self.dec(ZY).squeeze(-1)
+            return x_out, y_out
 
 class UnionTransformer(nn.Module):
     def __init__(self, input_size, latent_size, hidden_size, output_size, num_blocks, num_heads, decoder_layers=1, ln=False, pool='pma', 

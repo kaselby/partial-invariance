@@ -1,6 +1,6 @@
 
 from builders import SET_MODEL_BUILDERS, CONV_MODEL_BUILDERS
-from trainer import Trainer, CountingTrainer, CaptionTrainer, MetaDatasetTrainer, StatisticalDistanceTrainer, Pretrainer, DonskerVaradhanTrainer
+from trainer import Trainer, CountingTrainer, CaptionTrainer, MetaDatasetTrainer, StatisticalDistanceTrainer, Pretrainer, DonskerVaradhanTrainer, DonskerVaradhanMITrainer
 from datasets.counting import OmniglotCooccurenceGenerator, ImageCooccurenceGenerator, DatasetByClass, load_cifar, load_mnist, load_omniglot
 from datasets.alignment import EmbeddingAlignmentGenerator, CaptionGenerator, load_coco_data, load_flickr_data, bert_tokenize_batch, fasttext_tokenize_batch, load_pairs, split_pairs
 from datasets.distinguishability import DistinguishabilityGenerator
@@ -416,7 +416,43 @@ class DVTask(StatisticalDistanceTask):
     def build_model(self, pretrained_model=None):
         return self._build_model_encdec()
 
+class DVMITask(StatisticalDistanceTask):
+    trainer_cls=DonskerVaradhanMITrainer
 
+    def build_dataset(self):
+        generator = CorrelatedGaussianGenerator(return_params=True, variable_dim=self.args.equi)
+        return generator, generator, None
+
+    def build_training_args(self):
+        train_args, eval_args = super().build_training_args()
+        train_args['normalize'] = 'whiten'
+        eval_args['normalize'] = 'whiten'
+        return train_args, eval_args
+    
+    def build_trainer_kwargs(self):
+        trainer_kwargs = {
+            'eval_every': self.args.eval_every,
+            'save_every': self.args.save_every,
+            'label_fct': mi_corr_gaussian,
+            'criterion': nn.L1Loss()
+        }
+        return trainer_kwargs
+    
+    def build_model(self, pretrained_model=None):
+        model_kwargs={
+            'ln':True,
+            'remove_diag':False,
+            'num_blocks':self.args.num_blocks,
+            'num_heads':self.args.num_heads,
+            'dropout':self.args.dropout,
+            'equi':self.args.equi,
+            'decoder_layers': self.args.decoder_layers,
+            'merge': 'concat',
+            'weight_sharing': 'sym',     #IMPORTANT?? Not sure if necessary or not for MI but probably helpful
+            'merge_output_sets': True
+        }
+        set_model = MultiSetTransformerEncoder(self.args.n, self.args.latent_size, self.args.hidden_size, 1, **model_kwargs)
+        return set_model
 
 TASKS = {
     'counting': CountingTask,
@@ -426,5 +462,6 @@ TASKS = {
     'dist/meta-dataset': MetaDatasetTask,
     'stat/KL': KLTask,
     'stat/MI': MITask,
-    'stat/DV': DVTask
+    'stat/DV': DVTask,
+    'stat/DV-MI': DVMITask
 }
