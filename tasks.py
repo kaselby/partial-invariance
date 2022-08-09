@@ -431,6 +431,7 @@ class DVMITask(StatisticalDistanceTask):
         train_args, eval_args = super().build_training_args()
       
         train_args['sample_kwargs']['sample_groups']=4
+        eval_args['sample_kwargs']['sample_groups']=4
         train_args['normalize'] = 'whiten'
         eval_args['normalize'] = 'whiten'
         return train_args, eval_args
