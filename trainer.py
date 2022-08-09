@@ -373,8 +373,8 @@ class DonskerVaradhanTrainer(Trainer):
 
     def _forward_KL(self, X, Y):
         if self.split_inputs:
-            X0,X1 = X.chunk(2, dim=0).squeeze(0)
-            Y0,Y1 = Y.chunk(2, dim=0).squeeze(0)
+            X0,X1 = X.chunk(2, dim=1)
+            Y0,Y1 = Y.chunk(2, dim=1)
         else:
             X0,X1 = X,X
             Y0,Y1 = Y,Y
@@ -384,8 +384,8 @@ class DonskerVaradhanTrainer(Trainer):
         return self._KL_estimate(X_out, Y_out)
 
     def _forward_MI(self, X, Y):
-        X0,X1 = X.chunk(2, dim=0).squeeze(0)
-        Y0,Y1 = Y.chunk(2, dim=0).squeeze(0)
+        X0,X1 = X.chunk(2, dim=1)
+        Y0,Y1 = Y.chunk(2, dim=1)
 
         Z1 = self.model(X0, Y0)
         Z2 = self.model(X0, Y1)
@@ -393,8 +393,8 @@ class DonskerVaradhanTrainer(Trainer):
         return self._KL_estimate(Z1, Z2)
 
     def _forward_MI_KL(self, X, Y):
-        X0,X1,_,_ = X.chunk(4, dim=0).squeeze(0)
-        Y0,Y1,Y2,Y3 = Y.chunk(4, dim=0).squeeze(0)
+        X0,X1,_,_ = X.chunk(4, dim=1)
+        Y0,Y1,Y2,Y3 = Y.chunk(4, dim=1)
 
         Z_joint1 = torch.cat([X0,Y0], dim=-1)
         Z_marginal1 = torch.cat([X0,Y2], dim=1)
