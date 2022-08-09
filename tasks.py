@@ -446,7 +446,7 @@ class DVMITask(StatisticalDistanceTask):
         }
         return trainer_kwargs
     
-    def build_model(self, pretrained_model=None):
+    def _build_model_mst(self):
         model_kwargs={
             'ln':True,
             'remove_diag':False,
@@ -461,6 +461,25 @@ class DVMITask(StatisticalDistanceTask):
         }
         set_model = MultiSetTransformerEncoder(self.args.n, self.args.latent_size, self.args.hidden_size, 1, **model_kwargs)
         return set_model
+
+    def _build_model_encdec(self):
+        model_kwargs={
+            'ln':True,
+            'remove_diag':False,
+            'enc_blocks':self.args.enc_blocks,
+            'dec_blocks':self.args.dec_blocks,
+            'num_heads':self.args.num_heads,
+            'dropout':self.args.dropout,
+            'equi':self.args.equi,
+            'output_layers': self.args.decoder_layers,
+            'merge': 'concat',
+            'decoder_self_attn': self.args.decoder_self_attn
+        }
+        set_model = MultiSetTransformerEncoderDecoder(self.args.n, self.args.n, self.args.latent_size, self.args.hidden_size, 1, **model_kwargs)
+        return set_model
+
+    def build_model(self, pretrained_model=None):
+        return self._build_model_encdec()
 
 TASKS = {
     'counting': CountingTask,
