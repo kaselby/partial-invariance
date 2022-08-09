@@ -381,7 +381,7 @@ class DVTask(StatisticalDistanceTask):
             'save_every': self.args.save_every,
             'label_fct': kl_mc,
             'criterion': nn.L1Loss(),
-            'split_inputs': self.args.split_inputs
+            'split_inputs': self.args.split_inputs,
             'mode': 'kl'
         }
         return trainer_kwargs
@@ -440,7 +440,8 @@ class DVMITask(StatisticalDistanceTask):
             'eval_every': self.args.eval_every,
             'save_every': self.args.save_every,
             'label_fct': mi_corr_gaussian,
-            'criterion': nn.L1Loss()
+            'criterion': nn.L1Loss(),
+            'mode': 'mi-kl'
         }
         return trainer_kwargs
     
