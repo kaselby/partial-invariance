@@ -368,6 +368,9 @@ class DVTask(StatisticalDistanceTask):
 
     def build_training_args(self):
         train_args, eval_args = super().build_training_args()
+        if self.split_inputs:
+            train_args['sample_kwargs']['sample_groups']=2
+
         train_args['normalize'] = 'whiten'
         eval_args['normalize'] = 'whiten'
         return train_args, eval_args
@@ -379,6 +382,7 @@ class DVTask(StatisticalDistanceTask):
             'label_fct': kl_mc,
             'criterion': nn.L1Loss(),
             'split_inputs': self.args.split_inputs
+            'mode': 'kl'
         }
         return trainer_kwargs
     
@@ -417,7 +421,7 @@ class DVTask(StatisticalDistanceTask):
         return self._build_model_encdec()
 
 class DVMITask(StatisticalDistanceTask):
-    trainer_cls=DonskerVaradhanMITrainer
+    trainer_cls=DonskerVaradhanTrainer
 
     def build_dataset(self):
         generator = CorrelatedGaussianGenerator(return_params=True, variable_dim=self.args.equi)
@@ -425,6 +429,8 @@ class DVMITask(StatisticalDistanceTask):
 
     def build_training_args(self):
         train_args, eval_args = super().build_training_args()
+      
+        train_args['sample_kwargs']['sample_groups']=4
         train_args['normalize'] = 'whiten'
         eval_args['normalize'] = 'whiten'
         return train_args, eval_args

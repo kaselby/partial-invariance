@@ -87,7 +87,7 @@ class GaussianGenerator():
             return samples.float().contiguous()
         
     
-    def __call__(self, batch_size, dims=(2,6), **kwargs):
+    def __call__(self, batch_size, dims=(2,6), sample_groups=1, **kwargs):
         if self.variable_dim:
             n = torch.randint(*dims,(1,)).item()
             kwargs['n'] = n
@@ -168,24 +168,28 @@ class CorrelatedGaussianGenerator():
         cov = torch.cat([torch.cat([I, rhoI], dim=1), torch.cat([rhoI, I], dim=1)], dim=2)
         return MultivariateNormal(mu, covariance_matrix=cov)
 
-    def _generate(self, batch_size, n, set_size=(100,150), corr=None):
+    def _generate(self, batch_size, n, set_size=(100,150), sample_groups=1, corr=None):
         n_samples = torch.randint(*set_size,(1,))
         if corr is None:
             corr = 0.999-1.998*(torch.rand((batch_size,)))
             if use_cuda:
                 corr = corr.cuda()
         dists = self._build_dist(batch_size, corr, n)
-        X, Y = dists.sample(n_samples).transpose(0,1).chunk(2, dim=-1)
+        if sample_groups > 1:
+            X, Y = dists.sample(sample_groups, n_samples).transpose(1,2).chunk(2, dim=-1)
+        else:
+            X, Y = dists.sample(n_samples).transpose(0,1).chunk(2, dim=-1)
+
         if self.return_params:
             return (X, Y), (corr,)
         else:
             return X, Y
 
-    def __call__(self, batch_size, dims=(2,6), **kwargs):
+    def __call__(self, batch_size, dims=(2,6), sample_groups=1, **kwargs):
         if self.variable_dim:
             n = torch.randint(*dims,(1,)).item()
             kwargs['n'] = n
-        return self._generate(batch_size, **kwargs)
+        return self._generate(batch_size, sample_groups=sample_groups, **kwargs)
 
 
 
