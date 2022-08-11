@@ -396,11 +396,11 @@ class DonskerVaradhanTrainer(Trainer):
         Xs = X.chunk(6, dim=1)
         Ys = Y.chunk(6, dim=1)
 
-        Z_joint1 = torch.cat([X[0],Y[0]], dim=-1)
-        Z_marginal1 = torch.cat([X[1],Y[4]], dim=-1)
+        Z_joint1 = torch.cat([Xs[0],Ys[0]], dim=-1)
+        Z_marginal1 = torch.cat([Xs[1],Ys[4]], dim=-1)
 
-        Z_joint2 = torch.cat([X[2],Y[2]], dim=-1)
-        Z_marginal2 = torch.cat([X[3],Y[5]], dim=-1)
+        Z_joint2 = torch.cat([Xs[2],Ys[2]], dim=-1)
+        Z_marginal2 = torch.cat([Xs[3],Ys[5]], dim=-1)
 
         Z_joint_out, Z_marginal_out = self.model(Z_joint1, Z_marginal1, Z_joint2, Z_marginal2)
 
