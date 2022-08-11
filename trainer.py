@@ -393,14 +393,14 @@ class DonskerVaradhanTrainer(Trainer):
         return self._KL_estimate(Z1, Z2)
 
     def _forward_MI_KL(self, X, Y):
-        X0,X1,_,_ = X.chunk(4, dim=1)
-        Y0,Y1,Y2,Y3 = Y.chunk(4, dim=1)
+        Xs = X.chunk(6, dim=1)
+        Ys = Y.chunk(6, dim=1)
 
-        Z_joint1 = torch.cat([X0,Y0], dim=-1)
-        Z_marginal1 = torch.cat([X0,Y2], dim=-1)
+        Z_joint1 = torch.cat([X[0],Y[0]], dim=-1)
+        Z_marginal1 = torch.cat([X[1],Y[4]], dim=-1)
 
-        Z_joint2 = torch.cat([X1,Y1], dim=-1)
-        Z_marginal2 = torch.cat([X1,Y3], dim=-1)
+        Z_joint2 = torch.cat([X[2],Y[2]], dim=-1)
+        Z_marginal2 = torch.cat([X[3],Y[5]], dim=-1)
 
         Z_joint_out, Z_marginal_out = self.model(Z_joint1, Z_marginal1, Z_joint2, Z_marginal2)
 
