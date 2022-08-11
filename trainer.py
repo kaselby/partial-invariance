@@ -441,6 +441,7 @@ class DonskerVaradhanTrainer(Trainer):
     def evaluate(self, steps, dataset):
         args = self.eval_args
         avg_loss = 0
+        avg_diff = 0
         with torch.no_grad():
             for i in range(steps):
                 (X,Y), theta = self.train_dataset(args['batch_size'], **args['sample_kwargs'])
@@ -453,9 +454,11 @@ class DonskerVaradhanTrainer(Trainer):
                 d_out = self._forward(X,Y)
 
                 avg_loss += self.criterion(d_out, d_true)
+                avg_diff += (d_out - d_true).item()
             avg_loss /= steps
+            avg_diff /= steps
         
-        return {"criterion":avg_loss}
+        return {"criterion":avg_loss, 'signed-diff':avg_diff}
 
 
 
