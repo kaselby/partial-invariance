@@ -432,8 +432,8 @@ class DVMITask(StatisticalDistanceTask):
       
         train_args['sample_kwargs']['sample_groups']=6
         eval_args['sample_kwargs']['sample_groups']=6
-        train_args['normalize'] = 'whiten'
-        eval_args['normalize'] = 'whiten'
+        train_args['normalize'] = self.args.normalize
+        eval_args['normalize'] = self.args.normalize
         return train_args, eval_args
     
     def build_trainer_kwargs(self):
