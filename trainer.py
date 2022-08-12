@@ -454,7 +454,7 @@ class DonskerVaradhanTrainer(Trainer):
                 d_out = self._forward(X,Y)
 
                 avg_loss += self.criterion(d_out, d_true)
-                avg_diff += (d_out - d_true).item()
+                avg_diff += (d_out - d_true).mean().item()
             avg_loss /= steps
             avg_diff /= steps
         
