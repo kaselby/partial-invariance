@@ -368,7 +368,7 @@ class DVTask(StatisticalDistanceTask):
 
     def build_training_args(self):
         train_args, eval_args = super().build_training_args()
-        if self.split_inputs:
+        if self.args.split_inputs:
             train_args['sample_kwargs']['sample_groups']=2
 
         train_args['normalize'] = 'whiten'
