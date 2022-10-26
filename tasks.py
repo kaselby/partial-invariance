@@ -5,7 +5,7 @@ from datasets.counting import OmniglotCooccurenceGenerator, ImageCooccurenceGene
 from datasets.alignment import EmbeddingAlignmentGenerator, CaptionGenerator, load_coco_data, load_flickr_data, bert_tokenize_batch, fasttext_tokenize_batch, load_pairs, split_pairs
 from datasets.distinguishability import DistinguishabilityGenerator
 from datasets.meta_dataset import MetaDatasetGenerator, Split
-from datasets.distributions import CorrelatedGaussianGenerator, GaussianGenerator, NFGenerator
+from datasets.distributions import CorrelatedGaussianGenerator, GaussianGenerator, NFGenerator, StandardGaussianGenerator
 from models.task import ImageEncoderWrapper, BertEncoderWrapper, EmbeddingEncoderWrapper, MultiSetImageModel, MultiSetModel
 from models.set import MultiSetTransformerEncoder, MultiSetTransformerEncoderDecoder
 from utils import kl_mc, mi_corr_gaussian, kl_knn, kraskov_mi1, whiten_split, normalize_sets
@@ -421,7 +421,7 @@ class DVTask(StatisticalDistanceTask):
         return self._build_model_encdec()
 
 class DVMITask(StatisticalDistanceTask):
-    trainer_cls=DonskerVaradhanTrainer
+    trainer_cls=DonskerVaradhanMITrainer
 
     def build_dataset(self):
         generator = CorrelatedGaussianGenerator(return_params=True, variable_dim=self.args.equi)
@@ -430,8 +430,8 @@ class DVMITask(StatisticalDistanceTask):
     def build_training_args(self):
         train_args, eval_args = super().build_training_args()
       
-        train_args['sample_kwargs']['sample_groups']=6
-        eval_args['sample_kwargs']['sample_groups']=6
+        train_args['sample_kwargs']['sample_groups']=2
+        eval_args['sample_kwargs']['sample_groups']=2
         train_args['normalize'] = self.args.normalize
         eval_args['normalize'] = self.args.normalize
         return train_args, eval_args
@@ -442,7 +442,9 @@ class DVMITask(StatisticalDistanceTask):
             'save_every': self.args.save_every,
             'label_fct': mi_corr_gaussian,
             'criterion': nn.L1Loss(),
-            'mode': 'mi-kl'
+            'mode': 'mi-kl',
+            'x_marginal': StandardGaussianGenerator(),
+            'y_marginal': StandardGaussianGenerator()
         }
         return trainer_kwargs
     
