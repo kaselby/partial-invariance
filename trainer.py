@@ -482,7 +482,7 @@ class DonskerVaradhanMITrainer(Trainer):
         marginal_kwargs={
             'batch_size': args['batch_size'],
             'n': X0.size(-1),
-            'set_size': args['sample_kwargs']['set_size'],
+            'n_samples': X0.size(1),
             'sample_groups': 2
         }
         X2, X3 = self.x_marginal(**marginal_kwargs).chunk(2, dim=1)

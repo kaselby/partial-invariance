@@ -189,8 +189,9 @@ class CorrelatedGaussianGenerator():
         return self._generate(batch_size, sample_groups=sample_groups, **kwargs)
 
 class StandardGaussianGenerator():
-    def __call__(self, batch_size, n, sample_groups=1, set_size=(100,150)):
-        n_samples = torch.randint(*set_size,(1,))
+    def __call__(self, batch_size, n, sample_groups=1, set_size=(100,150), n_samples=-1):
+        if n_samples <= 0:
+            n_samples = torch.randint(*set_size,(1,))
         X = torch.randn(batch_size, n_samples*sample_groups, n)
         return X
 
