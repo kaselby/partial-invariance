@@ -485,8 +485,8 @@ class DonskerVaradhanMITrainer(Trainer):
             'n_samples': X0.size(1),
             'sample_groups': 2
         }
-        X2, X3 = self.x_marginal(**marginal_kwargs).chunk(2, dim=1)
-        Y2, Y3 = self.y_marginal(**marginal_kwargs).chunk(2, dim=1)
+        X2, X3 = self.x_marginal(**marginal_kwargs).to(self.device).chunk(2, dim=1)
+        Y2, Y3 = self.y_marginal(**marginal_kwargs).to(self.device).chunk(2, dim=1)
 
         Z_joint1 = torch.cat([X0,Y0], dim=-1)
         Z_marginal1 = torch.cat([X2,Y2], dim=-1)
