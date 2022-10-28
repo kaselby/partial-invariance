@@ -481,7 +481,7 @@ class DonskerVaradhanMITrainer(Trainer):
         Y0, Y1 = Y.chunk(2, dim=1)
         marginal_kwargs={
             'batch_size': args['batch_size'],
-            'n': X0.size(-1)
+            'n': X0.size(-1),
             'set_size': args['sample_kwargs']['set_size'],
             'sample_groups': 2
         }
