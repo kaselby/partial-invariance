@@ -479,8 +479,14 @@ class DonskerVaradhanMITrainer(Trainer):
     def _forward(self, args, X, Y):
         X0, X1 = X.chunk(2, dim=1)
         Y0, Y1 = Y.chunk(2, dim=1)
-        X2, X3 = self.x_marginal(args['batch_size'], **args['sample_kwargs'])
-        Y2, Y3 = self.y_marginal(args['batch_size'], **args['sample_kwargs'])
+        marginal_kwargs={
+            'batch_size': args['batch_size'],
+            'n': X0.size(-1)
+            'set_size': args['sample_kwargs']['set_size'],
+            'sample_groups': 2
+        }
+        X2, X3 = self.x_marginal(**marginal_kwargs).chunk(2, dim=1)
+        Y2, Y3 = self.y_marginal(**marginal_kwargs).chunk(2, dim=1)
 
         Z_joint1 = torch.cat([X0,Y0], dim=-1)
         Z_marginal1 = torch.cat([X2,Y2], dim=-1)
