@@ -442,7 +442,6 @@ class DVMITask(StatisticalDistanceTask):
             'save_every': self.args.save_every,
             'label_fct': mi_corr_gaussian,
             'criterion': nn.L1Loss(),
-            'mode': 'mi-kl',
             'x_marginal': StandardGaussianGenerator(),
             'y_marginal': StandardGaussianGenerator()
         }
