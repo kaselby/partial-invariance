@@ -14,6 +14,7 @@ from datetime import date
 from tasks import TASKS
 from builders import SET_MODEL_BUILDERS
 
+import wandb
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -146,6 +147,7 @@ if __name__ == '__main__':
     scaler = torch.cuda.amp.GradScaler(enabled=args.use_amp)
 
     logger = SummaryWriter(log_dir)
+    wandb.init(project=args.run_name)
 
     trainer = task.build_trainer(model, opt, None, train_dataset, val_dataset, test_dataset, device, logger, checkpoint_dir=args.checkpoint_dir)
     all_metrics = trainer.train(args.train_steps, args.val_steps, args.test_steps)

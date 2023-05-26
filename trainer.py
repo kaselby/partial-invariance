@@ -79,6 +79,7 @@ class Trainer():
             all_metrics[name].append(value)
             if self.logger is not None and step >= 0:
                 self.logger.add_scalar(name, value, step)
+            wandb.log({'name': value}, step)
 
         initial_step=0
 
