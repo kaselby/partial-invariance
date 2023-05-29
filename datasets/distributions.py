@@ -285,7 +285,7 @@ class NFGenerator():
         else: 
             return samples
 
-    def __call__(self, batch_size, dims=(2,6), **kwargs):
+    def __call__(self, batch_size, dims=(2,6), sample_groups=1, **kwargs):
         if self.variable_dim:
             n = torch.randint(*dims,(1,)).item()
             kwargs['n'] = n
