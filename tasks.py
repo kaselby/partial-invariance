@@ -390,7 +390,7 @@ class DVTask(StatisticalDistanceTask):
     
     def _build_model_mst(self):
         model_kwargs={
-            'ln':True,
+            'ln':self.args.layer_norm,
             'remove_diag':False,
             'num_blocks':self.args.num_blocks,
             'num_heads':self.args.num_heads,
@@ -405,7 +405,7 @@ class DVTask(StatisticalDistanceTask):
     
     def _build_model_encdec(self):
         model_kwargs={
-            'ln':True,
+            'ln':self.args.layer_norm,
             'remove_diag':False,
             'enc_blocks':self.args.enc_blocks,
             'dec_blocks':self.args.dec_blocks,
@@ -467,7 +467,7 @@ class DVMITask(StatisticalDistanceTask):
 
     def _build_model_encdec(self):
         model_kwargs={
-            'ln':True,
+            'ln':self.args.layer_norm,
             'remove_diag':False,
             'enc_blocks':self.args.enc_blocks,
             'dec_blocks':self.args.dec_blocks,
