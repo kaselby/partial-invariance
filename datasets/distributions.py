@@ -219,7 +219,7 @@ class CorrelatedGaussianGenerator2():
                 corr = corr.cuda()
         joint_dist = self._build_dist(batch_size, corr, n)
         P = joint_dist.sample(n_samples*sample_groups).transpose(0,1)
-        marginal = MultivariateNormal(torch.zeros(n*2), covariance_matrix=torch.eye(n*2))
+        marginal = MultivariateNormal(torch.zeros(n*2).cuda(), covariance_matrix=torch.eye(n*2).cuda())
         Q = marginal.sample(batch_size * n_samples * sample_groups).view(batch_size, -1, n*2)
 
         if self.return_params:
