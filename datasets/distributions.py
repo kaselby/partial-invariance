@@ -195,6 +195,44 @@ class StandardGaussianGenerator():
         X = torch.randn(batch_size, n_samples*sample_groups, n)
         return X
 
+
+class CorrelatedGaussianGenerator2():
+    def __init__(self, return_params=False, variable_dim=False):
+        self.return_params=return_params
+        self.variable_dim=variable_dim
+        
+    def _build_dist(self, batch_size, corr, n):
+        mu = torch.zeros((batch_size, n*2))
+        I = torch.eye(n).unsqueeze(0).expand(batch_size, -1, -1)
+        if use_cuda:
+            I = I.cuda()
+            mu = mu.cuda()
+        rhoI = corr.unsqueeze(-1).unsqueeze(-1) * I
+        cov = torch.cat([torch.cat([I, rhoI], dim=1), torch.cat([rhoI, I], dim=1)], dim=2)
+        return MultivariateNormal(mu, covariance_matrix=cov)
+
+    def _generate(self, batch_size, n, set_size=(100,150), sample_groups=1, corr=None):
+        n_samples = torch.randint(*set_size,(1,))
+        if corr is None:
+            corr = 0.999-1.998*(torch.rand((batch_size,)))
+            if use_cuda:
+                corr = corr.cuda()
+        dists = self._build_dist(batch_size, corr, n)
+        P = dists.sample(n_samples*sample_groups).transpose(0,1)
+
+        Q = torch.randn(batch_size, sample_groups * n_samples, n*2)
+
+        if self.return_params:
+            return (P, Q), (corr,)
+        else:
+            return X, Y
+
+    def __call__(self, batch_size, dims=(2,6), sample_groups=1, **kwargs):
+        if self.variable_dim:
+            n = torch.randint(*dims,(1,)).item()
+            kwargs['n'] = n
+        return self._generate(batch_size, sample_groups=sample_groups, **kwargs)
+
 from datasets.flows import MADE, MADE_IAF, BatchNormFlow, Reverse, FlowSequential, BatchOfFlows
 def build_maf(num_inputs, num_hidden, num_blocks, nf_cls=MADE_IAF):
     modules=[]

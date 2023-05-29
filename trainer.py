@@ -81,7 +81,7 @@ class Trainer():
             all_metrics[name].append(value)
             if self.logger is not None and step >= 0:
                 self.logger.add_scalar(name, value, step)
-            wandb.log({'name': value}, step)
+            wandb.log({name: value}, step)
 
         initial_step=0
 
@@ -114,6 +114,7 @@ class Trainer():
 
                 if self.checkpoint_dir is not None and i % self.save_every == 0:
                     self.save_checkpoint(i, all_metrics)
+            
 
         if self.test_dataset is not None:
             test_metrics = evaluate(test_steps, self.test_dataset)

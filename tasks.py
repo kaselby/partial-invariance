@@ -449,7 +449,7 @@ class DVMITask(StatisticalDistanceTask):
     
     def _build_model_mst(self):
         model_kwargs={
-            'ln':True,
+            'ln':self.args.layer_norm,
             'remove_diag':False,
             'num_blocks':self.args.num_blocks,
             'num_heads':self.args.num_heads,
