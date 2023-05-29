@@ -217,15 +217,15 @@ class CorrelatedGaussianGenerator2():
             corr = 0.999-1.998*(torch.rand((batch_size,)))
             if use_cuda:
                 corr = corr.cuda()
-        dists = self._build_dist(batch_size, corr, n)
-        P = dists.sample(n_samples*sample_groups).transpose(0,1)
-
-        Q = torch.randn(batch_size, sample_groups * n_samples, n*2)
+        joint_dist = self._build_dist(batch_size, corr, n)
+        P = joint_dist.sample(n_samples*sample_groups).transpose(0,1)
+        marginal = MultivariateNormal(torch.zeros(n*2), covariance_matrix=torch.eye(n*2))
+        Q = marginal.sample(batch_size * n_samples * sample_groups).view(batch_size, -1, n*2)
 
         if self.return_params:
-            return (P, Q), (corr,)
+            return (P, Q), (joint_dist,marginal)
         else:
-            return X, Y
+            return P,Q
 
     def __call__(self, batch_size, dims=(2,6), sample_groups=1, **kwargs):
         if self.variable_dim:

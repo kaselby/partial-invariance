@@ -5,7 +5,7 @@ from datasets.counting import OmniglotCooccurenceGenerator, ImageCooccurenceGene
 from datasets.alignment import EmbeddingAlignmentGenerator, CaptionGenerator, load_coco_data, load_flickr_data, bert_tokenize_batch, fasttext_tokenize_batch, load_pairs, split_pairs
 from datasets.distinguishability import DistinguishabilityGenerator
 from datasets.meta_dataset import MetaDatasetGenerator, Split
-from datasets.distributions import CorrelatedGaussianGenerator, GaussianGenerator, NFGenerator, StandardGaussianGenerator
+from datasets.distributions import CorrelatedGaussianGenerator, GaussianGenerator, NFGenerator, StandardGaussianGenerator, CorrelatedGaussianGenerator2
 from models.task import ImageEncoderWrapper, BertEncoderWrapper, EmbeddingEncoderWrapper, MultiSetImageModel, MultiSetModel
 from models.set import MultiSetTransformerEncoder, MultiSetTransformerEncoderDecoder
 from utils import kl_mc, mi_corr_gaussian, kl_knn, kraskov_mi1, whiten_split, normalize_sets
@@ -362,6 +362,8 @@ class DVTask(StatisticalDistanceTask):
             generator = GaussianGenerator(num_outputs=2, variable_dim=self.args.equi, return_params=True, mixture=True)
         elif self.args.dataset == 'nf':
             generator = NFGenerator(32, 2, num_outputs=2, use_maf=False, variable_dim=self.args.equi, return_params=True)
+        elif self.args.dataset == 'corr':
+            generator = CorrelatedGaussianGenerator2(return_params=True, variable_dim=self.args.equi)
         else:
             raise NotImplementedError("gmm or nf")
         return generator, generator, None
