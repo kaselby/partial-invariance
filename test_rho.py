@@ -51,7 +51,7 @@ if __name__ == "__main__":
     mi_true = mi_corr_gaussian(rhos, d=args.d)
     mi_model = torch.zeros(rhos.size(0))
     for i, rho in tqdm(enumerate(rhos)):
-        n_runs = args.n // bs
+        n_runs = args.n // args.bs
         outputs = torch.zeros(args.n)
         with torch.no_grad():
             for i in range(n_runs):
