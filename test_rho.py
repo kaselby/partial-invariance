@@ -55,7 +55,7 @@ if __name__ == "__main__":
         outputs = torch.zeros(args.n)
         with torch.no_grad():
             for j in range(n_runs):
-                (X,Y), theta = train_dataset(args.bs, set_size=(args.set_size, args.set_size+1), n=args.d, **model_args['sample_kwargs'])
+                (X,Y), theta = train_dataset(args.bs, set_size=(args.set_size, args.set_size+1), n=args.d, **sample_kwargs)
                 model_out = trainer._forward(X,Y)
                 outputs[j*args.bs:(j+1)*args.bs] = model_out.cpu()
         mi_model[i] = outputs.mean()
