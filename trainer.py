@@ -496,11 +496,11 @@ class DonskerVaradhanMITrainer(Trainer):
     def _KL_estimate(X, Y):
         return X.sum(dim=1)/X.size(1) - Y.logsumexp(dim=1) + math.log(Y.size(1))
 
-    def _forward(self, args, X, Y):
+    def _forward(self, X, Y):
         X0, X1 = X.chunk(2, dim=1)
         Y0, Y1 = Y.chunk(2, dim=1)
         marginal_kwargs={
-            'batch_size': args['batch_size'],
+            'batch_size': X0.size(0),
             'n': X0.size(-1),
             'n_samples': X0.size(1),
             'sample_groups': 2
@@ -526,7 +526,7 @@ class DonskerVaradhanMITrainer(Trainer):
 
         X, Y = X.to(self.device),Y.to(self.device)
         
-        d_out = self._forward(args, X, Y)
+        d_out = self._forward(X, Y)
 
         loss = -1* d_out.mean()
         loss.backward()
@@ -553,7 +553,7 @@ class DonskerVaradhanMITrainer(Trainer):
                 
                 X, Y = X.to(self.device),Y.to(self.device)
                 
-                d_out = self._forward(args, X,Y)
+                d_out = self._forward(X,Y)
 
                 avg_loss += self.criterion(d_out, d_true)
                 avg_diff += (d_out - d_true).mean().item()
