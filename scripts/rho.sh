@@ -10,4 +10,4 @@
 #SBATCH --exclude=gpu109
 
 
-python3 test_rho.py --name $1 --set_size $2
+python3 test_rho.py --run_name $1 --set_size $2 --d $3
