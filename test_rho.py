@@ -17,8 +17,9 @@ def load_run(run_path):
     train_dataset, val_dataset, test_dataset = task.build_dataset()
     device=torch.device("cuda")
     trainer = task.build_trainer(model, None, None, train_dataset, val_dataset, test_dataset, device, None, checkpoint_dir=None)
+    _, eval_args = task.build_training_args()
     
-    return args, model, task, (train_dataset, val_dataset, test_dataset), trainer
+    return args, model, task, (train_dataset, val_dataset, test_dataset), trainer, eval_args
 
 
 def KL_estimate(X, Y):
@@ -41,7 +42,7 @@ if __name__ == "__main__":
     parser.add_argument('--basedir', type=str, default='oct-runs')
     args = parser.parse_args()
 
-    model_args, model, task, (train_dataset, val_dataset, test_dataset), trainer = load_run(os.path.join(args.basedir, args.run_name))
+    _, model, task, (train_dataset, val_dataset, test_dataset), trainer, model_args = load_run(os.path.join(args.basedir, args.run_name))
     sample_kwargs = {k:v for k,v in model_args['sample_kwargs'].items() if k not in ['n', 'set_size']}
 
     gen2=CorrelatedGaussianGenerator2(return_params=True)
