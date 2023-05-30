@@ -359,6 +359,9 @@ class StatisticalDistanceTrainer(Trainer):
             metrics[key] = sum(baseline_losses)/len(baseline_losses)
         return metrics
 
+    def _forward(self, *X):
+        return self.model(*X).squeeze(-1)
+
 
 import math
 
