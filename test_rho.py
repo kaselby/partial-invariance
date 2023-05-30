@@ -8,6 +8,7 @@ from tqdm import tqdm
 
 from datasets.distributions import CorrelatedGaussianGenerator, CorrelatedGaussianGenerator2
 from utils import mi_corr_gaussian, kl_mc
+from tasks import TASKS
 
 def load_run(run_path):
     args = torch.load(os.path.join(run_path, "args.pt"))['args']
