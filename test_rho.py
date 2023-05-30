@@ -40,7 +40,7 @@ if __name__ == "__main__":
     parser.add_argument('--basedir', type=str, default='oct-runs')
     args = parser.parse_args()
 
-    model_args, model, task, (train_dataset, val_dataset, test_dataset), trainer = load_run(os.path.join(basedir, run_name))
+    model_args, model, task, (train_dataset, val_dataset, test_dataset), trainer = load_run(os.path.join(args.basedir, args.run_name))
     sample_kwargs = {k:v for k,v in model_args['sample_kwargs'].items() if k not in ['n', 'set_size']}
 
     gen2=CorrelatedGaussianGenerator2(return_params=True)
