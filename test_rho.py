@@ -32,28 +32,30 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--run_name', type=str)
     parser.add_argument('--set_size', type=int, default=500)
+    parser.add_argument('--d', type=int, default=2)
     parser.add_argument('--n', type=int, default=500)
     parser.add_argument('--bs', type=int, default=10)
     parser.add_argument('--basedir', type=str, default='oct-runs')
     args = parser.parse_args()
 
     model_args, model, task, (train_dataset, val_dataset, test_dataset), trainer = load_run(os.path.join(basedir, run_name))
+    sample_kwargs = {k:v for k,v in model_args['sample_kwargs'].items() if k not in ['n', 'set_size']}
 
     gen2=CorrelatedGaussianGenerator2(return_params=True)
 
     rhos = torch.tensor([-0.99,-0.9,-0.7,-0.5,-0.3,-0.1,0,0.1,0.3,0.5,0.7,0.9,0.99]).cuda()
-    mi_true = mi_corr_gaussian(rhos, d=model_args.n)
+    mi_true = mi_corr_gaussian(rhos, d=args.d)
     mi_model = torch.zeros(rhos.size(0))
     for i, rho in enumerate(rhos):
         n_runs = args.n // bs
         outputs = torch.zeros(args.n)
         with torch.no_grad():
             for i in tqdm.tqdm(range(n_runs)):
-                (X,Y), theta = self.train_dataset(args.bs, set_size=(set_size, set_size+1), **model_args['sample_kwargs'])
+                (X,Y), theta = self.train_dataset(args.bs, set_size=(set_size, set_size+1), n=args.d, **model_args['sample_kwargs'])
                 model_out = trainer._forward(X,Y)
                 outputs[i*bs:(i+1)*bs] = model_out.cpu()
         mi_model[i] = outputs.mean()
 
     torch.save({'rho':rho.cpu(), 'true':mi_true.cpu(), 'model':mi_model.cpu()}, 
-        os.path.join(args.basedir, args.run_name, "rho.pt"))
+        os.path.join(args.basedir, args.run_name, "rho_%d_%d.pt" % (args.d, args.set_size)))
 
