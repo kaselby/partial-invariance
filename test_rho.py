@@ -54,10 +54,10 @@ if __name__ == "__main__":
         n_runs = args.n // args.bs
         outputs = torch.zeros(args.n)
         with torch.no_grad():
-            for i in range(n_runs):
-                (X,Y), theta = train_dataset(args.bs, set_size=(set_size, set_size+1), n=args.d, **model_args['sample_kwargs'])
+            for j in range(n_runs):
+                (X,Y), theta = train_dataset(args.bs, set_size=(args.set_size, args.set_size+1), n=args.d, **model_args['sample_kwargs'])
                 model_out = trainer._forward(X,Y)
-                outputs[i*bs:(i+1)*bs] = model_out.cpu()
+                outputs[j*args.bs:(j+1)*args.bs] = model_out.cpu()
         mi_model[i] = outputs.mean()
 
     torch.save({'rho':rho.cpu(), 'true':mi_true.cpu(), 'model':mi_model.cpu()}, 
