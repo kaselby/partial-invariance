@@ -459,7 +459,7 @@ class DonskerVaradhanTrainer(Trainer):
                 
                 X, Y = X.to(self.device),Y.to(self.device)
                 
-                d_out = self._forward(args, X,Y)
+                d_out = self._forward(X,Y)
 
                 avg_loss += self.criterion(d_out, d_true)
                 avg_diff += (d_out - d_true).mean().item()
