@@ -523,13 +523,14 @@ class DonskerVaradhanMITrainer(Trainer):
         
         return loss.item()
 
-    def evaluate(self, steps, dataset):
+    def _eval(self, steps, dataset, set_size):
         args = self.eval_args
+        sample_kwargs = {k:v for k in args['sample_kwargs'] if k != "set_size"}
         avg_loss = 0
         avg_diff = 0
         with torch.no_grad():
             for i in range(steps):
-                (X,Y), theta = self.train_dataset(args['batch_size'], **args['sample_kwargs'])
+                (X,Y), theta = self.train_dataset(args['batch_size'], set_size=(set_size, set_size+1), **sample_kwargs)
                 d_true = self.label_fct(*theta, X=X, **args['label_kwargs']).squeeze(-1)
                 if args['normalize'] == 'whiten':
                     X,Y = whiten_split(X,Y)
@@ -542,6 +543,17 @@ class DonskerVaradhanMITrainer(Trainer):
                 avg_diff += (d_out - d_true).mean().item()
             avg_loss /= steps
             avg_diff /= steps
+        
+        return avg_loss, avg_diff
+        
+
+    def evaluate(self, steps, dataset):
+        set_sizes = (100, 300, 1000)
+        metrics={}
+        for ss in set_sizes:
+            avg_loss_ss, avg_diff_ss = self._eval(steps, dataset, ss)
+            metrics["criterion_%d" % ss] = avg_loss_ss
+            metrics["signed-diff_%d" % ss] = avg_diff_ss
         
         return {"criterion":avg_loss, 'signed-diff':avg_diff}
 

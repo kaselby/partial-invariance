@@ -175,7 +175,7 @@ class CorrelatedGaussianGenerator():
             if use_cuda:
                 corr = corr.cuda()
         dists = self._build_dist(batch_size, corr, n)
-        X, Y = dists.sample(n_samples*sample_groups).transpose(0,1).chunk(2, dim=-1)
+        X, Y = dists. sample(n_samples*sample_groups).transpose(0,1).chunk(2, dim=-1)
 
         if self.return_params:
             return (X, Y), (corr,)
