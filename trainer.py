@@ -444,7 +444,7 @@ class DonskerVaradhanTrainer(Trainer):
 
     def _eval(self, steps, dataset, set_size):
         args = self.eval_args
-        sample_kwargs = {k:v for k in args['sample_kwargs'] if k != "set_size"}
+        sample_kwargs = {k:v for k,v in args['sample_kwargs'].items() if k != "set_size"}
         avg_loss = 0
         avg_diff = 0
         with torch.no_grad():
@@ -538,7 +538,7 @@ class DonskerVaradhanMITrainer(Trainer):
 
     def _eval(self, steps, dataset, set_size):
         args = self.eval_args
-        sample_kwargs = {k:v for k in args['sample_kwargs'] if k != "set_size"}
+        sample_kwargs = {k:v for k,v in args['sample_kwargs'].items() if k != "set_size"}
         avg_loss = 0
         avg_diff = 0
         with torch.no_grad():
