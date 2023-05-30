@@ -477,7 +477,7 @@ class DonskerVaradhanTrainer(Trainer):
             metrics["criterion_%d" % ss] = avg_loss_ss
             metrics["signed-diff_%d" % ss] = avg_diff_ss
         
-        return {"criterion":avg_loss, 'signed-diff':avg_diff}
+        return metrics
 
 
 
@@ -571,7 +571,7 @@ class DonskerVaradhanMITrainer(Trainer):
             metrics["criterion_%d" % ss] = avg_loss_ss
             metrics["signed-diff_%d" % ss] = avg_diff_ss
         
-        return {"criterion":avg_loss, 'signed-diff':avg_diff}
+        return metrics
 
 
 #
