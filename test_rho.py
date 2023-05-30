@@ -3,6 +3,8 @@ import argparse
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
+import os
+from tqdm import tqdm
 
 from datasets.distributions import CorrelatedGaussianGenerator, CorrelatedGaussianGenerator2
 from utils import mi_corr_gaussian, kl_mc
@@ -46,11 +48,11 @@ if __name__ == "__main__":
     rhos = torch.tensor([-0.99,-0.9,-0.7,-0.5,-0.3,-0.1,0,0.1,0.3,0.5,0.7,0.9,0.99]).cuda()
     mi_true = mi_corr_gaussian(rhos, d=args.d)
     mi_model = torch.zeros(rhos.size(0))
-    for i, rho in enumerate(rhos):
+    for i, rho in tqdm(enumerate(rhos)):
         n_runs = args.n // bs
         outputs = torch.zeros(args.n)
         with torch.no_grad():
-            for i in tqdm.tqdm(range(n_runs)):
+            for i in range(n_runs):
                 (X,Y), theta = self.train_dataset(args.bs, set_size=(set_size, set_size+1), n=args.d, **model_args['sample_kwargs'])
                 model_out = trainer._forward(X,Y)
                 outputs[i*bs:(i+1)*bs] = model_out.cpu()
