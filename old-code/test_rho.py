@@ -41,7 +41,7 @@ if __name__ == '__main__':
         for i in range(rho.size(0)):
             X, T = generator(N, n=args.n, corr=rho[i])
             mi_kraskov[i] = kraskov_mi1(*X).mean()
-        modeldir = os.path.join(args.basedir, "mi", args.run_name)
+        modeldir = os.path.join(args.basedir, "MI", args.run_name)
         all_runs = get_runs(modeldir)
         n_runs = 0
         for run_num in all_runs:

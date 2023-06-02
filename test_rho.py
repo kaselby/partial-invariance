@@ -10,16 +10,21 @@ from datasets.distributions import CorrelatedGaussianGenerator, CorrelatedGaussi
 from utils import mi_corr_gaussian, kl_mc
 from tasks import TASKS
 
-def load_run(run_path):
+def load_run(run_path, ckpt_dir="/checkpoint/kaselby"):
+    run_name = run_path.split("/")[-1]
     args = torch.load(os.path.join(run_path, "args.pt"))['args']
-    model = torch.load(os.path.join(run_path, "model.pt"))
+    model_path=os.path.join(run_path, "model.pt")
+    if os.path.exists(model_path):
+        model = torch.load(model_path)
+    else:
+        ckpt = torch.load(os.path.join(args.checkpoint_dir, 'checkpoint.pt'))
+        model = ckpt['model']
     task = TASKS[args.task](args)
     train_dataset, val_dataset, test_dataset = task.build_dataset()
     device=torch.device("cuda")
     trainer = task.build_trainer(model, None, None, train_dataset, val_dataset, test_dataset, device, None, checkpoint_dir=None)
-    _, eval_args = task.build_training_args()
     
-    return args, model, task, (train_dataset, val_dataset, test_dataset), trainer, eval_args
+    return args, model, task, (train_dataset, val_dataset, test_dataset), trainer
 
 
 def KL_estimate(X, Y):
