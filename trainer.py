@@ -337,7 +337,7 @@ class StatisticalDistanceTrainer(Trainer):
                 
                 for baseline_name, baseline_fct in self.baselines.items():
                     baseline_out = baseline_fct(*X).squeeze(-1)
-                    baseline_loss = self.criterion(out, labels)
+                    baseline_loss = self.criterion(baseline_out, labels)
                     baseline_losses[baseline_name].append(baseline_loss.item())
 
                 if not self.exact_loss and args['normalize'] == 'scale-linear':
