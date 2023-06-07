@@ -334,7 +334,7 @@ class KLTask(StatisticalDistanceTask):
 class MITask(StatisticalDistanceTask):
     def build_dataset(self):
         generator = CorrelatedGaussianGenerator(return_params=True, variable_dim=self.args.equi)
-        return generator, None, None
+        return generator, generator, None
 
     def build_training_args(self):
         train_args, eval_args = super().build_training_args()
