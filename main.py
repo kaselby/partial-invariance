@@ -43,6 +43,7 @@ def parse_args():
     parser.add_argument('--test_steps', type=int, default=500)
     parser.add_argument('--use_amp', action="store_true")
     #parser.add_argument('--use_apex', action="store_true")
+    parser.add_argument('--clip', type=float, default=-1)
     
     # Model args
     parser.add_argument('--num_blocks', type=int, default=2)

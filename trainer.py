@@ -437,6 +437,9 @@ class DonskerVaradhanTrainer(Trainer):
         loss = -1* d_out.mean()
         loss.backward()
 
+        if args['clip'] > 0:
+            torch.nn.utils.clip_grad_norm_(self.model.parameters(), args['clip'])
+
         if (i+1) % args['grad_steps'] == 0 or i == (steps - 1):
             self.optimizer.step()
             if self.scheduler is not None:

@@ -294,7 +294,8 @@ class StatisticalDistanceTask(Task):
             'batch_size': self.args.batch_size,
             'grad_steps': self.args.grad_steps,
             'sample_kwargs': sample_kwargs,
-            'label_kwargs': {}
+            'label_kwargs': {},
+            'clip': getattr(self.args, 'clip', -1)
         }
         eval_args = {
             'batch_size': self.args.batch_size,
