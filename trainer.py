@@ -470,12 +470,12 @@ class DonskerVaradhanTrainer(Trainer):
         
 
     def evaluate(self, steps, dataset):
-        set_sizes = (100, 300, 1000)
+        #set_sizes = (100, 300, 1000)
         metrics={}
-        for ss in set_sizes:
-            avg_loss_ss, avg_diff_ss = self._eval(steps, dataset, ss)
-            metrics["criterion_%d" % ss] = avg_loss_ss
-            metrics["signed-diff_%d" % ss] = avg_diff_ss
+        #for ss in set_sizes:
+        avg_loss_ss, avg_diff_ss = self._eval(steps, dataset, 300)
+        metrics["criterion_%d" % ss] = avg_loss_ss
+        metrics["signed-diff_%d" % ss] = avg_diff_ss
         
         return metrics
 
