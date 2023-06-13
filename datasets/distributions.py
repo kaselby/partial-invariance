@@ -154,9 +154,10 @@ class PairedGaussianGenerator():
 
 
 class CorrelatedGaussianGenerator():
-    def __init__(self, return_params=False, variable_dim=False):
+    def __init__(self, return_params=False, variable_dim=False, max_rho=0.999):
         self.return_params=return_params
         self.variable_dim=variable_dim
+        self.max_rho=max_rho
         
     def _build_dist(self, batch_size, corr, n):
         mu = torch.zeros((batch_size, n*2))
@@ -171,7 +172,7 @@ class CorrelatedGaussianGenerator():
     def _generate(self, batch_size, n, set_size=(100,150), sample_groups=1, corr=None):
         n_samples = torch.randint(*set_size,(1,))
         if corr is None:
-            corr = 0.999-1.998*(torch.rand((batch_size,)))
+            corr = self.max_rho-2*self.max_rho*(torch.rand((batch_size,)))
             if use_cuda:
                 corr = corr.cuda()
         dists = self._build_dist(batch_size, corr, n)
@@ -197,9 +198,10 @@ class StandardGaussianGenerator():
 
 
 class CorrelatedGaussianGenerator2():
-    def __init__(self, return_params=False, variable_dim=False):
+    def __init__(self, return_params=False, variable_dim=False, max_rho=0.999):
         self.return_params=return_params
         self.variable_dim=variable_dim
+        self.max_rho=max_rho
         
     def _build_dist(self, batch_size, corr, n):
         mu = torch.zeros((batch_size, n*2))
@@ -214,7 +216,7 @@ class CorrelatedGaussianGenerator2():
     def _generate(self, batch_size, n, set_size=(100,150), sample_groups=1, corr=None):
         n_samples = torch.randint(*set_size,(1,))
         if corr is None:
-            corr = 0.999-1.998*(torch.rand((batch_size,)))
+            corr = self.max_rho-2*self.max_rho*(torch.rand((batch_size,)))
             if use_cuda:
                 corr = corr.cuda()
         joint_dist = self._build_dist(batch_size, corr, n)

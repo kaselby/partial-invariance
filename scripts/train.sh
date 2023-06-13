@@ -65,6 +65,7 @@ decoder_self_attn=0
 enc_blocks=4
 dec_blocks=1
 ln=1
+max_rho=0.99
 
 argstring="$run_name --basedir $basedir --checkpoint_dir $checkpoint_dir \
     --model $model --dataset $dataset --task $task --batch_size $bs --lr $lr --set_size $ss1 $ss2 \
@@ -74,7 +75,8 @@ argstring="$run_name --basedir $basedir --checkpoint_dir $checkpoint_dir \
     --pretrain_steps $pretrain_steps --pretrain_lr $pretrain_lr --val_split $val_split \
     --text_model $text_model --img_model $img_model --episode_classes $episode_classes \
     --episode_datasets $episode_datasets --episode_length $episode_length --p_dl $p_dl \
-    --md_path $md_path --n $n --normalize $normalize --enc_blocks $enc_blocks --dec_blocks $dec_blocks"
+    --md_path $md_path --n $n --normalize $normalize --enc_blocks $enc_blocks --dec_blocks $dec_blocks \
+    --max_rho $max_rho"
 
 if [ $equi -eq 1 ]
 then

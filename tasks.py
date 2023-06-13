@@ -363,7 +363,7 @@ class DVTask(StatisticalDistanceTask):
         elif self.args.dataset == 'nf':
             generator = NFGenerator(32, 2, num_outputs=2, use_maf=False, variable_dim=self.args.equi, return_params=True)
         elif self.args.dataset == 'corr':
-            generator = CorrelatedGaussianGenerator2(return_params=True, variable_dim=self.args.equi)
+            generator = CorrelatedGaussianGenerator2(return_params=True, variable_dim=self.args.equi, max_rho=self.args.max_rho)
         else:
             raise NotImplementedError("gmm or nf")
         return generator, generator, None
@@ -426,7 +426,7 @@ class DVMITask(StatisticalDistanceTask):
     trainer_cls=DonskerVaradhanMITrainer
 
     def build_dataset(self):
-        generator = CorrelatedGaussianGenerator(return_params=True, variable_dim=self.args.equi)
+        generator = CorrelatedGaussianGenerator(return_params=True, variable_dim=self.args.equi, max_rho=self.args.max_rho)
         return generator, generator, None
 
     def build_training_args(self):

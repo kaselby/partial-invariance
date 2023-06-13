@@ -82,6 +82,7 @@ def parse_args():
     parser.add_argument('--blur', type=float, default=0.05)
     parser.add_argument('--equi', action='store_true')
     parser.add_argument('--vardim', action='store_true')
+    parser.add_argument('--max_rho', type=float, default=0.999)
 
     # Donsker Varadhan args
     parser.add_argument('--split_inputs', action='store_true')
