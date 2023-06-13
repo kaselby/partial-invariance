@@ -851,8 +851,8 @@ class MultiSetTransformerEncoderDecoder(nn.Module):
         ZA, ZB = A, B
         if self.equi:
             ZA, ZB = ZA.unsqueeze(-1), ZB.unsqueeze(-1)
-        ZA = ZA if self.proj_a is None else self.proj_a(ZA)
-        ZB = ZB if self.proj_b is None else self.proj_b(ZB)
+        ZA = ZA if getattr(self, 'proj_a', None) is None else self.proj_a(ZA)
+        ZB = ZB if getattr(self, 'proj_a', None) is None else self.proj_b(ZB)
 
         for i in range(len(self.encoder_blocks)):
             ZA, ZB = self.encoder_blocks[i]((ZA, ZB))
