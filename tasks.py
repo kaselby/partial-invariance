@@ -1,6 +1,6 @@
 
 from builders import SET_MODEL_BUILDERS, CONV_MODEL_BUILDERS
-from trainer import Trainer, CountingTrainer, CaptionTrainer, MetaDatasetTrainer, StatisticalDistanceTrainer, Pretrainer, DonskerVaradhanTrainer, DonskerVaradhanMITrainer
+from trainer import Trainer, CountingTrainer, CaptionTrainer, MetaDatasetTrainer, StatisticalDistanceTrainer, Pretrainer, DonskerVaradhanTrainer, DonskerVaradhanMITrainer, DonskerVaradhanTrainer2
 from datasets.counting import OmniglotCooccurenceGenerator, ImageCooccurenceGenerator, DatasetByClass, load_cifar, load_mnist, load_omniglot
 from datasets.alignment import EmbeddingAlignmentGenerator, CaptionGenerator, load_coco_data, load_flickr_data, bert_tokenize_batch, fasttext_tokenize_batch, load_pairs, split_pairs
 from datasets.distinguishability import DistinguishabilityGenerator
@@ -484,6 +484,66 @@ class DVMITask(StatisticalDistanceTask):
 
     def build_model(self, pretrained_model=None):
         return self._build_model_encdec()
+    
+
+
+#
+#   DV2
+#
+class DVTask2(StatisticalDistanceTask):
+    trainer_cls=DonskerVaradhanTrainer2
+
+    def build_dataset(self):
+        if self.args.dataset == 'gmm':
+            generator = GaussianGenerator(num_outputs=2, variable_dim=self.args.equi, return_params=True, mixture=True)
+        elif self.args.dataset == 'nf':
+            generator = NFGenerator(32, 2, num_outputs=2, use_maf=False, variable_dim=self.args.equi, return_params=True)
+        elif self.args.dataset == 'corr':
+            generator = CorrelatedGaussianGenerator(return_params=True, variable_dim=self.args.equi, max_rho=self.args.max_rho)
+        else:
+            raise NotImplementedError("gmm or nf")
+        return generator, generator, None
+
+    def build_training_args(self):
+        train_args, eval_args = super().build_training_args()
+        #if self.args.split_inputs:
+            #train_args['sample_kwargs']['sample_groups']=2
+
+        train_args['normalize'] = 'whiten'
+        eval_args['normalize'] = 'whiten'
+        return train_args, eval_args
+    
+    def build_trainer_kwargs(self):
+        trainer_kwargs = {
+            'eval_every': self.args.eval_every,
+            'save_every': self.args.save_every,
+            'label_fct': kl_mc,
+            'criterion': nn.L1Loss(),
+            'split_inputs': self.args.split_inputs,
+        }
+        trainer_kwargs['mode'] = 'mi' if self.args.dataset == 'corr' else 'kl'
+        return trainer_kwargs
+    
+    def _build_model_mst(self):
+        model_kwargs={
+            'ln':self.args.layer_norm,
+            'remove_diag':False,
+            'num_blocks':self.args.num_blocks,
+            'num_heads':self.args.num_heads,
+            'dropout':self.args.dropout,
+            'equi':self.args.equi,
+            'decoder_layers': self.args.decoder_layers,
+            'merge': 'concat',
+            'weight_sharing': 'sym',     #IMPORTANT
+        }
+        set_model = MultiSetTransformerEncoder(self.args.n, self.args.latent_size, self.args.hidden_size, 1, **model_kwargs)
+        return set_model
+    
+    
+    def build_model(self, pretrained_model=None):
+        return self._build_model_mst()
+
+
 
 TASKS = {
     'counting': CountingTask,
@@ -494,5 +554,11 @@ TASKS = {
     'stat/KL': KLTask,
     'stat/MI': MITask,
     'stat/DV': DVTask,
-    'stat/DV-MI': DVMITask
+    'stat/DV-MI': DVMITask,
+    'stat/DV2': DVTask2
 }
+
+
+
+#### DV 2
+

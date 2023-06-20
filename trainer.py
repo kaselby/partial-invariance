@@ -576,6 +576,124 @@ class DonskerVaradhanMITrainer(Trainer):
         
         return metrics
 
+#
+#   DV2
+#
+
+class DonskerVaradhanTrainer2(Trainer):
+    def __init__(self, model, optimizer, train_dataset, val_dataset, test_dataset, train_args, eval_args, device, criterion, label_fct, 
+            logger=None, save_every=2000, eval_every=500, scheduler=None, checkpoint_dir=None, ss_schedule=-1, split_inputs=True, mode='kl'):
+        super().__init__(model, optimizer, train_dataset, val_dataset, test_dataset, train_args, eval_args, device, logger=logger,
+            save_every=save_every, criterion=criterion, scheduler=scheduler, checkpoint_dir=checkpoint_dir, ss_schedule=ss_schedule)
+        self.label_fct = label_fct
+        self.split_inputs = split_inputs
+        self.mode=mode
+
+    @staticmethod
+    def _KL_estimate(X, Y):
+        return X.sum(dim=1)/X.size(1) - Y.logsumexp(dim=1) + math.log(Y.size(1))
+
+    def _forward_KL(self, X, Y):
+
+        X_out, Y_out = self.model(X, Y)
+
+        return self._KL_estimate(X_out, Y_out)
+
+    def _forward_MI(self, X, Y):
+        X0,X1 = X.chunk(2, dim=1)
+        Y0,Y1 = Y.chunk(2, dim=1)
+
+        Z1 = self.model(X0, Y0)
+        Z2 = self.model(X0, Y1)
+
+        return self._KL_estimate(Z1, Z2)
+
+    def _forward_MI_KL(self, X, Y):
+        Y_marginal = Y[:,torch.randperm(Y.size(1))]
+
+        Z_joint= torch.cat([X,Y], dim=-1)
+        Z_marginal = torch.cat([X,Y_marginal], dim=-1)
+
+        Z_joint_out, Z_marginal_out = self.model(Z_joint, Z_marginal)
+
+        return self._KL_estimate(Z_joint_out, Z_marginal_out)
+
+    def _forward(self, X, Y):
+        if self.mode == 'kl':
+            return self._forward_KL(X, Y)
+        elif self.mode == 'mi':
+            return self._forward_MI(X, Y)
+        elif self.mode == 'mi-kl':
+            return self._forward_MI_KL(X, Y)
+        else:
+            raise NotImplementedError("")
+
+    
+    def train_step(self, i, steps, dataset):
+        args = self.train_args
+        (X,Y), _ = dataset(args['batch_size'], **args['sample_kwargs'])
+        if args['normalize'] == 'whiten':
+            X,Y = whiten_split(X,Y)
+
+        X, Y = X.to(self.device),Y.to(self.device)
+        
+        d_out = self._forward(X,Y)
+
+        loss = -1* d_out.mean()
+        loss.backward()
+
+        if args['clip'] > 0:
+            torch.nn.utils.clip_grad_norm_(self.model.parameters(), args['clip'])
+
+        if (i+1) % args['grad_steps'] == 0 or i == (steps - 1):
+            self.optimizer.step()
+            if self.scheduler is not None:
+                self.scheduler.step()
+            self.optimizer.zero_grad()
+        
+        return loss.item()
+
+    def _eval(self, steps, dataset, set_size):
+        args = self.eval_args
+        sample_kwargs = {k:v for k,v in args['sample_kwargs'].items() if k != "set_size"}
+        avg_loss = 0
+        avg_diff = 0
+        with torch.no_grad():
+            for i in range(steps):
+                (X,Y), theta = self.train_dataset(args['batch_size'], set_size=(set_size, set_size+1), **sample_kwargs)
+                d_true = self.label_fct(*theta, X=X, **args['label_kwargs']).squeeze(-1)
+                if args['normalize'] == 'whiten':
+                    X,Y = whiten_split(X,Y)
+                
+                X, Y = X.to(self.device),Y.to(self.device)
+                
+                d_out = self._forward(X,Y)
+
+                avg_loss += self.criterion(d_out, d_true)
+                avg_diff += (d_out - d_true).mean().item()
+            avg_loss /= steps
+            avg_diff /= steps
+        
+        return avg_loss, avg_diff
+        
+
+    def evaluate(self, steps, dataset):
+        #set_sizes = (100, 300, 1000)
+        metrics={}
+        #for ss in set_sizes:
+        avg_loss_ss, avg_diff_ss = self._eval(steps, dataset, 300)
+        metrics["criterion"] = avg_loss_ss
+        metrics["signed-diff"] = avg_diff_ss
+        
+        return metrics
+
+
+
+
+
+
+
+
 
 #
 #   Pretraining for image encoders
