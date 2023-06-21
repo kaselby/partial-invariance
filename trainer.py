@@ -581,12 +581,13 @@ class DonskerVaradhanMITrainer(Trainer):
 
 class DonskerVaradhanTrainer2(Trainer):
     def __init__(self, model, optimizer, train_dataset, val_dataset, test_dataset, train_args, eval_args, device, criterion, label_fct, 
-            logger=None, save_every=2000, eval_every=500, scheduler=None, checkpoint_dir=None, ss_schedule=-1, split_inputs=True, mode='kl'):
+            logger=None, save_every=2000, eval_every=500, scheduler=None, checkpoint_dir=None, ss_schedule=-1, split_inputs=True, mode='kl', model_type='encdec'):
         super().__init__(model, optimizer, train_dataset, val_dataset, test_dataset, train_args, eval_args, device, logger=logger,
             save_every=save_every, criterion=criterion, scheduler=scheduler, checkpoint_dir=checkpoint_dir, ss_schedule=ss_schedule)
         self.label_fct = label_fct
         self.split_inputs = split_inputs
-        self.mode=mode
+        self.mode = mode
+        self.model_type = model_type
 
     @staticmethod
     def _KL_estimate(X, Y):
@@ -598,14 +599,14 @@ class DonskerVaradhanTrainer2(Trainer):
 
         return self._KL_estimate(X_out, Y_out)
 
-    def _forward_MI(self, X, Y):
-        X0,X1 = X.chunk(2, dim=1)
-        Y0,Y1 = Y.chunk(2, dim=1)
+#    def _forward_MI(self, X, Y):
+#        X0,X1 = X.chunk(2, dim=1)
+#        Y0,Y1 = Y.chunk(2, dim=1)
 
-        Z1 = self.model(X0, Y0)
-        Z2 = self.model(X0, Y1)
+#        Z1 = self.model(X0, Y0)
+#        Z2 = self.model(X0, Y1)
 
-        return self._KL_estimate(Z1, Z2)
+#        return self._KL_estimate(Z1, Z2)
 
     def _forward_MI_KL(self, X, Y):
         Y_marginal = Y[:,torch.randperm(Y.size(1))]

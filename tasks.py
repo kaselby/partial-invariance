@@ -519,9 +519,17 @@ class DVTask2(StatisticalDistanceTask):
             'save_every': self.args.save_every,
             'label_fct': kl_mc,
             'criterion': nn.L1Loss(),
-            'split_inputs': self.args.split_inputs,
+            'split_inputs': False,
         }
-        trainer_kwargs['mode'] = 'mi-kl' if self.args.dataset == 'corr' else 'kl'
+        if self.args.dataset == 'corr':
+            trainer_kwargs['mode'] = 'mi-kl'
+            trainer_kwargs['label_fct'] = mi_corr_gaussian
+        elif self.args.dataset == 'corr2':
+            trainer_kwargs['mode'] = 'mi-kl'
+            trainer_kwargs['label_fct'] = kl_mc
+        else:
+            trainer_kwargs['mode'] = 'kl'
+            trainer_kwargs['label_fct'] = kl_mc   
         return trainer_kwargs
     
     def _build_model_mst(self):
