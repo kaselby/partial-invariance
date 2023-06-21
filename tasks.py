@@ -521,7 +521,7 @@ class DVTask2(StatisticalDistanceTask):
             'criterion': nn.L1Loss(),
             'split_inputs': self.args.split_inputs,
         }
-        trainer_kwargs['mode'] = 'mi' if self.args.dataset == 'corr' else 'kl'
+        trainer_kwargs['mode'] = 'mi-kl' if self.args.dataset == 'corr' else 'kl'
         return trainer_kwargs
     
     def _build_model_mst(self):
