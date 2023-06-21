@@ -382,11 +382,9 @@ class DonskerVaradhanTrainer(Trainer):
         if self.split_inputs:
             X0,X1 = X.chunk(2, dim=1)
             Y0,Y1 = Y.chunk(2, dim=1)
+            X_out, Y_out = self.model(X0, Y0, X1, Y1)
         else:
-            X0,X1 = X,X
-            Y0,Y1 = Y,Y
-
-        X_out, Y_out = self.model(X0, Y0, X1, Y1)
+            X_out, Y_out = self.model(X, Y)
 
         return self._KL_estimate(X_out, Y_out)
 
@@ -400,6 +398,8 @@ class DonskerVaradhanTrainer(Trainer):
         return self._KL_estimate(Z1, Z2)
 
     def _forward_MI_KL(self, X, Y):
+        
+
         Xs = X.chunk(6, dim=1)
         Ys = Y.chunk(6, dim=1)
 

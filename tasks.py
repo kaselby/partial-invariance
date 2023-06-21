@@ -499,7 +499,7 @@ class DVTask2(StatisticalDistanceTask):
         elif self.args.dataset == 'nf':
             generator = NFGenerator(32, 2, num_outputs=2, use_maf=False, variable_dim=self.args.equi, return_params=True)
         elif self.args.dataset == 'corr':
-            generator = CorrelatedGaussianGenerator(return_params=True, variable_dim=self.args.equi, max_rho=self.args.max_rho)
+            generator = CorrelatedGaussianGenerator2(return_params=True, variable_dim=self.args.equi, max_rho=self.args.max_rho)
         else:
             raise NotImplementedError("gmm or nf")
         return generator, generator, None
