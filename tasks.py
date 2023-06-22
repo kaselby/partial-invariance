@@ -519,9 +519,10 @@ class DVTask2(StatisticalDistanceTask):
         trainer_kwargs = {
             'eval_every': self.args.eval_every,
             'save_every': self.args.save_every,
-            'label_fct': kl_mc,
             'criterion': nn.L1Loss(),
             'split_inputs': False,
+            'dataset': self.args.dataset,
+            'model': 'mst'
         }
         if self.args.dataset == 'corr':
             trainer_kwargs['mode'] = 'mi-kl'
