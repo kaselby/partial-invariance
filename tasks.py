@@ -417,7 +417,8 @@ class DVTask(StatisticalDistanceTask):
             'merge': 'concat',
             'decoder_self_attn': self.args.decoder_self_attn
         }
-        set_model = MultiSetTransformerEncoderDecoder(self.args.n, self.args.n, self.args.latent_size, self.args.hidden_size, 1, **model_kwargs)
+        n = self.args.n * 2 if self.args.dataset == 'corr'else self.args.n
+        set_model = MultiSetTransformerEncoderDecoder(n, n, self.args.latent_size, self.args.hidden_size, 1, **model_kwargs)
         return set_model
     
     def build_model(self, pretrained_model=None):
@@ -479,7 +480,7 @@ class DVMITask(StatisticalDistanceTask):
             'merge': 'concat',
             'decoder_self_attn': self.args.decoder_self_attn
         }
-        set_model = MultiSetTransformerEncoderDecoder(self.args.n, self.args.n, self.args.latent_size, self.args.hidden_size, 1, **model_kwargs)
+        set_model = MultiSetTransformerEncoderDecoder(self.args.n*2, self.args.n*2, self.args.latent_size, self.args.hidden_size, 1, **model_kwargs)
         return set_model
 
     def build_model(self, pretrained_model=None):
@@ -547,7 +548,8 @@ class DVTask2(StatisticalDistanceTask):
             'merge': 'concat',
             'weight_sharing': 'sym',     #IMPORTANT
         }
-        set_model = MultiSetTransformerEncoder(self.args.n, self.args.latent_size, self.args.hidden_size, 1, **model_kwargs)
+        n = self.args.n * 2 if self.args.dataset == 'corr'else self.args.n
+        set_model = MultiSetTransformerEncoder(n, self.args.latent_size, self.args.hidden_size, 1, **model_kwargs)
         return set_model
     
     
