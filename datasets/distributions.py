@@ -160,8 +160,8 @@ class CorrelatedGaussianGenerator():
         self.max_rho=max_rho
         
     def _build_dist(self, batch_size, corr, n):
-        mu = torch.zeros((batch_size, n*2))
-        I = torch.eye(n).unsqueeze(0).expand(batch_size, -1, -1)
+        mu = torch.zeros((batch_size, n))
+        I = torch.eye(n//2).unsqueeze(0).expand(batch_size, -1, -1)
         if use_cuda:
             I = I.cuda()
             mu = mu.cuda()
