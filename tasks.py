@@ -522,7 +522,7 @@ class DVTask2(StatisticalDistanceTask):
             'criterion': nn.L1Loss(),
             'split_inputs': False,
             'dataset': self.args.dataset,
-            'model': 'mst'
+            'model_type': 'mst'
         }
         if self.args.dataset == 'corr':
             trainer_kwargs['mode'] = 'mi-kl'
