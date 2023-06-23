@@ -106,7 +106,7 @@ if [ $ln -eq 1 ]
 then
     argstring="$argstring --layer_norm"
 fi
-if [ -n $criterion ]
+if [ ! -z $criterion ]
 then
     argstring="$argstring --criterion $criterion"
 fi
