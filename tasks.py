@@ -270,6 +270,11 @@ class MetaDatasetTask(Task):
 #   Statistical Distance Tasks
 #
 
+LOSSES = {
+    'l1': nn.L1Loss,
+    'mse': nn.MSELoss
+}
+
 class StatisticalDistanceTask(Task):
     trainer_cls = StatisticalDistanceTrainer
 
@@ -330,6 +335,8 @@ class KLTask(StatisticalDistanceTask):
             'criterion': nn.L1Loss(),
             'baselines': {'knn': kl_knn}
         }
+        if getattr(self.args, 'criterion', None) is not None:
+            trainer_kwargs['criterion'] = LOSSES[self.args.criterion]
         return trainer_kwargs
         
 class MITask(StatisticalDistanceTask):
@@ -352,6 +359,8 @@ class MITask(StatisticalDistanceTask):
             'criterion': nn.MSELoss(),
             'baselines': {'kraskov':kraskov_mi1}
         }
+        if getattr(self.args, 'criterion', None) is not None:
+            trainer_kwargs['criterion'] = LOSSES[self.args.criterion]
         return trainer_kwargs
 
 
@@ -387,6 +396,8 @@ class DVTask(StatisticalDistanceTask):
             'split_inputs': self.args.split_inputs,
             'mode': 'kl'
         }
+        if getattr(self.args, 'criterion', None) is not None:
+            trainer_kwargs['criterion'] = LOSSES[self.args.criterion]
         return trainer_kwargs
     
     def _build_model_mst(self):
@@ -449,6 +460,8 @@ class DVMITask(StatisticalDistanceTask):
             'x_marginal': StandardGaussianGenerator(),
             'y_marginal': StandardGaussianGenerator()
         }
+        if getattr(self.args, 'criterion', None) is not None:
+            trainer_kwargs['criterion'] = LOSSES[self.args.criterion]
         return trainer_kwargs
     
     def _build_model_mst(self):
@@ -534,6 +547,9 @@ class DVTask2(StatisticalDistanceTask):
         else:
             trainer_kwargs['mode'] = 'kl'
             trainer_kwargs['label_fct'] = kl_mc   
+
+        if getattr(self.args, 'criterion', None) is not None:
+            trainer_kwargs['criterion'] = LOSSES[self.args.criterion]
         return trainer_kwargs
     
     def _build_model_mst(self):

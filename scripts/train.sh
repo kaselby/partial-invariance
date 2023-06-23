@@ -11,7 +11,7 @@
 
 checkpoint_id=$SLURM_JOB_ID
 checkpoint_dir="/checkpoint/$USER/$checkpoint_id"
-basedir="jul-runs"
+basedir="2023-runs-fixed"
 
 run_name=$1
 
@@ -69,6 +69,8 @@ dec_blocks=1
 ln=1
 max_rho=0.99
 
+criterion=''
+
 argstring="$run_name --basedir $basedir --checkpoint_dir $checkpoint_dir \
     --model $model --dataset $dataset --task $task --batch_size $bs --lr $lr --set_size $ss1 $ss2 \
     --eval_every $eval_every --save_every $save_every --train_steps $train_steps --val_steps $val_steps \
@@ -103,6 +105,10 @@ fi
 if [ $ln -eq 1 ]
 then
     argstring="$argstring --layer_norm"
+fi
+if [ -n $criterion ]
+then
+    argstring="$argstring --criterion $criterion"
 fi
 
 if [ $use_amp -eq 1 ]
