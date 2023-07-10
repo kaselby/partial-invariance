@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from einops import rearrange
+
 import tqdm
 import os
 
@@ -581,7 +583,8 @@ class DonskerVaradhanMITrainer(Trainer):
 
 class DonskerVaradhanTrainer2(Trainer):
     def __init__(self, model, optimizer, train_dataset, val_dataset, test_dataset, train_args, eval_args, device, criterion, label_fct, 
-            logger=None, save_every=2000, eval_every=500, scheduler=None, checkpoint_dir=None, ss_schedule=-1, split_inputs=True, mode='kl', model_type='encdec', dataset='corr'):
+            logger=None, save_every=2000, eval_every=500, scheduler=None, checkpoint_dir=None, ss_schedule=-1, split_inputs=True, 
+            mode='kl', model_type='encdec', dataset='corr', estimate_size=-1):
         super().__init__(model, optimizer, train_dataset, val_dataset, test_dataset, train_args, eval_args, device, logger=logger,
             save_every=save_every, criterion=criterion, scheduler=scheduler, checkpoint_dir=checkpoint_dir, ss_schedule=ss_schedule)
         self.label_fct = label_fct
@@ -589,6 +592,7 @@ class DonskerVaradhanTrainer2(Trainer):
         self.mode = mode
         self.model_type = model_type
         self.dataset = dataset
+        self.estimate_size=estimate_size
 
     @staticmethod
     def _KL_estimate(X, Y):
@@ -610,6 +614,10 @@ class DonskerVaradhanTrainer2(Trainer):
 #        return self._KL_estimate(Z1, Z2)
 
     def _forward_MI_KL(self, X, Y):
+        if self.estimate_size > 0:
+            N = (X.size(1) // self.estimate_size) * self.estimate_size
+            X = rearrange(X[:,:N], 'b (e n) d -> (b e) n d', e=self.estimate_size) #X[:, :N].view(-1, self.estimate_size, *X.size()[2:])
+            Y = rearrange(Y[:,:N], 'b (e n) d -> (b e) n d', e=self.estimate_size) #Y[:, :N].view(-1, self.estimate_size, *Y.size()[2:])
         if self.dataset == 'corr':
             Y_marginal = Y[:,torch.randperm(Y.size(1))]
             Z_joint= torch.cat([X,Y], dim=-1)
@@ -619,7 +627,11 @@ class DonskerVaradhanTrainer2(Trainer):
 
         Z_joint_out, Z_marginal_out = self.model(Z_joint, Z_marginal)
 
-        return self._KL_estimate(Z_joint_out, Z_marginal_out)
+        out = self._KL_estimate(Z_joint_out, Z_marginal_out)
+        if self.estimate_size > 0:
+            out = rearrange(out, '(b e) d -> b (e d)', e=self.estimate_size)
+            out = out.mean(dim=1, keepdim=True)
+        return out
 
     def _forward(self, X, Y):
         if self.mode == 'kl':
