@@ -489,12 +489,14 @@ class DonskerVaradhanTrainer(Trainer):
 
 class DonskerVaradhanMITrainer(Trainer):
     def __init__(self, model, optimizer, train_dataset, val_dataset, test_dataset, train_args, eval_args, device, criterion, label_fct, 
-            x_marginal, y_marginal, logger=None, save_every=2000, eval_every=500, scheduler=None, checkpoint_dir=None, ss_schedule=-1):
+            x_marginal, y_marginal, logger=None, save_every=2000, eval_every=500, scheduler=None, checkpoint_dir=None, ss_schedule=-1,
+            sample_marg=True):
         super().__init__(model, optimizer, train_dataset, val_dataset, test_dataset, train_args, eval_args, device, logger=logger,
             save_every=save_every, criterion=criterion, scheduler=scheduler, checkpoint_dir=checkpoint_dir, ss_schedule=ss_schedule)
         self.label_fct = label_fct
         self.x_marginal = x_marginal
         self.y_marginal = y_marginal
+        self.sample_marg = sample_marg
 
     @staticmethod
     def _KL_estimate(X, Y):
@@ -503,14 +505,20 @@ class DonskerVaradhanMITrainer(Trainer):
     def _forward(self, X, Y):
         X0, X1 = X.chunk(2, dim=1)
         Y0, Y1 = Y.chunk(2, dim=1)
-        marginal_kwargs={
-            'batch_size': X0.size(0),
-            'n': X0.size(-1),
-            'n_samples': X0.size(1),
-            'sample_groups': 2
-        }
-        X2, X3 = self.x_marginal(**marginal_kwargs).to(self.device).chunk(2, dim=1)
-        Y2, Y3 = self.y_marginal(**marginal_kwargs).to(self.device).chunk(2, dim=1)
+        if self.sample_marg:
+            marginal_kwargs={
+                'batch_size': X0.size(0),
+                'n': X0.size(-1),
+                'n_samples': X0.size(1),
+                'sample_groups': 2
+            }
+            X2, X3 = self.x_marginal(**marginal_kwargs).to(self.device).chunk(2, dim=1)
+            Y2, Y3 = self.y_marginal(**marginal_kwargs).to(self.device).chunk(2, dim=1)
+        else:
+            pass
+        #p1 = torch.randperm(Y0.size(1))
+        #p2 = torch.randperm(Y0.size(1))
+        #Y2 = Y0[:, p1]
 
         Z_joint1 = torch.cat([X0,Y0], dim=-1)
         Z_marginal1 = torch.cat([X2,Y2], dim=-1)
@@ -568,7 +576,7 @@ class DonskerVaradhanMITrainer(Trainer):
         
 
     def evaluate(self, steps, dataset):
-        set_sizes = (100, 300, 1000)
+        set_sizes = (100, 300, 800)
         metrics={}
         for ss in set_sizes:
             avg_loss_ss, avg_diff_ss = self._eval(steps, dataset, ss)

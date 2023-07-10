@@ -32,6 +32,7 @@ def parse_args():
     # Training args
     parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--lr', type=float, default=1e-3)
+    parser.add_argument('--weight_decay', type=float, default=0)
     parser.add_argument('--warmup_steps', type=int, default=1000)
     parser.add_argument('--grad_steps', type=int, default=1)
     parser.add_argument('--set_size', type=int, nargs=2, default=[6,10])
@@ -84,6 +85,7 @@ def parse_args():
     parser.add_argument('--equi', action='store_true')
     parser.add_argument('--vardim', action='store_true')
     parser.add_argument('--max_rho', type=float, default=0.999)
+    parser.add_argument('--criterion', type=str, default=None, choices=('l1', 'mse'))
 
     # Donsker Varadhan args
     parser.add_argument('--split_inputs', action='store_true')
@@ -148,7 +150,7 @@ if __name__ == '__main__':
         args.val_steps = args.val_steps // n_gpus 
         args.test_steps = args.test_steps // n_gpus 
 
-    opt = torch.optim.Adam(model.parameters(), lr=args.lr)
+    opt = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     scaler = torch.cuda.amp.GradScaler(enabled=args.use_amp)
 
     logger = SummaryWriter(log_dir)
