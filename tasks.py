@@ -537,7 +537,8 @@ class DVTask2(StatisticalDistanceTask):
             'split_inputs': False,
             'dataset': self.args.dataset,
             'model_type': 'mst',
-            'estimate_size': self.args.estimate_size
+            'estimate_size': self.args.estimate_size,
+            'model_type': self.args.dv_model
         }
         if self.args.dataset == 'corr':
             trainer_kwargs['mode'] = 'mi-kl'
@@ -569,9 +570,28 @@ class DVTask2(StatisticalDistanceTask):
         set_model = MultiSetTransformerEncoder(n, self.args.latent_size, self.args.hidden_size, 1, **model_kwargs)
         return set_model
     
+    def _build_model_encdec(self):
+        model_kwargs={
+            'ln':self.args.layer_norm,
+            'remove_diag':False,
+            'enc_blocks':self.args.enc_blocks,
+            'dec_blocks':self.args.dec_blocks,
+            'num_heads':self.args.num_heads,
+            'dropout':self.args.dropout,
+            'equi':self.args.equi,
+            'output_layers': self.args.decoder_layers,
+            'merge': 'concat',
+            'decoder_self_attn': self.args.decoder_self_attn
+        }
+        set_model = MultiSetTransformerEncoderDecoder(self.args.n*2, self.args.n*2, self.args.latent_size, self.args.hidden_size, 1, **model_kwargs)
+        return set_model
+    
     
     def build_model(self, pretrained_model=None):
-        return self._build_model_mst()
+        if self.args.dv_model == 'encdec':
+            return self._build_model_encdec()
+        else:
+            return self._build_model_mst()
 
 
 

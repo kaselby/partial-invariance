@@ -588,6 +588,7 @@ class DonskerVaradhanMITrainer(Trainer):
 #
 #   DV2
 #
+from utils import batched_shuffle
 
 class DonskerVaradhanTrainer2(Trainer):
     def __init__(self, model, optimizer, train_dataset, val_dataset, test_dataset, train_args, eval_args, device, criterion, label_fct, 
@@ -622,23 +623,28 @@ class DonskerVaradhanTrainer2(Trainer):
 #        return self._KL_estimate(Z1, Z2)
 
     def _forward_MI_KL(self, X, Y):
-        if self.estimate_size > 0:
-            N = (X.size(1) // self.estimate_size) * self.estimate_size
-            X = rearrange(X[:,:N], 'b (e n) d -> (b e) n d', e=self.estimate_size) #X[:, :N].view(-1, self.estimate_size, *X.size()[2:])
-            Y = rearrange(Y[:,:N], 'b (e n) d -> (b e) n d', e=self.estimate_size) #Y[:, :N].view(-1, self.estimate_size, *Y.size()[2:])
-        if self.dataset == 'corr':
-            Y_marginal = Y[:,torch.randperm(Y.size(1))]
+        Y_marginal = Y[:,torch.randperm(Y.size(1))]
+        P = torch.cat([X,Y], dim=-1)
+        Q = torch.cat([X,Y_marginal], dim=-1)
+
+        if self.model_type == 'mst':
+            Z_joint_out, Z_marginal_out = self.model(Z_joint, Z_marginal)
+            out = self._KL_estimate(Z_joint_out, Z_marginal_out)
+        else:
+            if self.estimate_size > 0:
+                N = (X.size(1) // self.estimate_size) * self.estimate_size
+                X = rearrange(X[:,:N], 'b (e n) d -> (b e) n d', e=self.estimate_size) #X[:, :N].view(-1, self.estimate_size, *X.size()[2:])
+                Y = rearrange(Y[:,:N], 'b (e n) d -> (b e) n d', e=self.estimate_size) #Y[:, :N].view(-1, self.estimate_size, *Y.size()[2:])
+                Y_marginal = batched_shuffle(Y)
+
             Z_joint= torch.cat([X,Y], dim=-1)
             Z_marginal = torch.cat([X,Y_marginal], dim=-1)
-        elif self.dataset == 'corr2':
-            Z_joint, Z_marginal = X, Y
+            Z_joint_out, Z_marginal_out = self.model(P, Q, Z_joint, Z_marginal)
+            out = self._KL_estimate(Z_joint_out, Z_marginal_out)
+            if self.estimate_size > 0:
+                out = rearrange(out, '(b e) -> b e', e=self.estimate_size)
+                out = out.mean(dim=1, keepdim=True)
 
-        Z_joint_out, Z_marginal_out = self.model(Z_joint, Z_marginal)
-
-        out = self._KL_estimate(Z_joint_out, Z_marginal_out)
-        if self.estimate_size > 0:
-            out = rearrange(out, '(b e) -> b e', e=self.estimate_size)
-            out = out.mean(dim=1, keepdim=True)
         return out
 
     def _forward(self, X, Y):

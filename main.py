@@ -94,6 +94,7 @@ def parse_args():
     parser.add_argument('--enc_blocks', type=int, default=4)
     parser.add_argument('--dec_blocks', type=int, default=1)
     parser.add_argument('--estimate_size', type=int, default=32)
+    parser.add_argument('--dv_model', default="encdec")
 
     
     return parser.parse_args()

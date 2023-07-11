@@ -5,6 +5,16 @@ import math
 
 use_cuda=torch.cuda.is_available()
 
+
+
+def batched_shuffle(x, dim=1):
+    indices = torch.argsort(torch.rand(*x.size()[:2]), dim=dim)
+    #result = torch.gather(x, dim, indices)
+    result = x[torch.arange(x.shape[0]).unsqueeze(-1), indices]
+    return result
+
+
+
 def masked_softmax(x, mask, dim=-1, eps=1e-8):
     x_masked = x.clone()
     x_masked = x_masked - x_masked.max(dim=dim, keepdim=True)[0]
