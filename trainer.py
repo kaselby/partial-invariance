@@ -633,13 +633,18 @@ class DonskerVaradhanTrainer2(Trainer):
         else:
             if self.estimate_size > 0:
                 N = (X.size(1) // self.estimate_size) * self.estimate_size
-                X = rearrange(X[:,:N], 'b (e n) d -> (b e) n d', e=self.estimate_size) #X[:, :N].view(-1, self.estimate_size, *X.size()[2:])
-                Y = rearrange(Y[:,:N], 'b (e n) d -> (b e) n d', e=self.estimate_size) #Y[:, :N].view(-1, self.estimate_size, *Y.size()[2:])
+                X = X[:,:N]#rearrange(X[:,:N], 'b (e n) d -> (b e) n d', e=self.estimate_size) #X[:, :N].view(-1, self.estimate_size, *X.size()[2:])
+                Y = Y[:,:N] #Y[:, :N].view(-1, self.estimate_size, *Y.size()[2:])
+                Y_marginal = batched_shuffle(rearrange(Y, 'b (e n) d -> (b e) n d', e=self.estimate_size))
+            else:
                 Y_marginal = batched_shuffle(Y)
 
             Z_joint= torch.cat([X,Y], dim=-1)
             Z_marginal = torch.cat([X,Y_marginal], dim=-1)
             Z_joint_out, Z_marginal_out = self.model(P, Q, Z_joint, Z_marginal)
+            if self.estimate_size > 0:
+                Z_joint_out = rearrange(Z_joint_out, 'b (e n) -> (b e) n')
+                Z_marginal_out = rearrange(Z_marginal_out, 'b (e n) -> (b e) n')
             out = self._KL_estimate(Z_joint_out, Z_marginal_out)
             if self.estimate_size > 0:
                 out = rearrange(out, '(b e) -> b e', e=self.estimate_size)
