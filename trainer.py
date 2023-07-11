@@ -637,7 +637,7 @@ class DonskerVaradhanTrainer2(Trainer):
 
         out = self._KL_estimate(Z_joint_out, Z_marginal_out)
         if self.estimate_size > 0:
-            out = rearrange(out, '(b e) d -> b (e d)', e=self.estimate_size)
+            out = rearrange(out, '(b e) -> b e', e=self.estimate_size)
             out = out.mean(dim=1, keepdim=True)
         return out
 
