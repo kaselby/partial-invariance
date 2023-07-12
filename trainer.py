@@ -636,6 +636,7 @@ class DonskerVaradhanTrainer2(Trainer):
                 X = X[:,:N]#rearrange(X[:,:N], 'b (e n) d -> (b e) n d', e=self.estimate_size) #X[:, :N].view(-1, self.estimate_size, *X.size()[2:])
                 Y = Y[:,:N] #Y[:, :N].view(-1, self.estimate_size, *Y.size()[2:])
                 Y_marginal = batched_shuffle(rearrange(Y, 'b (e n) d -> (b e) n d', e=self.estimate_size))
+                Y_marginal = rearrange(Y_marginal, '(b e) n d -> b (e n) d', e=self.estimate_size)
             else:
                 Y_marginal = batched_shuffle(Y)
 
