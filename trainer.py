@@ -644,8 +644,8 @@ class DonskerVaradhanTrainer2(Trainer):
             Z_marginal = torch.cat([X,Y_marginal], dim=-1)
             Z_joint_out, Z_marginal_out = self.model(P, Q, Z_joint, Z_marginal)
             if self.estimate_size > 0:
-                Z_joint_out = rearrange(Z_joint_out, 'b (e n) -> (b e) n')
-                Z_marginal_out = rearrange(Z_marginal_out, 'b (e n) -> (b e) n')
+                Z_joint_out = rearrange(Z_joint_out, 'b (e n) -> (b e) n', e=self.estimate_size)
+                Z_marginal_out = rearrange(Z_marginal_out, 'b (e n) -> (b e) n', e=self.estimate_size)
             out = self._KL_estimate(Z_joint_out, Z_marginal_out)
             if self.estimate_size > 0:
                 out = rearrange(out, '(b e) -> b e', e=self.estimate_size)
