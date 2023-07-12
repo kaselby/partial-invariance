@@ -523,7 +523,7 @@ class DonskerVaradhanMITrainer(Trainer):
                 N = (X.size(1) // self.estimate_size) * self.estimate_size
                 X1 = X1[:,:N]#rearrange(X[:,:N], 'b (e n) d -> (b e) n d', e=self.estimate_size) #X[:, :N].view(-1, self.estimate_size, *X.size()[2:])
                 Y1 = Y1[:,:N] #Y[:, :N].view(-1, self.estimate_size, *Y.size()[2:])
-                Y3 = batched_shuffle(rearrange(Y, 'b (e n) d -> (b e) n d', e=self.estimate_size))
+                Y3 = batched_shuffle(rearrange(Y1, 'b (e n) d -> (b e) n d', e=self.estimate_size))
                 Y3 = rearrange(Y3, '(b e) n d -> b (e n) d', e=self.estimate_size)
             else:
                 Y3 = batched_shuffle(Y)
