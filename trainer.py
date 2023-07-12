@@ -490,17 +490,19 @@ class DonskerVaradhanTrainer(Trainer):
 class DonskerVaradhanMITrainer(Trainer):
     def __init__(self, model, optimizer, train_dataset, val_dataset, test_dataset, train_args, eval_args, device, criterion, label_fct, 
             x_marginal, y_marginal, logger=None, save_every=2000, eval_every=500, scheduler=None, checkpoint_dir=None, ss_schedule=-1,
-            sample_marg=True):
+            sample_marg=True, estimate_size=-1):
         super().__init__(model, optimizer, train_dataset, val_dataset, test_dataset, train_args, eval_args, device, logger=logger,
             save_every=save_every, criterion=criterion, scheduler=scheduler, checkpoint_dir=checkpoint_dir, ss_schedule=ss_schedule)
         self.label_fct = label_fct
         self.x_marginal = x_marginal
         self.y_marginal = y_marginal
         self.sample_marg = sample_marg
+        self.estimate_size = estimate_size
 
     @staticmethod
     def _KL_estimate(X, Y):
         return X.sum(dim=1)/X.size(1) - Y.logsumexp(dim=1) + math.log(Y.size(1))
+
 
     def _forward(self, X, Y):
         X0, X1 = X.chunk(2, dim=1)
@@ -515,10 +517,17 @@ class DonskerVaradhanMITrainer(Trainer):
             X2, X3 = self.x_marginal(**marginal_kwargs).to(self.device).chunk(2, dim=1)
             Y2, Y3 = self.y_marginal(**marginal_kwargs).to(self.device).chunk(2, dim=1)
         else:
-            pass
-        #p1 = torch.randperm(Y0.size(1))
-        #p2 = torch.randperm(Y0.size(1))
-        #Y2 = Y0[:, p1]
+            Y2 = batched_shuffle(Y0)
+            X2 = X0
+            if self.estimate_size > 0:
+                N = (X.size(1) // self.estimate_size) * self.estimate_size
+                X1 = X1[:,:N]#rearrange(X[:,:N], 'b (e n) d -> (b e) n d', e=self.estimate_size) #X[:, :N].view(-1, self.estimate_size, *X.size()[2:])
+                Y1 = Y1[:,:N] #Y[:, :N].view(-1, self.estimate_size, *Y.size()[2:])
+                Y3 = batched_shuffle(rearrange(Y, 'b (e n) d -> (b e) n d', e=self.estimate_size))
+                Y3 = rearrange(Y3, '(b e) n d -> b (e n) d', e=self.estimate_size)
+            else:
+                Y3 = batched_shuffle(Y)
+            X3 = X1
 
         Z_joint1 = torch.cat([X0,Y0], dim=-1)
         Z_marginal1 = torch.cat([X2,Y2], dim=-1)
@@ -528,7 +537,17 @@ class DonskerVaradhanMITrainer(Trainer):
 
         Z_joint_out, Z_marginal_out = self.model(Z_joint1, Z_marginal1, Z_joint2, Z_marginal2)
 
-        return self._KL_estimate(Z_joint_out, Z_marginal_out)
+        if (not self.sample_marg) and self.estimate_size > 0:
+            Z_joint_out = rearrange(Z_joint_out, 'b (e n) -> (b e) n', e=self.estimate_size)
+            Z_marginal_out = rearrange(Z_marginal_out, 'b (e n) -> (b e) n', e=self.estimate_size)
+
+        out = self._KL_estimate(Z_joint_out, Z_marginal_out)
+
+        if (not self.sample_marg) and self.estimate_size > 0:
+            out = rearrange(out, '(b e) -> b e', e=self.estimate_size)
+            out = out.mean(dim=1, keepdim=True)
+
+        return out
     
     def train_step(self, i, steps, dataset):
         args = self.train_args

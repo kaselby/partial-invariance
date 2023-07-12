@@ -458,7 +458,9 @@ class DVMITask(StatisticalDistanceTask):
             'label_fct': mi_corr_gaussian,
             'criterion': nn.L1Loss(),
             'x_marginal': StandardGaussianGenerator(),
-            'y_marginal': StandardGaussianGenerator()
+            'y_marginal': StandardGaussianGenerator(),
+            'estimate_size': self.args.estimate_size,
+            'sample_marg': self.args.sample_marg
         }
         if getattr(self.args, 'criterion', None) is not None:
             trainer_kwargs['criterion'] = LOSSES[self.args.criterion]

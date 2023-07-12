@@ -73,6 +73,7 @@ max_rho=0.99
 estimate_size=32
 criterion=''
 dv_model='encdec'
+sample_marg=1
 
 argstring="$run_name --basedir $basedir --checkpoint_dir $checkpoint_dir \
     --model $model --dataset $dataset --task $task --batch_size $bs --lr $lr --set_size $ss1 $ss2 \
@@ -113,6 +114,10 @@ fi
 if [ ! -z $criterion ]
 then
     argstring="$argstring --criterion $criterion"
+fi
+if [ $sample_marg -eq 1 ]
+then
+    argstring="$argstring --sample_marg"
 fi
 
 if [ $use_amp -eq 1 ]

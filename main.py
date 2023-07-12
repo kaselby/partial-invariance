@@ -95,6 +95,7 @@ def parse_args():
     parser.add_argument('--dec_blocks', type=int, default=1)
     parser.add_argument('--estimate_size', type=int, default=32)
     parser.add_argument('--dv_model', default="encdec")
+    parser.add_argument('--sample_marg', action='store_true')
 
     
     return parser.parse_args()
