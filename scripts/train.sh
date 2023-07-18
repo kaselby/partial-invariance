@@ -4,7 +4,7 @@
 #SBATCH --open-mode=append
 #SBATCH --ntasks=1
 #SBATCH --gres=gpu:1
-#SBATCH --partition=t4v1,t4v2,rtx6000
+#SBATCH --partition=t4v2,rtx6000
 #SBATCH --cpus-per-gpu=1
 #SBATCH --mem=50GB
 #SBATCH --exclude=gpu109
@@ -16,13 +16,13 @@ basedir="2023-runs-fixed"
 run_name=$1
 
 model='multi-set-transformer'
-dataset='gmm'
-task='stat/DV'
+dataset='corr'
+task='stat/DV-MI'
 
-bs=128
+bs=32
 lr="1e-5"
-ss1=200
-ss2=300
+ss1=250
+ss2=350
 ss_schedule=-1
 eval_every=500
 save_every=2000
@@ -31,8 +31,8 @@ val_steps=200
 test_steps=500
 use_amp=0
 
-weight_decay=0
-grad_clip=50
+weight_decay=0.01
+grad_clip=-1
 
 num_blocks=4
 num_heads=4
@@ -57,9 +57,9 @@ episode_length=500
 p_dl=0.3
 md_path="/ssd003/projects/meta-dataset"
 
-n=2
+n=8
 
-normalize='whiten'
+normalize='none'
 equi=1
 vardim=1
 
@@ -67,13 +67,14 @@ split_inputs=1
 decoder_self_attn=0
 enc_blocks=4
 dec_blocks=1
-ln=1
-max_rho=0.99
+ln=0
+max_rho=0.9
 
-estimate_size=32
+estimate_size=-1
 criterion=''
 dv_model='encdec'
 sample_marg=1
+log_scale=0
 
 argstring="$run_name --basedir $basedir --checkpoint_dir $checkpoint_dir \
     --model $model --dataset $dataset --task $task --batch_size $bs --lr $lr --set_size $ss1 $ss2 \
@@ -116,6 +117,10 @@ then
     argstring="$argstring --criterion $criterion"
 fi
 if [ $sample_marg -eq 1 ]
+then
+    argstring="$argstring --sample_marg"
+fi
+if [ $log_scale -eq 1 ]
 then
     argstring="$argstring --sample_marg"
 fi

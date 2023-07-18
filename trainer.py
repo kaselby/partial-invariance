@@ -490,7 +490,7 @@ class DonskerVaradhanTrainer(Trainer):
 class DonskerVaradhanMITrainer(Trainer):
     def __init__(self, model, optimizer, train_dataset, val_dataset, test_dataset, train_args, eval_args, device, criterion, label_fct, 
             x_marginal, y_marginal, logger=None, save_every=2000, eval_every=500, scheduler=None, checkpoint_dir=None, ss_schedule=-1,
-            sample_marg=True, estimate_size=-1):
+            sample_marg=True, estimate_size=-1, log_scale=False):
         super().__init__(model, optimizer, train_dataset, val_dataset, test_dataset, train_args, eval_args, device, logger=logger,
             save_every=save_every, criterion=criterion, scheduler=scheduler, checkpoint_dir=checkpoint_dir, ss_schedule=ss_schedule)
         self.label_fct = label_fct
@@ -498,6 +498,7 @@ class DonskerVaradhanMITrainer(Trainer):
         self.y_marginal = y_marginal
         self.sample_marg = sample_marg
         self.estimate_size = estimate_size
+        self.log_scale = log_scale
 
     @staticmethod
     def _KL_estimate(X, Y):
@@ -540,6 +541,10 @@ class DonskerVaradhanMITrainer(Trainer):
         if (not self.sample_marg) and self.estimate_size > 0:
             Z_joint_out = rearrange(Z_joint_out, 'b (e n) -> (b e) n', e=self.estimate_size)
             Z_marginal_out = rearrange(Z_marginal_out, 'b (e n) -> (b e) n', e=self.estimate_size)
+        
+        if self.log_scale:
+            Z_joint_out = torch.log(torch.abs(Z_joint_out))
+            Z_marginal_out = torch.log(torch.abs(Z_marginal_out))
 
         out = self._KL_estimate(Z_joint_out, Z_marginal_out)
 
