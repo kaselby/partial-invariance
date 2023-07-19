@@ -600,7 +600,7 @@ class DonskerVaradhanMITrainer(Trainer):
         
 
     def evaluate(self, steps, dataset):
-        set_sizes = (100, 300, 800)
+        set_sizes = (300,)#(100, 300, 800)
         metrics={}
         for ss in set_sizes:
             avg_loss_ss, avg_diff_ss = self._eval(steps, dataset, ss)
