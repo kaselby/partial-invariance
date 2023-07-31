@@ -9,7 +9,7 @@ import os
 
 import wandb
 
-from utils import whiten_split
+from utils import whiten_split, batched_cov
 
 SS_SCHEDULE_15=[{'set_size':(1,5), 'steps':20000}, {'set_size':(3,10), 'steps':5000}, {'set_size':(8,15), 'steps':5000}]
 SS_SCHEDULE_30=[{'set_size':(1,5), 'steps':20000}, {'set_size':(3,10), 'steps':5000}, {'set_size':(8,15), 'steps':5000}, {'set_size':(10,30), 'steps':5000}]
@@ -490,7 +490,7 @@ class DonskerVaradhanTrainer(Trainer):
 class DonskerVaradhanMITrainer(Trainer):
     def __init__(self, model, optimizer, train_dataset, val_dataset, test_dataset, train_args, eval_args, device, criterion, label_fct, 
             x_marginal, y_marginal, logger=None, save_every=2000, eval_every=500, scheduler=None, checkpoint_dir=None, ss_schedule=-1,
-            sample_marg=True, estimate_size=-1, log_scale=False):
+            sample_marg=True, estimate_size=-1, scale='none'):
         super().__init__(model, optimizer, train_dataset, val_dataset, test_dataset, train_args, eval_args, device, logger=logger,
             save_every=save_every, criterion=criterion, scheduler=scheduler, checkpoint_dir=checkpoint_dir, ss_schedule=ss_schedule)
         self.label_fct = label_fct
@@ -498,7 +498,7 @@ class DonskerVaradhanMITrainer(Trainer):
         self.y_marginal = y_marginal
         self.sample_marg = sample_marg
         self.estimate_size = estimate_size
-        self.log_scale = log_scale
+        self.scale = scale
 
     @staticmethod
     def _KL_estimate(X, Y):
@@ -542,9 +542,15 @@ class DonskerVaradhanMITrainer(Trainer):
             Z_joint_out = rearrange(Z_joint_out, 'b (e n) -> (b e) n', e=self.estimate_size)
             Z_marginal_out = rearrange(Z_marginal_out, 'b (e n) -> (b e) n', e=self.estimate_size)
         
-        if self.log_scale:
+        if self.scale == 'log':
             Z_joint_out = torch.log(torch.abs(Z_joint_out))
             Z_marginal_out = torch.log(torch.abs(Z_marginal_out))
+        elif self.scale == 'logcov':
+            cov_joint = batched_cov(Z_joint1)
+            cov_marg = batched_cov(Z_marginal1)
+            log_scale_factor = (cov_marg.logdet() - cov_joint.logdet()) * X0.size(-1)
+            Z_joint_out = F.logsigmoid(Z_joint_out) + log_scale_factor
+            Z_marginal_out = F.logsigmoid(Z_marginal_out) + log_scale_factor
 
         out = self._KL_estimate(Z_joint_out, Z_marginal_out)
 

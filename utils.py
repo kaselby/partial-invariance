@@ -13,6 +13,19 @@ def batched_shuffle(x, dim=1):
     result = x[torch.arange(x.shape[0]).unsqueeze(-1), indices]
     return result
 
+def batched_cov(X, Y=None):
+    # X bs x n x d
+    N = X.size(1) - 1
+    Xbar = X.sum(dim=1, keepdim=True) / N
+    Xcentered = X - Xbar 
+    if Y is not None:
+        assert Y.size(1) == X.size(1)
+        Ybar = Y.sum(dim=1, keepdim=True) / N
+        Ycentered = Y - Ybar 
+    else:
+        Ycentered = Xcentered
+    cov = Xcentered.transpose(1,2).matmul(Ycentered) / n
+    return cov
 
 
 def masked_softmax(x, mask, dim=-1, eps=1e-8):
