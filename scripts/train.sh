@@ -74,7 +74,7 @@ estimate_size=-1
 criterion=''
 dv_model='encdec'
 sample_marg=1
-log_scale=0
+scale='none'
 
 argstring="$run_name --basedir $basedir --checkpoint_dir $checkpoint_dir \
     --model $model --dataset $dataset --task $task --batch_size $bs --lr $lr --set_size $ss1 $ss2 \
@@ -86,7 +86,7 @@ argstring="$run_name --basedir $basedir --checkpoint_dir $checkpoint_dir \
     --episode_datasets $episode_datasets --episode_length $episode_length --p_dl $p_dl \
     --md_path $md_path --n $n --normalize $normalize --enc_blocks $enc_blocks --dec_blocks $dec_blocks \
     --max_rho $max_rho --clip $grad_clip --weight_decay $weight_decay --estimate_size $estimate_size \
-    --dv_model $dv_model"
+    --dv_model $dv_model --scale $scale"
 
 if [ $equi -eq 1 ]
 then
@@ -120,10 +120,7 @@ if [ $sample_marg -eq 1 ]
 then
     argstring="$argstring --sample_marg"
 fi
-if [ $log_scale -eq 1 ]
-then
-    argstring="$argstring --sample_marg"
-fi
+
 
 if [ $use_amp -eq 1 ]
 then
