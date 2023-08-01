@@ -548,7 +548,7 @@ class DonskerVaradhanMITrainer(Trainer):
         elif self.scale == 'logcov':
             cov_joint = batched_cov(Z_joint1)
             cov_marg = batched_cov(Z_marginal1)
-            log_scale_factor = (cov_marg.logdet() - cov_joint.logdet()) * X0.size(-1)
+            log_scale_factor = (cov_marg.logdet() - cov_joint.logdet()).unsqueeze(-1) * X0.size(-1)
             Z_joint_out = F.logsigmoid(Z_joint_out) + log_scale_factor
             Z_marginal_out = F.logsigmoid(Z_marginal_out) + log_scale_factor
 
