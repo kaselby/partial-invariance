@@ -24,7 +24,7 @@ def batched_cov(X, Y=None):
         Ycentered = Y - Ybar 
     else:
         Ycentered = Xcentered
-    cov = Xcentered.transpose(1,2).matmul(Ycentered) / n
+    cov = Xcentered.transpose(1,2).matmul(Ycentered) / N
     return cov
 
 
