@@ -9,11 +9,12 @@
 #SBATCH --mem=50GB
 #SBATCH --exclude=gpu109
 
-checkpoint_id=$SLURM_JOB_ID
-checkpoint_dir="/checkpoint/$USER/$checkpoint_id"
+
 basedir="2023-runs-fixed"
 
 run_name=$1
+
+checkpoint_dir="/checkpoint/$USER/$run_name"
 
 model='multi-set-transformer'
 dataset='corr'
