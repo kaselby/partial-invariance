@@ -505,7 +505,7 @@ class DonskerVaradhanMITrainer(Trainer):
         return X.sum(dim=1)/X.size(1) - Y.logsumexp(dim=1) + math.log(Y.size(1))
 
 
-    def _forward(self, X, Y):
+    def _forward(self, X, Y, eps=1e-5):
         X0, X1 = X.chunk(2, dim=1)
         Y0, Y1 = Y.chunk(2, dim=1)
         if self.sample_marg:
@@ -548,9 +548,9 @@ class DonskerVaradhanMITrainer(Trainer):
         elif self.scale == 'logcov':
             cov_joint = batched_cov(Z_joint1)
             cov_marg = batched_cov(Z_marginal1)
-            log_scale_factor = (cov_marg.logdet() - cov_joint.logdet()).unsqueeze(-1) * X0.size(-1)
-            Z_joint_out = F.logsigmoid(Z_joint_out) + log_scale_factor
-            Z_marginal_out = F.logsigmoid(Z_marginal_out) + log_scale_factor
+            log_scale_factor = (cov_marg.logdet() - cov_joint.logdet()).unsqueeze(-1) * 1./2
+            Z_joint_out = torch.log(F.sigmoid(Z_joint_out)+eps) + log_scale_factor
+            Z_marginal_out = torch.log(F.sigmoid(Z_marginal_out)+eps) + log_scale_factor
 
         out = self._KL_estimate(Z_joint_out, Z_marginal_out)
 
