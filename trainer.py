@@ -490,7 +490,7 @@ class DonskerVaradhanTrainer(Trainer):
 class DonskerVaradhanMITrainer(Trainer):
     def __init__(self, model, optimizer, train_dataset, val_dataset, test_dataset, train_args, eval_args, device, criterion, label_fct, 
             x_marginal, y_marginal, logger=None, save_every=2000, eval_every=500, scheduler=None, checkpoint_dir=None, ss_schedule=-1,
-            sample_marg=True, estimate_size=-1, scale='none'):
+            sample_marg=True, estimate_size=-1, scale='none', eps=1e-6):
         super().__init__(model, optimizer, train_dataset, val_dataset, test_dataset, train_args, eval_args, device, logger=logger,
             save_every=save_every, criterion=criterion, scheduler=scheduler, checkpoint_dir=checkpoint_dir, ss_schedule=ss_schedule)
         self.label_fct = label_fct
@@ -499,13 +499,14 @@ class DonskerVaradhanMITrainer(Trainer):
         self.sample_marg = sample_marg
         self.estimate_size = estimate_size
         self.scale = scale
+        self.eps=eps
 
     @staticmethod
     def _KL_estimate(X, Y):
         return X.sum(dim=1)/X.size(1) - Y.logsumexp(dim=1) + math.log(Y.size(1))
 
 
-    def _forward(self, X, Y, eps=1e-5):
+    def _forward(self, X, Y):
         X0, X1 = X.chunk(2, dim=1)
         Y0, Y1 = Y.chunk(2, dim=1)
         if self.sample_marg:
@@ -549,8 +550,8 @@ class DonskerVaradhanMITrainer(Trainer):
             cov_joint = batched_cov(Z_joint1)
             cov_marg = batched_cov(Z_marginal1)
             log_scale_factor = (cov_marg.logdet() - cov_joint.logdet()).unsqueeze(-1) * 1./2
-            Z_joint_out = torch.log(F.sigmoid(Z_joint_out)+eps) + log_scale_factor
-            Z_marginal_out = torch.log(F.sigmoid(Z_marginal_out)+eps) + log_scale_factor
+            Z_joint_out = torch.log(F.sigmoid(Z_joint_out) + self.eps) + log_scale_factor
+            Z_marginal_out = torch.log(F.sigmoid(Z_marginal_out) + self.eps) + log_scale_factor
 
         out = self._KL_estimate(Z_joint_out, Z_marginal_out)
 
