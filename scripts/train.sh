@@ -76,6 +76,7 @@ criterion=''
 dv_model='encdec'
 sample_marg=1
 scale='none'
+eps="1e-8"
 
 argstring="$run_name --basedir $basedir --checkpoint_dir $checkpoint_dir \
     --model $model --dataset $dataset --task $task --batch_size $bs --lr $lr --set_size $ss1 $ss2 \
@@ -87,7 +88,7 @@ argstring="$run_name --basedir $basedir --checkpoint_dir $checkpoint_dir \
     --episode_datasets $episode_datasets --episode_length $episode_length --p_dl $p_dl \
     --md_path $md_path --n $n --normalize $normalize --enc_blocks $enc_blocks --dec_blocks $dec_blocks \
     --max_rho $max_rho --clip $grad_clip --weight_decay $weight_decay --estimate_size $estimate_size \
-    --dv_model $dv_model --scale $scale"
+    --dv_model $dv_model --scale $scale --eps $eps"
 
 if [ $equi -eq 1 ]
 then

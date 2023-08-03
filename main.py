@@ -97,6 +97,7 @@ def parse_args():
     parser.add_argument('--dv_model', default="encdec")
     parser.add_argument('--sample_marg', action='store_true')
     parser.add_argument('--scale', type=str, choices=('none', 'log', 'logcov'))
+    parser.add_argument('--eps', type=float, default=1e-6)
     
     return parser.parse_args()
 
