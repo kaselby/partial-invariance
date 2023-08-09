@@ -589,7 +589,7 @@ class DonskerVaradhanMITrainer(Trainer):
         avg_diff = 0
         with torch.no_grad():
             for i in range(steps):
-                (X,Y), theta = self.train_dataset(args['batch_size'], set_size=(set_size, set_size+1), **sample_kwargs)
+                (X,Y), theta = dataset(args['batch_size'], set_size=(set_size, set_size+1), **sample_kwargs)
                 d_true = self.label_fct(*theta, X=X, **args['label_kwargs']).squeeze(-1)
                 if args['normalize'] == 'whiten':
                     X,Y = whiten_split(X,Y)

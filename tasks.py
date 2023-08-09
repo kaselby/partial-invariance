@@ -459,10 +459,10 @@ class DVMITask(StatisticalDistanceTask):
             'criterion': nn.L1Loss(),
             'x_marginal': StandardGaussianGenerator(),
             'y_marginal': StandardGaussianGenerator(),
-            'estimate_size': self.args.estimate_size,
-            'sample_marg': self.args.sample_marg,
-            'scale': self.args.scale,
-            'eps':self.args.eps
+            'estimate_size': getattr(self.args, 'estimate_size', -1),
+            'sample_marg': getattr(self.args, 'sample_marg', True),
+            'scale': getattr(self.args, 'scale', 'none'),
+            'eps': getattr(self.args, 'eps', 1e-8)
         }
         if getattr(self.args, 'criterion', None) is not None:
             trainer_kwargs['criterion'] = LOSSES[self.args.criterion]
