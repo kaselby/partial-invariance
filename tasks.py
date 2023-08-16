@@ -435,74 +435,7 @@ class DVTask(StatisticalDistanceTask):
     def build_model(self, pretrained_model=None):
         return self._build_model_encdec()
 
-class DVMITask(StatisticalDistanceTask):
-    trainer_cls=DonskerVaradhanMITrainer
 
-    def build_dataset(self):
-        generator = CorrelatedGaussianGenerator(return_params=True, variable_dim=self.args.equi, max_rho=self.args.max_rho)
-        return generator, generator, None
-
-    def build_training_args(self):
-        train_args, eval_args = super().build_training_args()
-      
-        train_args['sample_kwargs']['sample_groups']=2
-        eval_args['sample_kwargs']['sample_groups']=2
-        train_args['normalize'] = self.args.normalize
-        eval_args['normalize'] = self.args.normalize
-        return train_args, eval_args
-    
-    def build_trainer_kwargs(self):
-        trainer_kwargs = {
-            'eval_every': self.args.eval_every,
-            'save_every': self.args.save_every,
-            'label_fct': mi_corr_gaussian,
-            'criterion': nn.L1Loss(),
-            'x_marginal': StandardGaussianGenerator(),
-            'y_marginal': StandardGaussianGenerator(),
-            'estimate_size': getattr(self.args, 'estimate_size', -1),
-            'sample_marg': getattr(self.args, 'sample_marg', True),
-            'scale': getattr(self.args, 'scale', 'none'),
-            'eps': getattr(self.args, 'eps', 1e-8)
-        }
-        if getattr(self.args, 'criterion', None) is not None:
-            trainer_kwargs['criterion'] = LOSSES[self.args.criterion]
-        return trainer_kwargs
-    
-    def _build_model_mst(self):
-        model_kwargs={
-            'ln':self.args.layer_norm,
-            'remove_diag':False,
-            'num_blocks':self.args.num_blocks,
-            'num_heads':self.args.num_heads,
-            'dropout':self.args.dropout,
-            'equi':self.args.equi,
-            'decoder_layers': self.args.decoder_layers,
-            'merge': 'concat',
-            'weight_sharing': 'sym',     #IMPORTANT?? Not sure if necessary or not for MI but probably helpful
-            'merge_output_sets': True
-        }
-        set_model = MultiSetTransformerEncoder(self.args.n, self.args.latent_size, self.args.hidden_size, 1, **model_kwargs)
-        return set_model
-
-    def _build_model_encdec(self):
-        model_kwargs={
-            'ln':self.args.layer_norm,
-            'remove_diag':False,
-            'enc_blocks':self.args.enc_blocks,
-            'dec_blocks':self.args.dec_blocks,
-            'num_heads':self.args.num_heads,
-            'dropout':self.args.dropout,
-            'equi':self.args.equi,
-            'output_layers': self.args.decoder_layers,
-            'merge': 'concat',
-            'decoder_self_attn': self.args.decoder_self_attn
-        }
-        set_model = MultiSetTransformerEncoderDecoder(self.args.n*2, self.args.n*2, self.args.latent_size, self.args.hidden_size, 1, **model_kwargs)
-        return set_model
-
-    def build_model(self, pretrained_model=None):
-        return self._build_model_encdec()
-    
 
 class DVMITask(StatisticalDistanceTask):
     trainer_cls=DonskerVaradhanMITrainer
@@ -514,8 +447,8 @@ class DVMITask(StatisticalDistanceTask):
     def build_training_args(self):
         train_args, eval_args = super().build_training_args()
       
-        train_args['sample_kwargs']['sample_groups']=2
-        eval_args['sample_kwargs']['sample_groups']=2
+        train_args['sample_kwargs']['sample_groups']=2 if self.args.split_inputs else 1
+        eval_args['sample_kwargs']['sample_groups']=2 if self.args.split_inputs else 1
         train_args['normalize'] = self.args.normalize
         eval_args['normalize'] = self.args.normalize
         return train_args, eval_args
