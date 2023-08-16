@@ -572,7 +572,7 @@ class DVMITask(StatisticalDistanceTask):
         return set_model
 
     def build_model(self, pretrained_model=None):
-        if self.args.model_type == 'mst':
+        if self.args.dv_model == 'mst':
             return self._build_model_mst()
         else:
             return self._build_model_encdec()
