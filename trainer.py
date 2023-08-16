@@ -490,7 +490,7 @@ class DonskerVaradhanTrainer(Trainer):
 class DonskerVaradhanMITrainer(Trainer):
     def __init__(self, model, optimizer, train_dataset, val_dataset, test_dataset, train_args, eval_args, device, criterion, label_fct, 
             x_marginal, y_marginal, logger=None, save_every=2000, eval_every=500, scheduler=None, checkpoint_dir=None, ss_schedule=-1,
-            sample_marg=True, estimate_size=-1, scale='none', eps=1e-6):
+            sample_marg=True, estimate_size=-1, scale='none', eps=1e-6, model_type='mst', split_inputs=True):
         super().__init__(model, optimizer, train_dataset, val_dataset, test_dataset, train_args, eval_args, device, logger=logger,
             save_every=save_every, criterion=criterion, scheduler=scheduler, checkpoint_dir=checkpoint_dir, ss_schedule=ss_schedule)
         self.label_fct = label_fct
@@ -500,6 +500,8 @@ class DonskerVaradhanMITrainer(Trainer):
         self.estimate_size = estimate_size
         self.scale = scale
         self.eps=eps
+        self.split_inputs = split_inputs
+        self.model_type = model_type
 
     @staticmethod
     def _KL_estimate(X, Y):
@@ -507,8 +509,13 @@ class DonskerVaradhanMITrainer(Trainer):
 
 
     def _forward(self, X, Y):
-        X0, X1 = X.chunk(2, dim=1)
-        Y0, Y1 = Y.chunk(2, dim=1)
+        if self.split_inputs:
+            X0, X1 = X.chunk(2, dim=1)
+            Y0, Y1 = Y.chunk(2, dim=1)
+        else:
+            X0, X1 = X, X
+            Y0, Y1 = Y, Y
+
         if self.sample_marg:
             marginal_kwargs={
                 'batch_size': X0.size(0),
@@ -531,13 +538,19 @@ class DonskerVaradhanMITrainer(Trainer):
                 Y3 = batched_shuffle(Y)
             X3 = X1
 
-        Z_joint1 = torch.cat([X0,Y0], dim=-1)
-        Z_marginal1 = torch.cat([X2,Y2], dim=-1)
+        if self.model_type == 'encdec':
+            Z_joint1 = torch.cat([X0,Y0], dim=-1)
+            Z_marginal1 = torch.cat([X2,Y2], dim=-1)
 
-        Z_joint2 = torch.cat([X1,Y1], dim=-1)
-        Z_marginal2 = torch.cat([X3,Y3], dim=-1)
+            Z_joint2 = torch.cat([X1,Y1], dim=-1)
+            Z_marginal2 = torch.cat([X3,Y3], dim=-1)
 
-        Z_joint_out, Z_marginal_out = self.model(Z_joint1, Z_marginal1, Z_joint2, Z_marginal2)
+            Z_joint_out, Z_marginal_out = self.model(Z_joint1, Z_marginal1, Z_joint2, Z_marginal2)
+        else:
+            Z_joint1 = torch.cat([X,Y], dim=-1)
+            Z_marginal1 = torch.cat([X,Y], dim=-1)
+
+            Z_joint_out, Z_marginal_out = self.model(Z_joint1, Z_marginal1)
 
         if (not self.sample_marg) and self.estimate_size > 0:
             Z_joint_out = rearrange(Z_joint_out, 'b (e n) -> (b e) n', e=self.estimate_size)
@@ -659,6 +672,8 @@ class DonskerVaradhanTrainer2(Trainer):
         Q = torch.cat([X,Y_marginal], dim=-1)
 
         if self.model_type == 'mst':
+            Z_joint= torch.cat([X,Y], dim=-1)
+            Z_marginal = torch.cat([X,Y_marginal], dim=-1)
             Z_joint_out, Z_marginal_out = self.model(Z_joint, Z_marginal)
             out = self._KL_estimate(Z_joint_out, Z_marginal_out)
         else:
@@ -677,6 +692,7 @@ class DonskerVaradhanTrainer2(Trainer):
             if self.estimate_size > 0:
                 Z_joint_out = rearrange(Z_joint_out, 'b (e n) -> (b e) n', e=self.estimate_size)
                 Z_marginal_out = rearrange(Z_marginal_out, 'b (e n) -> (b e) n', e=self.estimate_size)
+
             out = self._KL_estimate(Z_joint_out, Z_marginal_out)
             if self.estimate_size > 0:
                 out = rearrange(out, '(b e) -> b e', e=self.estimate_size)
