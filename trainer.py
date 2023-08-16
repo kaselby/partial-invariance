@@ -508,6 +508,8 @@ class DonskerVaradhanMITrainer(Trainer):
         return X.sum(dim=1)/X.size(1) - Y.logsumexp(dim=1) + math.log(Y.size(1))
 
 
+
+
     def _forward(self, X, Y):
         if self.split_inputs:
             X0, X1 = X.chunk(2, dim=1)
@@ -535,7 +537,7 @@ class DonskerVaradhanMITrainer(Trainer):
                 Y3 = batched_shuffle(rearrange(Y1, 'b (e n) d -> (b e) n d', e=self.estimate_size))
                 Y3 = rearrange(Y3, '(b e) n d -> b (e n) d', e=self.estimate_size)
             else:
-                Y3 = batched_shuffle(Y)
+                Y3 = batched_shuffle(Y1)
             X3 = X1
 
         if self.model_type == 'encdec':
