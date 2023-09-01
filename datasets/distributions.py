@@ -305,7 +305,6 @@ class NFGenerator():
 class KroneckerProduct(Distribution):
     def __init__(self, *distributions):
         self.distributions = distributions
-        self.event_shapes = [dst.event_shape.view(-1) for dst in self.distributions]
 
     def sample(self, sample_shape=torch.Size([])):
         samples = [dst.sample(sample_shape) for dst in self.distributions]
