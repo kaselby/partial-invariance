@@ -511,15 +511,18 @@ class MultiSetTransformer(nn.Module):
         return out.squeeze(-1)
 
 class MultiSetTransformerEncoder(nn.Module):
-    def __init__(self, input_size, latent_size, hidden_size, output_size, num_heads=4, num_blocks=2, remove_diag=False, ln=False, equi=False, 
+    def __init__(self, x_size, y_size, latent_size, hidden_size, output_size, num_heads=4, num_blocks=2, remove_diag=False, ln=False, equi=False, 
             weight_sharing='none', dropout=0.1, decoder_layers=0, merge='concat', merge_output_sets=False):
         super(MultiSetTransformerEncoder, self).__init__()
         if equi:
-            input_size = 1
-        self.input_size = input_size
+            x_size = 1
+            y_size = 1
+        self.x_size = x_size
+        self.y_size = y_size
         self.merge_output_sets = merge_output_sets
         decoder_input_size = latent_size if not merge_output_sets else latent_size*2
-        self.proj = None if input_size == latent_size else nn.Linear(input_size, latent_size) 
+        self.proj_x = None if x_size == latent_size else nn.Linear(x_size, latent_size) 
+        self.proj_y = None if y_size == latent_size else nn.Linear(y_size, latent_size) 
         self.enc = EncoderStack(*[CSAB(latent_size, latent_size, hidden_size, num_heads, ln=ln, remove_diag=remove_diag, 
                 equi=equi, weight_sharing=weight_sharing, dropout=dropout, merge='concat') for i in range(num_blocks)])
         self.dec = self._make_decoder(decoder_input_size, hidden_size, output_size, decoder_layers)
@@ -545,7 +548,7 @@ class MultiSetTransformerEncoder(nn.Module):
         if self.equi:
             ZX, ZY = ZX.unsqueeze(-1), ZY.unsqueeze(-1)
         if self.proj is not None:
-            ZX, ZY = self.proj(ZX), self.proj(ZY)
+            ZX, ZY = self.proj_x(ZX), self.proj_y(ZY)
             
         ZX, ZY = self.enc((ZX, ZY), masks=masks)
             

@@ -1,5 +1,5 @@
 import torch
-from torch.distributions import MultivariateNormal, LKJCholesky, Categorical, MixtureSameFamily, Dirichlet, LogNormal
+from torch.distributions import MultivariateNormal, LKJCholesky, Categorical, MixtureSameFamily, Dirichlet, LogNormal, Bernoulli, Distribution
 from scipy.stats import invwishart
 import numpy as np
 
@@ -176,7 +176,7 @@ class CorrelatedGaussianGenerator():
             if use_cuda:
                 corr = corr.cuda()
         dists = self._build_dist(batch_size, corr, n)
-        X, Y = dists. sample(n_samples*sample_groups).transpose(0,1).chunk(2, dim=-1)
+        X, Y = dists.sample(n_samples*sample_groups).transpose(0,1).chunk(2, dim=-1)
 
         if self.return_params:
             return (X, Y), (corr,)
@@ -299,3 +299,86 @@ class NFGenerator():
             return outputs, dists
         else:
             return outputs
+        
+
+
+class KroneckerProduct(Distribution):
+    def __init__(self, *distributions):
+        self.distributions = distributions
+        self.event_shapes = [dst.event_shape.view(-1) for dst in self.distributions]
+
+    def sample(self, sample_shape=torch.Size([])):
+        samples = [dst.sample(sample_shape) for dst in self.distributions]
+        return samples
+    
+    def log_prob(self, value):
+        logprobs = [dst.log_prob(x) for x,dst in zip(value, self.distributions)]
+        return sum(logprobs)
+        
+class Mixture(Distribution):
+    def __init__(self, mixing_distribution, base_distribution, mixture_dim=1):
+        self.base_distribution = base_distribution
+        self.mixing_distribution = mixing_distribution
+        self.mixture_dim=mixture_dim
+        event_shape = self.base_distribution.event_shape
+        self._event_ndims = len(event_shape)
+
+    def sample(self, sample_shape=torch.Size([])):
+        mixture_labels = self.mixing_distribution.sample(sample_shape)
+        all_samples = self.base_distribution.sample(sample_shape)
+        mixing_dim = self.mixture_dim + len(sample_shape)
+        outputs = torch.gather(all_samples, mixing_dim, mixture_labels).squeeze(mixing_dim)
+        return outputs, mixture_labels
+    
+    def log_prob(self, x, labels=None):
+        x = self._pad(x)
+        log_prob_x = self.base_distribution.log_prob(x)  # [S, B, k]
+
+        if labels is not None:
+            label_logprobs = self.mixing_distribution.log_prob(labels)
+            component_logprobs = torch.gather(log_prob_x, -1, labels.view(1,1,-1)).squeeze(-1)
+            return label_logprobs + component_logprobs
+        else:
+            log_mix_prob = torch.log_softmax(self.mixing_distribution.logits,
+                                    dim=-1)  # [B, k]
+            return torch.logsumexp(log_prob_x + log_mix_prob, dim=-1)  # [S, B]
+
+    def _pad(self, x):
+        return x.unsqueeze(-1 - self._event_ndims)
+
+
+
+
+
+class LabelledGaussianGenerator():
+    def __init__(self, return_params=False, variable_dim=False):
+        self.return_params=return_params
+        self.variable_dim=variable_dim
+
+    def _generate(self, batch_size, n, return_params=False, set_size=(100,150)):
+        mus = torch.rand(batch_size, 2, n)
+        sigmas = torch.rand(batch_size, 2, n)
+        dist = MultivariateNormal(mus, covariance_matrix=sigmas)
+        mixing_dist = Categorical(torch.ones(2))
+
+        joint = Mixture(mixing_dist, dist)
+        marginal = KroneckerProduct(MixtureSameFamily(mixing_dist, dist))
+
+        n_samples = torch.randint(*set_size,(1,))
+        X, labels = joint.sample(n_samples)
+        X = X.transpose(0,1)
+        labels = labels.transpose(0,1)
+
+        if self.return_params:
+            return (X, labels), (joint, marginal)
+        else:
+            return X, labels
+
+    def __call__(self, batch_size, dims=(2,6), sample_groups=1, **kwargs):
+        if self.variable_dim:
+            n = torch.randint(*dims,(1,)).item() * 2
+            kwargs['n'] = n
+        return self._generate(batch_size, sample_groups=sample_groups, **kwargs)
+
+
+

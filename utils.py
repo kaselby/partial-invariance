@@ -125,6 +125,13 @@ def kl_mc(p, q, X=None, Y=None, N=500):
         X = p.sample((N,)).transpose(0,1)
     return (p.log_prob(X.transpose(0,1)) - q.log_prob(X.transpose(0,1))).mean(dim=0)  
 
+def kl_mc_mixture(p, q, X=None, Y=None, N=500):
+    if X is None:
+        X = p.sample((N,))
+    else:
+        X = [x.transpose(0,1) for x in X]
+    return (p.log_prob(*X) - q.log_prob(*X)).mean(dim=0)  
+
 
 def mi_corr_gaussian(corr, d=None, X=None):
     assert (d is None) != (X is None)

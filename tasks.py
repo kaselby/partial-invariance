@@ -5,10 +5,10 @@ from datasets.counting import OmniglotCooccurenceGenerator, ImageCooccurenceGene
 from datasets.alignment import EmbeddingAlignmentGenerator, CaptionGenerator, load_coco_data, load_flickr_data, bert_tokenize_batch, fasttext_tokenize_batch, load_pairs, split_pairs
 from datasets.distinguishability import DistinguishabilityGenerator
 from datasets.meta_dataset import MetaDatasetGenerator, Split
-from datasets.distributions import CorrelatedGaussianGenerator, GaussianGenerator, NFGenerator, StandardGaussianGenerator, CorrelatedGaussianGenerator2
+from datasets.distributions import CorrelatedGaussianGenerator, GaussianGenerator, NFGenerator, StandardGaussianGenerator, CorrelatedGaussianGenerator2, LabelledGaussianGenerator
 from models.task import ImageEncoderWrapper, BertEncoderWrapper, EmbeddingEncoderWrapper, MultiSetImageModel, MultiSetModel
 from models.set import MultiSetTransformerEncoder, MultiSetTransformerEncoderDecoder
-from utils import kl_mc, mi_corr_gaussian, kl_knn, kraskov_mi1, whiten_split, normalize_sets
+from utils import kl_mc, kl_mc_mixture, mi_corr_gaussian, kl_knn, kraskov_mi1, whiten_split, normalize_sets
 
 import fasttext
 from transformers import BertTokenizer, BertModel
@@ -412,7 +412,7 @@ class DVTask(StatisticalDistanceTask):
             'merge': 'concat',
             'weight_sharing': 'sym',     #IMPORTANT
         }
-        set_model = MultiSetTransformerEncoder(self.args.n, self.args.latent_size, self.args.hidden_size, 1, **model_kwargs)
+        set_model = MultiSetTransformerEncoder(self.args.n, self.args.n, self.args.latent_size, self.args.hidden_size, 1, **model_kwargs)
         return set_model
     
     def _build_model_encdec(self):
@@ -441,7 +441,12 @@ class DVMITask(StatisticalDistanceTask):
     trainer_cls=DonskerVaradhanMITrainer
 
     def build_dataset(self):
-        generator = CorrelatedGaussianGenerator(return_params=True, variable_dim=self.args.equi, max_rho=self.args.max_rho)
+        if self.args.dataset == 'corr':
+            generator = CorrelatedGaussianGenerator(return_params=True, variable_dim=self.args.equi, max_rho=self.args.max_rho)
+        elif self.args.dataset == 'mixture':
+            generator = LabelledGaussianGenerator(return_params=True, variable_dim=self.args.equi)
+        else:
+            raise NotImplementedError("corr or mixture")
         return generator, generator, None
 
     def build_training_args(self):
@@ -454,20 +459,28 @@ class DVMITask(StatisticalDistanceTask):
         return train_args, eval_args
     
     def build_trainer_kwargs(self):
+
         trainer_kwargs = {
             'eval_every': self.args.eval_every,
             'save_every': self.args.save_every,
-            'label_fct': mi_corr_gaussian,
             'criterion': nn.L1Loss(),
-            'x_marginal': StandardGaussianGenerator(),
-            'y_marginal': StandardGaussianGenerator(),
             'estimate_size': getattr(self.args, 'estimate_size', -1),
-            'sample_marg': getattr(self.args, 'sample_marg', True),
             'scale': getattr(self.args, 'scale', 'none'),
             'eps': getattr(self.args, 'eps', 1e-8),
             'model_type': self.args.dv_model,
             'split_inputs': self.args.split_inputs
         }
+        if self.args.dataset == 'corr':
+            trainer_kwargs['x_marginal'] = StandardGaussianGenerator()
+            trainer_kwargs['y_marginal'] = StandardGaussianGenerator()
+            trainer_kwargs['sample_marg'] = getattr(self.args, 'sample_marg', True)
+            trainer_kwargs['label_fct'] = mi_corr_gaussian
+        elif self.args.dataset == 'mixture':
+            trainer_kwargs['x_marginal'] = None
+            trainer_kwargs['y_marginal'] = None
+            trainer_kwargs['sample_marg'] = False
+            trainer_kwargs['label_fct'] = kl_mc_mixture
+
         if getattr(self.args, 'criterion', None) is not None:
             trainer_kwargs['criterion'] = LOSSES[self.args.criterion]
         return trainer_kwargs
@@ -485,7 +498,11 @@ class DVMITask(StatisticalDistanceTask):
             'weight_sharing': 'sym',     #IMPORTANT?? Not sure if necessary or not for MI but probably helpful
             'merge_output_sets': True
         }
-        set_model = MultiSetTransformerEncoder(self.args.n, self.args.latent_size, self.args.hidden_size, 1, **model_kwargs)
+        if self.args.dataset == 'corr':
+            x_size, y_size = self.args.n, self.args.n
+        elif self.args.dataset == 'mixture':
+            x_size, y_size = self.args.n, 1
+        set_model = MultiSetTransformerEncoder(x_size, y_size, self.args.latent_size, self.args.hidden_size, 1, **model_kwargs)
         return set_model
 
     def _build_model_encdec(self):
@@ -501,7 +518,11 @@ class DVMITask(StatisticalDistanceTask):
             'merge': 'concat',
             'decoder_self_attn': self.args.decoder_self_attn
         }
-        set_model = MultiSetTransformerEncoderDecoder(self.args.n*2, self.args.n*2, self.args.latent_size, self.args.hidden_size, 1, **model_kwargs)
+        if self.args.dataset == 'corr':
+            input_size = self.args.n * 2
+        elif self.args.dataset == 'mixture':
+            input_size = self.args.n + 1
+        set_model = MultiSetTransformerEncoderDecoder(input_size, input_size, self.args.latent_size, self.args.hidden_size, 1, **model_kwargs)
         return set_model
 
     def build_model(self, pretrained_model=None):
@@ -578,7 +599,7 @@ class DVTask2(StatisticalDistanceTask):
             'weight_sharing': 'sym',     #IMPORTANT
         }
         n = self.args.n * 2 if self.args.dataset == 'corr'else self.args.n
-        set_model = MultiSetTransformerEncoder(n, self.args.latent_size, self.args.hidden_size, 1, **model_kwargs)
+        set_model = MultiSetTransformerEncoder(n, n, self.args.latent_size, self.args.hidden_size, 1, **model_kwargs)
         return set_model
     
     def _build_model_encdec(self):
