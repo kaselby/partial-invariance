@@ -319,12 +319,13 @@ class Mixture(Distribution):
         self.base_distribution = base_distribution
         self.mixing_distribution = mixing_distribution
         self.mixture_dim=mixture_dim
-        event_shape = self.base_distribution.event_shape
-        self._event_ndims = len(event_shape)
+        self.event_shape = self.base_distribution.event_shape
+        self._event_ndims = len(self.event_shape)
 
     def sample(self, sample_shape=torch.Size([])):
         mixture_labels = self.mixing_distribution.sample(sample_shape).unsqueeze(-1)
         mixture_labels = mixture_labels.view(*mixture_labels.size(), *[1 for _ in range(self._event_ndims)])
+        mixture_labels = mixture_labels.expand(*mixture_labels.size()[:-1], self.event_shape[-1])
         all_samples = self.base_distribution.sample(sample_shape)
         mixing_dim = self.mixture_dim + len(sample_shape)
         outputs = torch.gather(all_samples, mixing_dim, mixture_labels).squeeze(mixing_dim)
@@ -360,7 +361,7 @@ class LabelledGaussianGenerator():
         sigmas = torch.rand(batch_size, 2, n)
         sigmas = torch.diag_embed(sigmas)
         dist = MultivariateNormal(mus, covariance_matrix=sigmas)
-        mixing_dist = Categorical(torch.ones(2))
+        mixing_dist = Categorical(torch.ones(batch_size, 2))
 
         joint = Mixture(mixing_dist, dist)
         marginal = KroneckerProduct(MixtureSameFamily(mixing_dist, dist))
