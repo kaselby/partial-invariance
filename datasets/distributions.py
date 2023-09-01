@@ -323,7 +323,8 @@ class Mixture(Distribution):
         self._event_ndims = len(event_shape)
 
     def sample(self, sample_shape=torch.Size([])):
-        mixture_labels = self.mixing_distribution.sample(sample_shape)
+        mixture_labels = self.mixing_distribution.sample(sample_shape).unsqueeze(-1)
+        mixture_labels = mixture_labels.view(*mixture_labels.size(), *[1 for _ in range(self._event_ndims)])
         all_samples = self.base_distribution.sample(sample_shape)
         mixing_dim = self.mixture_dim + len(sample_shape)
         outputs = torch.gather(all_samples, mixing_dim, mixture_labels).squeeze(mixing_dim)
