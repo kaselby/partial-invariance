@@ -355,7 +355,7 @@ class LabelledGaussianGenerator():
         self.return_params=return_params
         self.variable_dim=variable_dim
 
-    def _generate(self, batch_size, n, return_params=False, set_size=(100,150)):
+    def _generate(self, batch_size, n, return_params=False, set_size=(100,150), sample_groups=1):
         mus = torch.rand(batch_size, 2, n)
         sigmas = torch.rand(batch_size, 2, n)
         dist = MultivariateNormal(mus, covariance_matrix=sigmas)
@@ -365,7 +365,7 @@ class LabelledGaussianGenerator():
         marginal = KroneckerProduct(MixtureSameFamily(mixing_dist, dist))
 
         n_samples = torch.randint(*set_size,(1,))
-        X, labels = joint.sample(n_samples)
+        X, labels = joint.sample(n_samples * sample_groups)
         X = X.transpose(0,1)
         labels = labels.transpose(0,1)
 
