@@ -378,7 +378,7 @@ class LabelledGaussianGenerator():
 
     def __call__(self, batch_size, dims=(2,6), sample_groups=1, **kwargs):
         if self.variable_dim:
-            n = torch.randint(*dims,(1,)).item() * 2
+            n = torch.randint(*dims,(1,)).item()
             kwargs['n'] = n
         return self._generate(batch_size, sample_groups=sample_groups, **kwargs)
 
