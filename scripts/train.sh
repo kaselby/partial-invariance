@@ -17,7 +17,7 @@ run_name=$1
 checkpoint_dir="/checkpoint/$USER/$run_name"
 
 model='multi-set-transformer'
-dataset='corr'
+dataset='mixture'
 task='stat/DV-MI'
 
 bs=32
