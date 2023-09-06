@@ -304,6 +304,7 @@ class NFGenerator():
 
 class KroneckerProduct(Distribution):
     def __init__(self, *distributions):
+        super().__init__()
         self.distributions = distributions
 
     def sample(self, sample_shape=torch.Size([])):
@@ -316,10 +317,11 @@ class KroneckerProduct(Distribution):
         
 class Mixture(Distribution):
     def __init__(self, mixing_distribution, base_distribution, mixture_dim=1):
+        super().__init__()
         self.base_distribution = base_distribution
         self.mixing_distribution = mixing_distribution
         self.mixture_dim=mixture_dim
-        self.event_shape = self.base_distribution.event_shape
+        self._event_shape = self.base_distribution.event_shape
         self._event_ndims = len(self.event_shape)
 
     def sample(self, sample_shape=torch.Size([])):
