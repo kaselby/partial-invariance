@@ -339,8 +339,8 @@ class Mixture(Distribution):
 
         if labels is not None:
             label_logprobs = self.mixing_distribution.log_prob(labels)
-            component_logprobs = torch.gather(log_prob_x, -1, labels).squeeze(-1)
-            return label_logprobs + component_logprobs
+            component_logprobs = torch.gather(log_prob_x, -1, labels)
+            return (label_logprobs + component_logprobs).squeeze(-1)
         else:
             log_mix_prob = torch.log_softmax(self.mixing_distribution.logits,
                                     dim=-1)  # [B, k]
