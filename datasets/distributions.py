@@ -326,12 +326,12 @@ class Mixture(Distribution):
 
     def sample(self, sample_shape=torch.Size([])):
         mixture_labels = self.mixing_distribution.sample(sample_shape).unsqueeze(-1)
-        mixture_labels = mixture_labels.view(*mixture_labels.size(), *[1 for _ in range(self._event_ndims)])
-        mixture_labels = mixture_labels.expand(*mixture_labels.size()[:-1], self.event_shape[-1])
+        mixture_labels_expanded = mixture_labels.view(*mixture_labels.size(), *[1 for _ in range(self._event_ndims)])
+        mixture_labels_expanded = mixture_labels_expanded.expand(*mixture_labels_expanded.size()[:-1], self.event_shape[-1])
         all_samples = self.base_distribution.sample(sample_shape)
         mixing_dim = self.mixture_dim + len(sample_shape)
-        outputs = torch.gather(all_samples, mixing_dim, mixture_labels)
-        return outputs.squeeze(mixing_dim), mixture_labels.squeeze(mixing_dim)
+        outputs = torch.gather(all_samples, mixing_dim, mixture_labels_expanded).squeeze(mixing_dim)
+        return outputs.squeeze(mixing_dim), mixture_labels
     
     def log_prob(self, x, labels=None):
         x = self._pad(x)
