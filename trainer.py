@@ -492,7 +492,7 @@ class DonskerVaradhanMITrainer(Trainer):
             x_marginal, y_marginal, logger=None, save_every=2000, eval_every=500, scheduler=None, checkpoint_dir=None, ss_schedule=-1,
             sample_marg=True, estimate_size=-1, scale='none', eps=1e-6, model_type='mst', split_inputs=True):
         super().__init__(model, optimizer, train_dataset, val_dataset, test_dataset, train_args, eval_args, device, logger=logger,
-            save_every=save_every, criterion=criterion, scheduler=scheduler, checkpoint_dir=checkpoint_dir, ss_schedule=ss_schedule)
+            save_every=save_every, eval_every=eval_every, criterion=criterion, scheduler=scheduler, checkpoint_dir=checkpoint_dir, ss_schedule=ss_schedule)
         self.label_fct = label_fct
         self.x_marginal = x_marginal
         self.y_marginal = y_marginal
