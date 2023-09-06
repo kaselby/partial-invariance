@@ -311,8 +311,8 @@ class KroneckerProduct(Distribution):
         samples = [dst.sample(sample_shape) for dst in self.distributions]
         return samples
     
-    def log_prob(self, value):
-        logprobs = [dst.log_prob(x) for x,dst in zip(value, self.distributions)]
+    def log_prob(self, *values):
+        logprobs = [dst.log_prob(x) for x,dst in zip(values, self.distributions)]
         return sum(logprobs)
         
 class Mixture(Distribution):
