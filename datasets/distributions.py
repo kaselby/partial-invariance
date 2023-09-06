@@ -359,11 +359,11 @@ class LabelledGaussianGenerator():
         self.variable_dim=variable_dim
 
     def _generate(self, batch_size, n, return_params=False, set_size=(100,150), sample_groups=1):
-        mus = torch.rand(batch_size, 2, n)
+        mus = torch.rand(batch_size, 2, n).cuda()
         sigmas = torch.rand(batch_size, 2, n)
-        sigmas = torch.diag_embed(sigmas)
+        sigmas = torch.diag_embed(sigmas).cuda()
         dist = MultivariateNormal(mus, covariance_matrix=sigmas)
-        mixing_dist = Categorical(torch.ones(batch_size, 2))
+        mixing_dist = Categorical(torch.ones(batch_size, 2).cuda())
 
         joint = Mixture(mixing_dist, dist)
         marginal = KroneckerProduct(MixtureSameFamily(mixing_dist, dist))
