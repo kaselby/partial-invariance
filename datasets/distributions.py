@@ -383,6 +383,31 @@ class LabelledGaussianGenerator():
             n = torch.randint(*dims,(1,)).item()
             kwargs['n'] = n
         return self._generate(batch_size, sample_groups=sample_groups, **kwargs)
+    
 
+from torch.utils.data import Dataset
+class ProtectedDataset(Dataset):
+    def __init__(self, data, protected, label):
+        assert data.size(0) == protected.size(0) == label.size(0)
+        self.data = data
+        self.protected = protected
+        self.label = label
+        self.N = data.size(0)
 
+    def __len__(self):
+        return self.N
+    
+    def __getitem__(self, idx):
+        return self.data[idx], self.protected[idx], self.label[idx]
+    
+import pickle
+def load_adult(dir):
+    with open(os.path.join(dir, 'adult_binary.pkl'), 'rb') as f:
+        adult = pickle.load(f)
+    with open(os.path.join(dir, 'adult_test_binary.pkl'), 'rb') as f:
+        adult_test = pickle.load(f)
+    
+    adult_dataset = ProtectedDataset(*[torch.Tensor(x) for x in adult])
+    adult_test_dataset = ProtectedDataset(*[torch.Tensor(x) for x in adult_test])
 
+    return adult_dataset, adult_test_dataset
