@@ -338,7 +338,7 @@ class Mixture(Distribution):
         log_prob_x = self.base_distribution.log_prob(x)  # [S, B, k]
 
         if labels is not None:
-            label_logprobs = self.mixing_distribution.log_prob(labels.squeeze(-1))
+            label_logprobs = self.mixing_distribution.log_prob(labels)
             component_logprobs = torch.gather(log_prob_x, -1, labels).squeeze(-1)
             return label_logprobs + component_logprobs
         else:
@@ -366,9 +366,9 @@ class LabelledGaussianGenerator():
         mixing_dist = Categorical(torch.ones(batch_size, 2).cuda())
 
         joint = Mixture(mixing_dist, dist)
-        marginal = KroneckerProduct(MixtureSameFamily(mixing_dist, dist))
+        marginal = KroneckerProduct(MixtureSameFamily(mixing_dist, dist), mixing_dist)
 
-        n_samples = torch.randint(*set_size,(1,))
+        n_samples = torch.randint(*set_size, (1,))
         X, labels = joint.sample(n_samples * sample_groups)
         X = X.transpose(0,1)
         labels = labels.transpose(0,1)
