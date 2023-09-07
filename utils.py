@@ -130,7 +130,7 @@ def kl_mc_mixture(p, q, X=None, Y=None, N=500):
         X = p.sample((N,))
     else:
         X = [x.transpose(0,1) for x in X]
-    X[-1] = X[-1].squeeze(-1)
+    X = [x.squeeze(-1) for x in X]
     return (p.log_prob(*X) - q.log_prob(*X)).mean(dim=0)  
 
 
