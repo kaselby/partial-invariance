@@ -358,10 +358,14 @@ class LabelledGaussianGenerator():
         self.return_params=return_params
         self.variable_dim=variable_dim
 
-    def _generate(self, batch_size, n, return_params=False, set_size=(100,150), sample_groups=1):
-        mus = torch.rand(batch_size, 2, n).cuda()
-        sigmas = torch.rand(batch_size, 2, n)
-        sigmas = torch.diag_embed(sigmas).cuda()
+    def _generate(self, batch_size, n, return_params=False, set_size=(100,150), sample_groups=1, logscale=True):
+        if not logscale:
+            mus = torch.rand(batch_size, 2, n).cuda()
+            sigmas = torch.rand(batch_size, 2, n).cuda() + 1e-5
+        else:
+            mus = (torch.rand(batch_size, 2, n)* 6 - 2).exp().cuda() 
+            sigmas = (torch.rand(batch_size, 2, n)* 6 - 2).exp().cuda() 
+        sigmas = torch.diag_embed(sigmas)
         dist = MultivariateNormal(mus, covariance_matrix=sigmas)
         mixing_dist = Categorical(torch.ones(batch_size, 2).cuda())
 
