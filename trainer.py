@@ -622,6 +622,8 @@ class DonskerVaradhanMITrainer(Trainer):
         
 
     def evaluate(self, steps, dataset):
+        if self.label_fct is None:
+            return {}
         set_sizes = (300,)#(100, 300, 800)
         metrics={}
         for ss in set_sizes:

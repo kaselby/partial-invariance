@@ -397,6 +397,7 @@ class ProtectedDataset(Dataset):
         self.protected = protected
         self.label = label
         self.N = data.size(0)
+        self.dim = data.size(1)
 
     def __len__(self):
         return self.N
@@ -415,3 +416,41 @@ def load_adult(dir):
     adult_test_dataset = ProtectedDataset(*[torch.Tensor(x) for x in adult_test])
 
     return adult_dataset, adult_test_dataset
+
+
+from datasets.vfae import VariationalMLP
+class RandomEncoderGenerator():
+    @classmethod
+    def from_adult(cls, model_kwargs, dir='./data/adult', **kwargs):
+        train_dataset, _ = load_adult(dir)
+        train_dataset = ProtectedDataset(*train_dataset)
+        return cls(train_dataset, model_kwargs, **kwargs)
+
+    def __init__(self, base_dataset, model_kwargs, return_params=False, variable_dim=False):
+        self.base_dataset = base_dataset
+        self.model_kwargs = model_kwargs
+        self.return_params = return_params
+        self.variable_dim=variable_dim
+
+    
+    def _generate(self, batch_size, n, set_size=(100,150), sample_groups=1):
+        model = VariationalMLP(**self.model_kwargs, z_dim=n).cuda()
+
+        indices = torch.randperm(len(self.base_dataset))
+        n_samples = torch.randint(*set_size, (1,))
+        batch, Y, _ = zip(*[self.base_dataset[x] for x in indices[:batch_size*n_samples*sample_groups]])
+
+        with torch.no_grad():
+            X = model(batch.cuda()).view(batch_size, n_samples * sample_groups, -1)
+        
+        if self.return_params:
+            return (X,Y), None
+        else:
+            return X, Y
+
+    def __call__(self, batch_size, dims=(25,50), sample_groups=1, **kwargs):
+        if self.variable_dim:
+            n = torch.randint(*dims,(1,)).item()
+            kwargs['n'] = n
+        return self._generate(batch_size, sample_groups=sample_groups, **kwargs)
+

@@ -5,7 +5,7 @@ from datasets.counting import OmniglotCooccurenceGenerator, ImageCooccurenceGene
 from datasets.alignment import EmbeddingAlignmentGenerator, CaptionGenerator, load_coco_data, load_flickr_data, bert_tokenize_batch, fasttext_tokenize_batch, load_pairs, split_pairs
 from datasets.distinguishability import DistinguishabilityGenerator
 from datasets.meta_dataset import MetaDatasetGenerator, Split
-from datasets.distributions import CorrelatedGaussianGenerator, GaussianGenerator, NFGenerator, StandardGaussianGenerator, CorrelatedGaussianGenerator2, LabelledGaussianGenerator
+from datasets.distributions import CorrelatedGaussianGenerator, GaussianGenerator, NFGenerator, StandardGaussianGenerator, CorrelatedGaussianGenerator2, LabelledGaussianGenerator, RandomEncoderGenerator
 from models.task import ImageEncoderWrapper, BertEncoderWrapper, EmbeddingEncoderWrapper, MultiSetImageModel, MultiSetModel
 from models.set import MultiSetTransformerEncoder, MultiSetTransformerEncoderDecoder
 from utils import kl_mc, kl_mc_mixture, mi_corr_gaussian, kl_knn, kraskov_mi1, whiten_split, normalize_sets
@@ -445,6 +445,13 @@ class DVMITask(StatisticalDistanceTask):
             generator = CorrelatedGaussianGenerator(return_params=True, variable_dim=self.args.equi, max_rho=self.args.max_rho)
         elif self.args.dataset == 'mixture':
             generator = LabelledGaussianGenerator(return_params=True, variable_dim=self.args.equi)
+        elif self.args.dataset == 'adult':
+            model_kwargs={
+                'in_features': 117,
+                'hidden_dim': 100,
+                'activation': nn.ReLU(),
+            }
+            generator = RandomEncoderGenerator.from_adult(model_kwargs, return_params=True)
         else:
             raise NotImplementedError("corr or mixture")
         return generator, generator, None
@@ -480,6 +487,11 @@ class DVMITask(StatisticalDistanceTask):
             trainer_kwargs['y_marginal'] = None
             trainer_kwargs['sample_marg'] = False
             trainer_kwargs['label_fct'] = kl_mc_mixture
+        elif self.args.dataset == 'adult':
+            trainer_kwargs['x_marginal'] = None
+            trainer_kwargs['y_marginal'] = None
+            trainer_kwargs['sample_marg'] = False
+            trainer_kwargs['label_fct'] = None
 
         if getattr(self.args, 'criterion', None) is not None:
             trainer_kwargs['criterion'] = LOSSES[self.args.criterion]
