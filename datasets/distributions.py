@@ -438,6 +438,8 @@ class RandomEncoderGenerator():
         indices = torch.randperm(len(self.base_dataset))
         n_samples = torch.randint(*set_size, (1,))
         batch, Y, _ = zip(*[self.base_dataset[x] for x in indices[:batch_size*n_samples*sample_groups]])
+        batch = torch.stack(batch, dim=0)
+        Y = torch.stack(Y, dim=0)
 
         with torch.no_grad():
             X = model(batch.cuda()).view(batch_size, n_samples * sample_groups, -1)
