@@ -532,7 +532,7 @@ class DVMITask(StatisticalDistanceTask):
         }
         if self.args.dataset == 'corr':
             input_size = self.args.n * 2
-        elif self.args.dataset == 'mixture':
+        elif self.args.dataset == 'mixture' or self.args.dataset == 'adult':
             input_size = self.args.n + 1
         set_model = MultiSetTransformerEncoderDecoder(input_size, input_size, self.args.latent_size, self.args.hidden_size, 1, **model_kwargs)
         return set_model
