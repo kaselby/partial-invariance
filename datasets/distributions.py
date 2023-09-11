@@ -442,7 +442,7 @@ class RandomEncoderGenerator():
         Y = torch.stack(Y, dim=0)
 
         with torch.no_grad():
-            X = model(batch.cuda()).view(batch_size, n_samples * sample_groups, -1)
+            X = model(batch.cuda())[0].view(batch_size, n_samples * sample_groups, -1)
         
         if self.return_params:
             return (X,Y), None
