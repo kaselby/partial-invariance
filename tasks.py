@@ -290,11 +290,13 @@ class StatisticalDistanceTask(Task):
             sample_kwargs['nu']=5
             sample_kwargs['mu0']=0
             sample_kwargs['s0']=0.3
+
         if self.args.equi and self.args.vardim:
             dim_range = math.ceil(self.args.n/8)
             sample_kwargs['dims'] = (max(2,self.args.n-dim_range),self.args.n+dim_range)
         else:
             sample_kwargs['n'] = self.args.n
+
         train_args = {
             'batch_size': self.args.batch_size,
             'grad_steps': self.args.grad_steps,
@@ -451,7 +453,7 @@ class DVMITask(StatisticalDistanceTask):
                 'hidden_dim': 100,
                 'activation': nn.ReLU(),
             }
-            generator = RandomEncoderGenerator.from_adult(model_kwargs, return_params=True)
+            generator = RandomEncoderGenerator.from_adult(model_kwargs, return_params=True, variable_dim=self.args.equi)
         else:
             raise NotImplementedError("corr or mixture")
         return generator, generator, None
