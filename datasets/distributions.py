@@ -423,7 +423,6 @@ class RandomEncoderGenerator():
     @classmethod
     def from_adult(cls, model_kwargs, dir='./data/adult', **kwargs):
         train_dataset, _ = load_adult(dir)
-        train_dataset = ProtectedDataset(*train_dataset)
         return cls(train_dataset, model_kwargs, **kwargs)
 
     def __init__(self, base_dataset, model_kwargs, return_params=False, variable_dim=False):
