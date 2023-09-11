@@ -449,7 +449,7 @@ class DVMITask(StatisticalDistanceTask):
             generator = LabelledGaussianGenerator(return_params=True, variable_dim=self.args.equi)
         elif self.args.dataset == 'adult':
             model_kwargs={
-                'in_features': 117,
+                'in_features': 102,
                 'hidden_dim': 100,
                 'activation': nn.ReLU(),
             }
