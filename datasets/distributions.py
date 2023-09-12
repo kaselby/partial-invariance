@@ -418,6 +418,36 @@ def load_adult(dir):
     return adult_dataset, adult_test_dataset
 
 
+class ProtectedDatasetGenerator():
+    @classmethod
+    def from_adult(cls, dir='./data/adult', **kwargs):
+        train_dataset, _ = load_adult(dir)
+        return cls(train_dataset, **kwargs)
+
+    def __init__(self, base_dataset, return_params=False):
+        self.base_dataset = base_dataset
+        self.return_params = return_params
+
+    def _generate(self, batch_size, set_size=(100,150), sample_groups=1):
+        indices = torch.randperm(len(self.base_dataset))
+        n_samples = torch.randint(*set_size, (1,))
+        X, Y, _ = zip(*[self.base_dataset[x] for x in indices[:batch_size*n_samples*sample_groups]])
+        X = torch.stack(X, dim=0)
+        Y = torch.stack(Y, dim=0)
+
+        X = X.view(batch_size, n_samples * sample_groups, -1)
+        Y = Y.view(batch_size, n_samples * sample_groups, 1)
+        
+        if self.return_params:
+            return (X,Y), None
+        else:
+            return X, Y
+        
+    def __call__(self, batch_size, sample_groups=1, **kwargs):
+        return self._generate(batch_size, sample_groups=sample_groups, **kwargs)
+
+
+
 from datasets.vfae import VariationalMLP
 class RandomEncoderGenerator():
     @classmethod

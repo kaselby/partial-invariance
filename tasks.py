@@ -5,7 +5,7 @@ from datasets.counting import OmniglotCooccurenceGenerator, ImageCooccurenceGene
 from datasets.alignment import EmbeddingAlignmentGenerator, CaptionGenerator, load_coco_data, load_flickr_data, bert_tokenize_batch, fasttext_tokenize_batch, load_pairs, split_pairs
 from datasets.distinguishability import DistinguishabilityGenerator
 from datasets.meta_dataset import MetaDatasetGenerator, Split
-from datasets.distributions import CorrelatedGaussianGenerator, GaussianGenerator, NFGenerator, StandardGaussianGenerator, CorrelatedGaussianGenerator2, LabelledGaussianGenerator, RandomEncoderGenerator
+from datasets.distributions import CorrelatedGaussianGenerator, GaussianGenerator, NFGenerator, StandardGaussianGenerator, CorrelatedGaussianGenerator2, LabelledGaussianGenerator, RandomEncoderGenerator, ProtectedDatasetGenerator
 from models.task import ImageEncoderWrapper, BertEncoderWrapper, EmbeddingEncoderWrapper, MultiSetImageModel, MultiSetModel
 from models.set import MultiSetTransformerEncoder, MultiSetTransformerEncoderDecoder
 from utils import kl_mc, kl_mc_mixture, mi_corr_gaussian, kl_knn, kraskov_mi1, whiten_split, normalize_sets
@@ -448,6 +448,8 @@ class DVMITask(StatisticalDistanceTask):
         elif self.args.dataset == 'mixture':
             generator = LabelledGaussianGenerator(return_params=True, variable_dim=self.args.equi)
         elif self.args.dataset == 'adult':
+            generator = ProtectedDatasetGenerator.from_adult(return_params=True)
+        elif self.args.dataset == 'adult-rand':
             model_kwargs={
                 'in_features': 102,
                 'hidden_dim': 100,
@@ -494,6 +496,11 @@ class DVMITask(StatisticalDistanceTask):
             trainer_kwargs['y_marginal'] = None
             trainer_kwargs['sample_marg'] = False
             trainer_kwargs['label_fct'] = None
+        elif self.args.dataset == 'adult-rand':
+            trainer_kwargs['x_marginal'] = None
+            trainer_kwargs['y_marginal'] = None
+            trainer_kwargs['sample_marg'] = False
+            trainer_kwargs['label_fct'] = None
 
         if getattr(self.args, 'criterion', None) is not None:
             trainer_kwargs['criterion'] = LOSSES[self.args.criterion]
@@ -514,7 +521,7 @@ class DVMITask(StatisticalDistanceTask):
         }
         if self.args.dataset == 'corr':
             x_size, y_size = self.args.n, self.args.n
-        elif self.args.dataset == 'mixture':
+        elif self.args.dataset == 'mixture' or self.args.dataset == 'adult' or self.args.dataset == 'adult-rand':
             x_size, y_size = self.args.n, 1
         set_model = MultiSetTransformerEncoder(x_size, y_size, self.args.latent_size, self.args.hidden_size, 1, **model_kwargs)
         return set_model
@@ -534,7 +541,7 @@ class DVMITask(StatisticalDistanceTask):
         }
         if self.args.dataset == 'corr':
             input_size = self.args.n * 2
-        elif self.args.dataset == 'mixture' or self.args.dataset == 'adult':
+        elif self.args.dataset == 'mixture' or self.args.dataset == 'adult' or self.args.dataset == 'adult-rand':
             input_size = self.args.n + 1
         set_model = MultiSetTransformerEncoderDecoder(input_size, input_size, self.args.latent_size, self.args.hidden_size, 1, **model_kwargs)
         return set_model
