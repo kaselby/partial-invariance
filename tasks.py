@@ -521,8 +521,10 @@ class DVMITask(StatisticalDistanceTask):
         }
         if self.args.dataset == 'corr':
             x_size, y_size = self.args.n, self.args.n
-        elif self.args.dataset == 'mixture' or self.args.dataset == 'adult' or self.args.dataset == 'adult-rand':
+        elif self.args.dataset == 'mixture' or self.args.dataset == 'adult-rand':
             x_size, y_size = self.args.n, 1
+        elif self.args.dataset == 'adult':
+            x_size, y_size = 102, 1
         set_model = MultiSetTransformerEncoder(x_size, y_size, self.args.latent_size, self.args.hidden_size, 1, **model_kwargs)
         return set_model
 
@@ -541,8 +543,10 @@ class DVMITask(StatisticalDistanceTask):
         }
         if self.args.dataset == 'corr':
             input_size = self.args.n * 2
-        elif self.args.dataset == 'mixture' or self.args.dataset == 'adult' or self.args.dataset == 'adult-rand':
+        elif self.args.dataset == 'mixture' or self.args.dataset == 'adult-rand':
             input_size = self.args.n + 1
+        elif self.args.dataset == 'adult':
+            input_size = 102 + 1
         set_model = MultiSetTransformerEncoderDecoder(input_size, input_size, self.args.latent_size, self.args.hidden_size, 1, **model_kwargs)
         return set_model
 
