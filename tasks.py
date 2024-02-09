@@ -561,6 +561,7 @@ class DVMITask(StatisticalDistanceTask):
 #
 #   DV2
 #
+'''
 class DVTask2(StatisticalDistanceTask):
     trainer_cls=DonskerVaradhanTrainer2
 
@@ -649,7 +650,7 @@ class DVTask2(StatisticalDistanceTask):
             return self._build_model_encdec()
         else:
             return self._build_model_mst()
-
+'''
 
 
 TASKS = {
@@ -662,7 +663,7 @@ TASKS = {
     'stat/MI': MITask,
     'stat/DV': DVTask,
     'stat/DV-MI': DVMITask,
-    'stat/DV2': DVTask2
+    #'stat/DV2': DVTask2
 }
 
 
