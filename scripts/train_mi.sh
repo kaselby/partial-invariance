@@ -10,52 +10,76 @@
 
 
 basedir="runs"
-
 run_name=$1
-
 checkpoint_dir="/checkpoint/$USER/$run_name"
 
+## note on some conventions:
+# parameters set to -1 mostly mean 'dont use this'
+# parameters with values of 1 or 0 are mostly boolean flags (except for a couple like decoder_layers)
 
-
+# stat/MI for supervised, stat/DV-MI for unsupervised
 task='stat/DV-MI'
 
 ###     data parameters
+# 'corr' for synthetic gaussian data, 'adult' for adult dataset
 dataset='corr'
+# dimensionality of the data
 n=8
+# correlations go from -max_rho to +max_rho for 'corr' dataset
 max_rho=0.9
 
 ###     general training parameters
 bs=32
 lr="1e-5"
+# total number of training steps as well as how often to evaluate/save and how many steps to perform for evaluation
+train_steps=100000
 eval_every=500
 save_every=2000
-train_steps=100000
 val_steps=200
 test_steps=500
 
+# whether or not to use amp acceleration. i forget if this actually sped things up at all, it may not have.
 use_amp=0
 
 ## set size parameters
+# set sizes go from ss1 to ss2
 ss1=250
 ss2=350
+# whether to use a training schedule that starts with smaller set sizes and expands the set sizes during training.
+# i dont believe this was needed for the MI stuff, but im going to leave it in just in case. I think the set size values used for the
+# schedule are hardcoded somewhere.
 ss_schedule=-1
 
-## weight decay is important for the unsupervised version i think, but not for the supervised
+
+# weight decay is important for the unsupervised version i think, but not for the supervised. 
 weight_decay=0.01
+# i dont think gradient clipping was important, but not 100% sure
 grad_clip=-1
 
 
 ###     general model parameters
+# note that for the equivariant model, the actual latent size/hidden size is this value * the dimension of the data (n)
+# thus if you want to turn off equivariance you should probably increase these iirc
 ls=16
 hs=32
 num_heads=4
-weight_sharing='none'
+decoder_layers=1
+# not sure exactly what the best values for these flags are or if they matter. i dont think they have a significant effect
 dropout=0
 ln=0
-decoder_layers=1
+# 'none' or 'whiten'. i think for MI it doesnt matter.
 normalize='none'
 
-## these parameters control the dimension equivariance. they should usually be set to the same value - 1 to use it or 0 to not use it
+# i think this may actually be hardcoded based on the task/model right now so i dont remember if this flag matters.
+# it might be used for certain model settings? the supervised model might use it.
+# it refers to whether weight sharing is used in the MSAB blocks - 'none', 'cross' for XY=YX, and 'sym' for XY=YX and XX=YY
+# if the order of the model inputs should be irrelevant and the two sets are wholly symmetric than using 'sym' can be useful.
+# this might be the case for MI but it depends whether its formulated via the KL divergence or not because the KL divergence
+# isnt symmetric.
+weight_sharing='none'
+
+# these parameters control the dimension equivariance. 
+# they should usually be set to the same value - 1 to use it or 0 to not use it
 equi=1
 vardim=1
 
@@ -68,6 +92,7 @@ num_blocks=4
 dv_model='encdec'
 enc_blocks=4
 dec_blocks=1
+# this is important for a finicky aspect of the unsupervised model. i believe 1e-5 or 1e-6 was a fine value.
 eps="1e-6"
 
 ## these flags control some finicky/complicated aspects of the unsupervised model. i believe these are the right values for them
