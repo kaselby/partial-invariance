@@ -329,7 +329,7 @@ class StatisticalDistanceTrainer(Trainer):
         model_losses=[]
         baseline_losses={baseline:[] for baseline in self.baselines.keys()}
         with torch.no_grad():
-            for i in tqdm.tqdm(range(steps)):
+            for i in range(steps):
                 if self.exact_loss:
                     X, theta = dataset(args['batch_size'], **args['sample_kwargs'])
                     labels = self.label_fct(*theta, X=X[0], **args['label_kwargs']).squeeze(-1)
@@ -506,9 +506,6 @@ class DonskerVaradhanMITrainer(Trainer):
     @staticmethod
     def _KL_estimate(X, Y):
         return X.sum(dim=1)/X.size(1) - Y.logsumexp(dim=1) + math.log(Y.size(1))
-
-
-
 
     def _forward(self, X, Y):
         if self.split_inputs:

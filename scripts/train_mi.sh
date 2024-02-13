@@ -30,6 +30,7 @@ max_rho=0.9
 
 ###     general training parameters
 bs=32
+# lr 1e-4 for supervised or 1e-5 for unsupervised
 lr="1e-5"
 # total number of training steps as well as how often to evaluate/save and how many steps to perform for evaluation
 train_steps=100000
@@ -51,8 +52,8 @@ ss2=350
 ss_schedule=-1
 
 
-# weight decay is important for the unsupervised version i think, but not for the supervised. 
-weight_decay=0.01
+# weight decay might have been used for unsupervised at one point, but i believe i replaced it with scale='logcov'
+weight_decay=0
 # i dont think gradient clipping was important, but not 100% sure
 grad_clip=-1
 
