@@ -137,7 +137,7 @@ def kl_mc_mixture(p, q, X=None, Y=None, N=500):
 def mi_corr_gaussian(corr, d=None, X=None):
     assert (d is None) != (X is None)
     if X is not None:
-        d = X.size(-1)
+        d = X[0].size(-1)
     return -d/2 * torch.log(1-torch.pow(corr, 2))
 
 
