@@ -83,7 +83,6 @@ weight_sharing='none'
 equi=1
 vardim=1
 
-
 ###     supervised parameters
 model='multi-set-transformer'   
 num_blocks=4
@@ -96,14 +95,17 @@ dec_blocks=1
 eps="1e-6"
 
 ## these flags control some finicky/complicated aspects of the unsupervised model. i believe these are the right values for them
+scale='logcov'
+# this should be 1 if youre sampling directly from the marginals like for the gaussians and 0 for empirical samples like for the adult dataset
 sample_marg=1
+# i dont think this ended up doing what i wanted so its disabled
 estimate_size=-1
 split_inputs=1
 decoder_self_attn=0
 
 
-#i forget what these do, i dont think they matter. i wouldnt change them though
-scale='none'
+#i think this is maybe for deciding whether the sueprvised model uses mse or l1 error but i cant remember if its being used or not
+#it may just be hardcoded
 criterion=''
 
 
