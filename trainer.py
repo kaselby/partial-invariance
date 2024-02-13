@@ -636,6 +636,7 @@ class DonskerVaradhanMITrainer(Trainer):
 #
 #   DV2
 #
+'''
 from utils import batched_shuffle
 
 class DonskerVaradhanTrainer2(Trainer):
@@ -775,7 +776,7 @@ class DonskerVaradhanTrainer2(Trainer):
 
 
 
-
+'''
 
 
 
