@@ -428,7 +428,7 @@ class ProtectedDatasetGenerator():
         self.base_dataset = base_dataset
         self.return_params = return_params
 
-    def _generate(self, batch_size, set_size=(100,150), sample_groups=1):
+    def _generate(self, batch_size, set_size=(100,150), sample_groups=1, **kwargs):
         indices = torch.randperm(len(self.base_dataset))
         n_samples = torch.randint(*set_size, (1,))
         X, Y, _ = zip(*[self.base_dataset[x] for x in indices[:batch_size*n_samples*sample_groups]])
