@@ -14,7 +14,9 @@ basedir="2023-runs-fixed"
 
 run_name=$1
 
-checkpoint_dir="/checkpoint/$USER/$run_name"
+#checkpoint_dir="/checkpoint/$USER/$run_name"
+
+checkpoint_dir="/checkpoint/${SLURM_JOB_USER}/${SLURM_JOB_ID}"
 
 model='multi-set-transformer'   
 dataset='corr'
